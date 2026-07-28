@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Agenda+</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,500;9..144,600&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
     --ink:#1b1620;
@@ -15,6 +15,7 @@
     --line:#e6e1ea;
     --plum:#3d1f3a;
     --plum-deep:#2a1428;
+    --accent:#3d1f3a;
     --gold:#b8935f;
     --gold-soft:#e9dcc7;
     --danger:#a3423a;
@@ -23,24 +24,24 @@
     --shadow:0 10px 30px -12px rgba(43,20,40,0.25);
   }
   *{box-sizing:border-box;}
-  body{margin:0;font-family:'Manrope',sans-serif;background:var(--paper);color:var(--ink);}
+  body{margin:0;font-family:'Inter',sans-serif;background:var(--paper);color:var(--ink);}
   h1,h2,h3,.display{font-family:'Fraunces',serif;font-weight:600;letter-spacing:-0.01em;}
   a{color:inherit;}
   button{font-family:inherit;cursor:pointer;}
   .btn{
-    background:var(--plum);color:#fff;border:none;padding:14px 26px;border-radius:999px;
-    font-size:15px;font-weight:600;letter-spacing:.02em;transition:transform .15s ease, background .15s ease;
+    background:var(--accent);color:#fff;border:none;padding:14px 26px;border-radius:999px;
+    font-size:15px;font-weight:600;letter-spacing:.02em;transition:transform .15s ease, filter .15s ease;
   }
-  .btn:hover{background:var(--plum-deep);transform:translateY(-1px);}
+  .btn:hover{filter:brightness(0.88);transform:translateY(-1px);}
   .btn:active{transform:translateY(0);}
-  .btn.gold{background:var(--gold);color:var(--plum-deep);}
-  .btn.gold:hover{background:#a67e4c;}
-  .btn.ghost{background:transparent;color:var(--plum);border:1.5px solid var(--line);}
-  .btn.ghost:hover{border-color:var(--plum);}
+  .btn.gold{background:var(--gold);color:var(--plum-deep);filter:none;}
+  .btn.gold:hover{background:#a67e4c;filter:none;}
+  .btn.ghost{background:transparent;color:var(--accent);border:1.5px solid var(--line);filter:none;}
+  .btn.ghost:hover{border-color:var(--accent);filter:none;}
   .btn.danger{background:var(--danger);}
   .btn:disabled{opacity:.45;cursor:not-allowed;transform:none;}
   input,select,textarea{
-    font-family:'Manrope',sans-serif;padding:12px 14px;border-radius:10px;border:1.5px solid var(--line);
+    font-family:'Inter',sans-serif;padding:12px 14px;border-radius:10px;border:1.5px solid var(--line);
     background:#fff;font-size:15px;width:100%;color:var(--ink);
   }
   input:focus,select:focus,textarea:focus{outline:none;border-color:var(--gold);}
@@ -50,7 +51,7 @@
   .container{max-width:520px;margin:0 auto;padding:32px 20px 80px;}
   .container.wide{max-width:960px;}
   .eyebrow{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);font-weight:700;margin-bottom:8px;}
-  .top-plum{background:var(--plum);color:#fff;}
+  .top-plum{background:var(--accent);color:#fff;}
   .top-plum .eyebrow{color:var(--gold-soft);}
   .muted{color:var(--ink-soft);}
   .row{display:flex;gap:12px;}
@@ -65,13 +66,13 @@
     display:flex;justify-content:space-between;align-items:center;transition:.15s;
   }
   .service-opt:hover{border-color:var(--gold);}
-  .service-opt.selected{border-color:var(--plum);background:#faf7fb;box-shadow:inset 0 0 0 1px var(--plum);}
+  .service-opt.selected{border-color:var(--accent);background:#faf7fb;box-shadow:inset 0 0 0 1px var(--accent);}
   .slot{
     padding:10px 6px;text-align:center;border-radius:10px;border:1.5px solid var(--line);font-size:14px;font-weight:600;
   }
   .slot.free{cursor:pointer;}
   .slot.free:hover{border-color:var(--gold);}
-  .slot.selected{background:var(--plum);color:#fff;border-color:var(--plum);}
+  .slot.selected{background:var(--accent);color:#fff;border-color:var(--accent);}
   .slot.taken{opacity:.35;text-decoration:line-through;cursor:not-allowed;}
   .slots-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:8px;}
   .hero{
@@ -92,11 +93,11 @@
   .list-item:last-child{border-bottom:none;}
   .tabs{display:flex;gap:8px;margin-bottom:24px;flex-wrap:wrap;}
   .tab{padding:10px 18px;border-radius:999px;border:1.5px solid var(--line);font-weight:600;font-size:14px;background:#fff;}
-  .tab.active{background:var(--plum);color:#fff;border-color:var(--plum);}
+  .tab.active{background:var(--accent);color:#fff;border-color:var(--accent);}
   .day-toggle{
     padding:10px;border-radius:10px;border:1.5px solid var(--line);text-align:center;font-weight:700;font-size:13px;cursor:pointer;background:#fff;
   }
-  .day-toggle.on{background:var(--plum);color:#fff;border-color:var(--plum);}
+  .day-toggle.on{background:var(--accent);color:#fff;border-color:var(--accent);}
   .days-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:10px;}
   .footer-note{text-align:center;font-size:12px;color:var(--ink-soft);margin-top:24px;}
   .icon-btn{background:none;border:none;color:var(--ink-soft);font-size:13px;font-weight:600;text-decoration:underline;padding:0;}
@@ -439,7 +440,7 @@ function route(){
 function barraVoltarMaster(){
   if(!masterAuthed) return "";
   return `<div style="background:var(--gold-soft);padding:10px 20px;text-align:center;font-size:13px;font-weight:700;">
-    Modo visualização (via painel master) — <span style="text-decoration:underline;cursor:pointer;" onclick="goto({master:1})">voltar ao painel master</span>
+    Modo visualização (via painel master) — <span style="text-decoration:underline;cursor:pointer;" onclick="goto({master:1})">Voltar ao painel master</span>
   </div>`;
 }
 
@@ -463,6 +464,7 @@ function renderLanding(){
 
 // ---------- HOME DA EMPRESA ----------
 function renderHome(emp){
+  applyAccent(emp.corPrincipal);
   if(emp.bloqueada){
     render(`${barraVoltarMaster()}<div class="container"><div class="empty"><h2 class="display">Agendamentos temporariamente indisponíveis</h2><p>Entre em contato diretamente com ${escapeHtml(emp.nome)}.</p></div></div>`);
     return;
@@ -473,23 +475,21 @@ function renderHome(emp){
   const botoesAtivos = (emp.botoes || []).filter(b => b.ativo).sort((a,b) => a.ordem - b.ordem);
 
   const logoHtml = emp.logo
-    ? `<img src="${escapeAttr(emp.logo)}" alt="Logo" style="width:96px;height:96px;border-radius:50%;border:4px solid #fff;object-fit:cover;box-shadow:0 4px 20px rgba(0,0,0,0.18);">`
-    : `<div style="width:96px;height:96px;border-radius:50%;border:4px solid #fff;background:${cor};display:flex;align-items:center;justify-content:center;font-size:38px;font-family:'Fraunces',serif;font-weight:600;color:#fff;box-shadow:0 4px 20px rgba(0,0,0,0.18);">${escapeHtml(emp.nome.charAt(0).toUpperCase())}</div>`;
+    ? `<img src="${escapeAttr(emp.logo)}" alt="Logo" style="width:180px;height:180px;border-radius:50%;border:4px solid #fff;object-fit:cover;box-shadow:0 4px 24px rgba(0,0,0,0.22);">`
+    : `<div style="width:180px;height:180px;border-radius:50%;border:4px solid #fff;background:${cor};display:flex;align-items:center;justify-content:center;font-size:72px;font-family:'Fraunces',serif;font-weight:600;color:#fff;box-shadow:0 4px 24px rgba(0,0,0,0.22);">${escapeHtml(emp.nome.charAt(0).toUpperCase())}</div>`;
 
   const botoesHtml = botoesAtivos.map(b => {
-    const icone  = b.icone || ICONE_POR_TIPO[b.tipo] || '🔗';
     const target = b.abrirNovaAba ? 'target="_blank" rel="noopener noreferrer"' : '';
     return `<a href="${escapeAttr(b.link)}" ${target} style="text-decoration:none;display:block;width:100%;max-width:360px;margin:0 auto 10px;">
-      <div style="background:#fff;border:1.5px solid var(--line);border-radius:14px;padding:14px 20px;font-size:15px;font-weight:600;display:flex;align-items:center;gap:12px;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
-        <span style="font-size:22px;line-height:1;">${escapeHtml(icone)}</span>
-        <span style="color:var(--ink);">${escapeHtml(b.nome)}</span>
+      <div style="background:#fff;border:1.5px solid var(--line);border-radius:14px;padding:14px 20px;font-size:15px;font-weight:600;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,0.06);color:var(--ink);">
+        ${escapeHtml(b.nome)}
       </div>
     </a>`;
   }).join('');
 
   render(`
     ${barraVoltarMaster()}
-    <div style="min-height:100vh;background:var(--paper);padding-bottom:env(safe-area-inset-bottom,0px);">
+    <div style="min-height:100vh;background:var(--paper);display:flex;flex-direction:column;">
 
       <!-- Imagem de fundo -->
       <div style="position:relative;height:200px;background-image:url('${escapeAttr(bg)}');background-size:cover;background-position:center;">
@@ -497,7 +497,7 @@ function renderHome(emp){
       </div>
 
       <!-- Perfil -->
-      <div style="display:flex;flex-direction:column;align-items:center;padding:0 20px;margin-top:-48px;position:relative;">
+      <div style="flex:1;display:flex;flex-direction:column;align-items:center;padding:0 20px;margin-top:-90px;position:relative;">
 
         ${logoHtml}
 
@@ -511,23 +511,24 @@ function renderHome(emp){
         <!-- Botão principal de agendamento -->
         <div style="width:100%;max-width:360px;margin:0 auto 12px;">
           <button onclick="goto({empresa:'${emp.slug}', page:'agendar'})"
-            style="width:100%;background:${cor};color:#fff;border:none;border-radius:14px;padding:16px 20px;font-size:16px;font-weight:700;font-family:'Manrope',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 4px 16px rgba(0,0,0,0.15);">
-            <span style="font-size:20px;">📅</span> Agendar horário
+            style="width:100%;background:${cor};color:#fff;border:none;border-radius:14px;padding:16px 20px;font-size:16px;font-weight:700;font-family:'Inter',sans-serif;cursor:pointer;text-align:center;box-shadow:0 4px 16px rgba(0,0,0,0.15);">
+            Agendar horário
           </button>
         </div>
 
         <!-- Botões personalizados -->
         ${botoesHtml}
 
-        <!-- Link discreto para gestão -->
-        <div style="margin-top:36px;padding-bottom:32px;">
-          <button class="icon-btn" onclick="goto({empresa:'${emp.slug}', page:'gestao'})"
-            style="font-size:11px;color:var(--ink-soft);opacity:0.4;letter-spacing:.05em;">
-            área da empresa
-          </button>
-        </div>
-
       </div>
+
+      <!-- Rodapé -->
+      <div style="text-align:center;padding:16px 20px calc(16px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--line);margin-top:24px;">
+        <button class="icon-btn" onclick="goto({empresa:'${emp.slug}', page:'gestao'})"
+          style="font-size:11px;color:var(--ink-soft);opacity:0.4;letter-spacing:.05em;">
+          Área da empresa
+        </button>
+      </div>
+
     </div>
   `);
 }
@@ -535,6 +536,7 @@ function renderHome(emp){
 // ---------- AGENDAMENTO ----------
 let bookingState = {};
 function renderAgendar(emp){
+  applyAccent(emp.corPrincipal);
   bookingState = { servico:null, data:null, hora:null, nome:"", telefone:"" };
 
   function primeiros7Dias(emp){
@@ -567,11 +569,14 @@ function renderAgendar(emp){
       : null;
 
     const slots = bookingState.data ? horariosDoMes(emp, bookingState.data.slice(0,7)) : [];
+    const _agora = new Date();
+    const _hojeIso = isoData(_agora);
     const slotsHtml = bookingState.data ? (slots.length ? slots.map(h=>{
       const taken = agendamentos.some(a=>a.slug===emp.slug && a.data===bookingState.data && a.hora===h);
       const bloqueado = (emp.bloqueios||[]).some(b=>b.data===bookingState.data && b.hora===h);
+      const passado = bookingState.data === _hojeIso && (()=>{const [hh,mm]=h.split(':').map(Number); return hh*60+mm <= _agora.getHours()*60+_agora.getMinutes();})();
       const sel = bookingState.hora===h;
-      if(taken || bloqueado) return `<div class="slot taken">${h}</div>`;
+      if(taken || bloqueado || passado) return `<div class="slot taken">${h}</div>`;
       return `<div class="slot free ${sel?'selected':''}" onclick="selectHora('${h}')">${h}</div>`;
     }).join("") : `<p class="muted">Nenhum horário disponível nesta data.</p>`) : `<p class="muted">Escolha um dia primeiro.</p>`;
 
@@ -582,16 +587,17 @@ function renderAgendar(emp){
       </div>`;
     }).join("");
 
-    const canSubmit = bookingState.servico && bookingState.data && bookingState.hora && bookingState.nome.trim() && bookingState.telefone.trim();
+    const telDigits = bookingState.telefone.replace(/\D/g,'');
+    const telValido = telDigits.length === 12 && telDigits[0] === '0' && telDigits[3] === '9';
+    const telErro   = telDigits.length > 0 && !telValido;
+    const canSubmit = bookingState.servico && bookingState.data && bookingState.hora && bookingState.nome.trim() && telValido;
 
     render(`
       ${barraVoltarMaster()}
-      <div class="topbar top-plum">
-        <div class="brand">${escapeHtml(emp.nome)}</div>
-        <div style="display:flex;gap:12px;align-items:center;">
-          <button class="icon-btn" style="color:#e9dcc7;font-size:12px;opacity:.7;" onclick="goto({empresa:'${emp.slug}', page:'gestao'})">gestão</button>
-          <button class="icon-btn" style="color:#e9dcc7;" onclick="goto({empresa:'${emp.slug}'})">Voltar</button>
-        </div>
+      <div class="topbar top-plum" style="display:grid;grid-template-columns:44px 1fr 44px;align-items:center;">
+        <button class="icon-btn" style="color:#e9dcc7;font-size:22px;line-height:1;" onclick="goto({empresa:'${emp.slug}'})">←</button>
+        <div class="brand" style="text-align:center;font-size:17px;">${escapeHtml(emp.nome)}</div>
+        <div></div>
       </div>
       <div class="container">
         <div class="card">
@@ -616,9 +622,19 @@ function renderAgendar(emp){
           <div class="eyebrow" style="margin-top:24px;">Passo 4</div>
           <h3 class="display">Seus dados</h3>
           <div class="field"><label>Nome</label><input id="inpNome" value="${escapeAttr(bookingState.nome)}" oninput="bookingState.nome=this.value.toUpperCase();this.value=this.value.toUpperCase()" placeholder="SEU NOME" style="text-transform:uppercase;"/></div>
-          <div class="field"><label>Telefone (WhatsApp)</label><input id="inpTel" value="${escapeAttr(bookingState.telefone)}" oninput="bookingState.telefone=this.value" placeholder="(11) 91234-5678"/></div>
+          <div class="field">
+            <label>Telefone (WhatsApp)</label>
+            <input id="inpTel" type="tel" inputmode="numeric" maxlength="12"
+              value="${escapeAttr(bookingState.telefone)}"
+              oninput="formatarTelefone(this)"
+              placeholder="011912345678"/>
+            <div id="telError" style="display:${telErro?'flex':'none'};align-items:flex-start;gap:6px;margin-top:8px;color:var(--danger);font-size:13px;line-height:1.4;">
+              <span style="font-weight:700;font-size:15px;flex-shrink:0;">ⓘ</span>
+              <span>Formato: 0 + DDD (2 dígitos) + 9 + número (8 dígitos). Ex: <strong>011912345678</strong></span>
+            </div>
+          </div>
 
-          <button class="btn" style="width:100%;margin-top:8px;" ${canSubmit?'':'disabled'} onclick="confirmarAgendamento('${emp.slug}')">Agendar</button>
+          <button id="btnAgendar" class="btn" style="width:100%;margin-top:8px;" ${canSubmit?'':'disabled'} onclick="confirmarAgendamento('${emp.slug}')">Agendar</button>
         </div>
       </div>
     `);
@@ -627,6 +643,20 @@ function renderAgendar(emp){
   window.selectDia = (iso)=>{ bookingState.data = iso; bookingState.hora=null; draw(); };
   window.selectDiaOutra = (iso)=>{ if(iso){ bookingState.data = iso; bookingState.hora=null; draw(); } };
   window.selectHora = (h)=>{ bookingState.hora = h; draw(); };
+  window.formatarTelefone = (input)=>{
+    let v = input.value.replace(/\D/g,'');
+    if(v.length > 0 && v[0] !== '0') v = '0' + v;
+    v = v.slice(0, 12);
+    input.value = v;
+    bookingState.telefone = v;
+    const digits = v;
+    const valido = digits.length === 12 && digits[0] === '0' && digits[3] === '9';
+    const erro = digits.length > 0 && !valido;
+    const errEl = document.getElementById('telError');
+    if(errEl) errEl.style.display = erro ? 'flex' : 'none';
+    const btn = document.getElementById('btnAgendar');
+    if(btn) btn.disabled = !(bookingState.servico && bookingState.data && bookingState.hora && bookingState.nome.trim() && valido);
+  };
   draw();
 }
 
@@ -636,7 +666,9 @@ async function confirmarAgendamento(slug){
   const telInp = document.getElementById('inpTel');
   bookingState.nome = nomeInp ? nomeInp.value : bookingState.nome;
   bookingState.telefone = telInp ? telInp.value : bookingState.telefone;
-  if(!bookingState.servico || !bookingState.data || !bookingState.hora || !bookingState.nome.trim() || !bookingState.telefone.trim()) return;
+  const _digits = bookingState.telefone.replace(/\D/g,'');
+  const _telOk = _digits.length === 12 && _digits[0] === '0' && _digits[3] === '9';
+  if(!bookingState.servico || !bookingState.data || !bookingState.hora || !bookingState.nome.trim() || !_telOk) return;
 
   const jaOcupado = agendamentos.some(a=>a.slug===slug && a.data===bookingState.data && a.hora===bookingState.hora)
     || (emp.bloqueios||[]).some(b=>b.data===bookingState.data && b.hora===bookingState.hora);
@@ -669,6 +701,7 @@ let lastBooking = null;
 
 // ---------- CONFIRMAÇÃO ----------
 function renderConfirmacao(emp){
+  applyAccent(emp.corPrincipal);
   const b = lastBooking;
   if(!b){
     render(`<div class="container"><div class="empty"><h2 class="display">Nenhum agendamento recente</h2><button class="btn" onclick="goto({empresa:'${emp.slug}'})">Voltar</button></div></div>`);
@@ -679,6 +712,11 @@ function renderConfirmacao(emp){
   const numero = (emp.whatsapp||"").replace(/\D/g,"");
   const link = `https://wa.me/${numero}?text=${encodeURIComponent(msg)}`;
   render(`
+    <div class="topbar top-plum" style="display:grid;grid-template-columns:44px 1fr 44px;align-items:center;">
+      <button class="icon-btn" style="color:#e9dcc7;font-size:22px;line-height:1;" onclick="goto({empresa:'${emp.slug}'})">←</button>
+      <div class="brand" style="text-align:center;font-size:17px;">${escapeHtml(emp.nome)}</div>
+      <div></div>
+    </div>
     <div class="container">
       <div class="card" style="text-align:center;">
         <div class="eyebrow" style="color:var(--ok);">Agendamento reservado</div>
@@ -699,13 +737,23 @@ function renderConfirmacao(emp){
 
 // ---------- GESTÃO (LOGIN) ----------
 function renderGestaoLogin(emp){
+  applyAccent('#1a1a1a');
   render(`
     ${barraVoltarMaster()}
+    <div class="topbar top-plum" style="display:grid;grid-template-columns:44px 1fr 44px;align-items:center;">
+      <button class="icon-btn" style="color:#e9dcc7;font-size:22px;line-height:1;" onclick="goto({empresa:'${emp.slug}'})">←</button>
+      <div class="brand" style="text-align:center;font-size:17px;">${escapeHtml(emp.nome)}</div>
+      <div></div>
+    </div>
     <div class="container">
       <div class="card">
         <div class="eyebrow">Área restrita</div>
         <h2 class="display">Gestão — ${escapeHtml(emp.nome)}</h2>
-        <div class="field"><label>Senha</label><input type="password" id="senhaGestao" placeholder="Digite a senha"/></div>
+        <div class="field">
+          <label>Senha</label>
+          <input type="password" id="senhaGestao" placeholder="Digite a senha" onkeyup="checkCapsLock(event,'cL1')"/>
+          <div id="cL1" style="display:none;align-items:center;gap:5px;color:var(--danger);font-size:12px;margin-top:6px;"><strong>!</strong> Caps Lock ativado</div>
+        </div>
         <button class="btn" style="width:100%;" onclick="tentarLoginGestao('${emp.slug}')">Entrar</button>
       </div>
     </div>
@@ -720,6 +768,7 @@ function tentarLoginGestao(slug){
 
 // ---------- GESTÃO (PAINEL) ----------
 function renderGestao(emp){
+  applyAccent('#1a1a1a');
   let corner = null; // null = agendamentos | 'servicos' | 'horarios' | 'personalizar'
   let diaSelecionado = null;
   let editandoId = null;
@@ -765,63 +814,71 @@ function renderGestao(emp){
           <div><strong>${h}</strong> — ${escapeHtml(ag.nome)} · ${escapeHtml(ag.servicoNome)}<br/><span class="muted" style="font-size:13px;">${escapeHtml(ag.telefone)}</span></div>
           <div style="display:flex;gap:8px;flex:0 0 auto;">
             <button class="btn ghost" onclick="editarAgendamento('${ag.id}')">Editar</button>
-            <button class="icon-btn" style="color:var(--danger);" onclick="cancelarAgendamento('${ag.id}')">cancelar</button>
+            <button class="icon-btn" style="color:var(--danger);" onclick="cancelarAgendamento('${ag.id}')">Cancelar</button>
           </div>
         </div>`;
       }
       if(bloqueado){
         return `<div class="list-item" style="opacity:.55;">
-          <div><strong>${h}</strong> — <span class="muted">bloqueado</span></div>
+          <div><strong>${h}</strong> — <span class="muted">Bloqueado</span></div>
           <button class="btn ghost" onclick="desbloquearHorario('${diaSelecionado}','${h}')">Desbloquear</button>
         </div>`;
       }
       return `<div class="list-item" style="opacity:.55;">
-        <div><strong>${h}</strong> — <span class="muted">livre</span></div>
+        <div><strong>${h}</strong> — <span class="muted">Livre</span></div>
         <button class="btn ghost" onclick="bloquearHorario('${diaSelecionado}','${h}')">Bloquear</button>
       </div>`;
     }).join("") : `<p class="muted" style="text-align:center;padding:20px 0;">Nenhum horário configurado para este dia.</p>`;
 
+    const diaNome = dataObj.toLocaleDateString('pt-BR',{weekday:'long'});
     return `
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
         <button class="btn ghost" style="padding:10px 16px;font-size:18px;line-height:1;" onclick="selecionarDiaGestao('${isoAddDias(diaSelecionado,-1)}')">&#8592;</button>
-        <div style="position:relative;text-align:center;">
-          <div style="font-family:'Fraunces',serif;font-size:18px;font-weight:600;cursor:pointer;" onclick="document.getElementById('calGestao').showPicker ? document.getElementById('calGestao').showPicker() : document.getElementById('calGestao').click()">${dataFmt}</div>
-          <div class="muted" style="font-size:12px;">clique para escolher</div>
+        <div style="position:relative;text-align:center;cursor:pointer;" onclick="document.getElementById('calGestao').showPicker ? document.getElementById('calGestao').showPicker() : document.getElementById('calGestao').click()">
+          <div style="font-family:'Fraunces',serif;font-size:18px;font-weight:600;">${dataFmt}</div>
+          <div style="font-size:13px;font-weight:600;color:var(--ink-soft);text-transform:capitalize;margin:2px 0;">${diaNome}</div>
+          <div class="muted" style="font-size:11px;">toque para escolher</div>
           <input type="date" id="calGestao" value="${diaSelecionado}" style="position:absolute;opacity:0;width:1px;height:1px;top:0;left:50%;" onchange="selecionarDiaGestao(this.value)"/>
         </div>
         <button class="btn ghost" style="padding:10px 16px;font-size:18px;line-height:1;" onclick="selecionarDiaGestao('${isoAddDias(diaSelecionado,1)}')">&#8594;</button>
+      </div>
+      <div style="text-align:center;margin-bottom:20px;">
+        <button class="icon-btn" style="font-size:12px;color:var(--danger);" onclick="bloquearDiaTodo()">Bloquear dia todo</button>
       </div>
       ${linhas}
     `;
   }
 
-  function servicosBody(){
-    return `
-      <h3 class="display">Serviços</h3>
-      ${emp.servicos.map((s,i)=>`
-        <div class="list-item">
-          <input value="${escapeAttr(s.nome)}" onchange="updServico(${i},'nome',this.value)"/>
-          <button class="icon-btn" style="color:var(--danger);margin-left:12px;white-space:nowrap;" onclick="removeServico(${i})">remover</button>
-        </div>
-      `).join("")}
-      <button class="btn ghost" style="margin-top:14px;" onclick="addServico()">+ Adicionar serviço</button>
-    `;
-  }
-
-  function horariosBody(){
+  function configurarBody(){
     const lista = horariosDoMes(emp, mesHorario);
     return `
-      <h3 class="display">Horários</h3>
-      <div class="field"><label>Mês</label><input type="month" value="${mesHorario}" onchange="mudarMesHorario(this.value)"/></div>
-      ${lista.length ? lista.map(h=>`
-        <div class="list-item">
-          <div><strong>${h}</strong></div>
-          <button class="icon-btn" style="color:var(--danger);" onclick="removerHorario('${h}')">remover</button>
+      <div class="card" style="margin-bottom:16px;">
+        <div class="eyebrow" style="margin-bottom:12px;">Serviços</div>
+        ${emp.servicos.map((s,i)=>`
+          <div class="list-item">
+            <input value="${escapeAttr(s.nome)}" onchange="updServico(${i},'nome',this.value)"/>
+            <button class="icon-btn" style="color:var(--danger);margin-left:12px;white-space:nowrap;" onclick="removeServico(${i})">Remover</button>
+          </div>
+        `).join("")}
+        <div class="row" style="margin-top:14px;">
+          <input type="text" id="novoServicoInput" placeholder="Nome do serviço"/>
+          <button class="btn ghost" style="flex:0 0 auto;" onclick="adicionarServico()">+ Adicionar</button>
         </div>
-      `).join("") : `<p class="muted">Nenhum horário adicionado para este mês ainda.</p>`}
-      <div class="row" style="margin-top:14px;">
-        <input type="time" id="novoHorarioInput"/>
-        <button class="btn ghost" style="flex:0 0 auto;" onclick="adicionarHorario()">+ Adicionar horário</button>
+      </div>
+
+      <div class="card">
+        <div class="eyebrow" style="margin-bottom:12px;">Horários</div>
+        <div class="field"><label>Mês</label><input type="month" value="${mesHorario}" onchange="mudarMesHorario(this.value)"/></div>
+        ${lista.length ? lista.map(h=>`
+          <div class="list-item">
+            <div><strong>${h}</strong></div>
+            <button class="icon-btn" style="color:var(--danger);" onclick="removerHorario('${h}')">Remover</button>
+          </div>
+        `).join("") : `<p class="muted">Nenhum horário adicionado para este mês ainda.</p>`}
+        <div class="row" style="margin-top:14px;">
+          <input type="time" id="novoHorarioInput"/>
+          <button class="btn ghost" style="flex:0 0 auto;" onclick="adicionarHorario()">+ Adicionar horário</button>
+        </div>
       </div>
     `;
   }
@@ -833,7 +890,6 @@ function renderGestao(emp){
     const botoesHtml = botoesSorted.length ? botoesSorted.map((b,i) => `
       <div class="list-item" style="flex-direction:column;align-items:stretch;gap:10px;padding:16px 0;">
         <div style="display:flex;align-items:center;gap:10px;">
-          <span style="font-size:22px;">${escapeHtml(b.icone || ICONE_POR_TIPO[b.tipo] || '🔗')}</span>
           <div style="flex:1;min-width:0;">
             <div style="font-weight:700;font-size:14px;">${escapeHtml(b.nome)}</div>
             <div class="muted" style="font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(b.link)}</div>
@@ -844,7 +900,7 @@ function renderGestao(emp){
           </div>
         </div>
         <div style="display:flex;gap:8px;align-items:center;">
-          <button class="btn ${b.ativo?'ghost':'danger'}" style="padding:6px 14px;font-size:12px;flex:1;" onclick="toggleBotao('${b.id}')">${b.ativo?'✓ Ativo':'✗ Inativo'}</button>
+          <button class="btn ${b.ativo?'ghost':'danger'}" style="padding:6px 14px;font-size:12px;flex:1;" onclick="toggleBotao('${b.id}')">${b.ativo?'Ativo':'Inativo'}</button>
           <button class="btn ghost" style="padding:6px 14px;font-size:12px;color:var(--danger);border-color:var(--danger);flex:1;" onclick="removerBotao('${b.id}')">Remover</button>
         </div>
       </div>
@@ -856,16 +912,16 @@ function renderGestao(emp){
         <div class="field"><label>Nome exibido</label><input id="bNome" placeholder="Ex: WhatsApp"/></div>
         <div class="field"><label>Tipo</label>
           <select id="bTipo">
-            <option value="whatsapp">💬 WhatsApp</option>
-            <option value="instagram">📸 Instagram</option>
-            <option value="telefone">📞 Telefone</option>
-            <option value="maps">📍 Google Maps</option>
-            <option value="site">🌐 Site</option>
-            <option value="link">🔗 Link personalizado</option>
+            <option value="whatsapp">WhatsApp</option>
+            <option value="instagram">Instagram</option>
+            <option value="telefone">Telefone</option>
+            <option value="maps">Google Maps</option>
+            <option value="site">Site</option>
+            <option value="link">Link personalizado</option>
           </select>
         </div>
         <div class="field"><label>Link</label><input id="bLink" placeholder="https://wa.me/5511999999999"/></div>
-        <div class="field"><label>Ícone (emoji — deixe vazio para padrão)</label><input id="bIcone" placeholder="💬"/></div>
+        <div class="field"><label>Ícone (deixe vazio para padrão)</label><input id="bIcone" placeholder=""/></div>
         <div class="field" style="display:flex;align-items:center;gap:10px;margin-bottom:18px;">
           <input type="checkbox" id="bNovaAba" checked style="width:20px;min-height:20px;margin:0;"/>
           <label style="margin:0;text-transform:none;font-size:14px;font-weight:500;letter-spacing:0;">Abrir em nova aba</label>
@@ -894,6 +950,10 @@ function renderGestao(emp){
       </div>
 
       <button class="btn" style="width:100%;" onclick="salvarInfoEmpresa()">Salvar informações</button>
+      <div class="row" style="margin-top:10px;">
+        <button class="btn ghost" style="flex:1;" onclick="goto({empresa:'${emp.slug}'})">Ver página</button>
+        <button class="btn ghost" style="flex:1;" onclick="compartilharLink()">Compartilhar link</button>
+      </div>
 
       <div class="eyebrow" style="margin-top:36px;margin-bottom:4px;">Botões da página</div>
       <p class="muted" style="font-size:13px;margin:0 0 16px;">Aparecem na página pública abaixo do botão de agendamento.</p>
@@ -903,27 +963,41 @@ function renderGestao(emp){
   }
 
   function draw(){
-    const body = corner==='servicos'     ? servicosBody()
-               : corner==='horarios'     ? horariosBody()
+    const body = corner==='configurar'   ? configurarBody()
                : corner==='personalizar' ? personalizarBody()
                : agendamentosBody();
     render(`
-      ${barraVoltarMaster()}
-      <div class="topbar top-plum"><div class="brand">${escapeHtml(emp.nome)} · Gestão</div><button class="icon-btn" style="color:#e9dcc7;" onclick="goto({empresa:'${emp.slug}'})">Sair</button></div>
-      <div class="container wide">
-        <div class="tabs" style="justify-content:flex-end;">
-          ${corner ? `<div class="tab" style="font-size:12px;padding:6px 14px;" onclick="setCorner(null)">← Agendamentos</div>` : ''}
-          <div class="tab ${corner==='personalizar'?'active':''}" style="font-size:12px;padding:6px 14px;" onclick="setCorner('personalizar')">✦ Personalizar</div>
-          <div class="tab ${corner==='servicos'?'active':''}" style="font-size:12px;padding:6px 14px;" onclick="setCorner('servicos')">Serviços</div>
-          <div class="tab ${corner==='horarios'?'active':''}" style="font-size:12px;padding:6px 14px;" onclick="setCorner('horarios')">Horários</div>
+      <div style="position:sticky;top:0;z-index:100;background:var(--paper);">
+        ${barraVoltarMaster()}
+        <div class="topbar top-plum"><div class="brand">${escapeHtml(emp.nome)} · Gestão</div><button class="icon-btn" style="color:#e9dcc7;" onclick="goto({empresa:'${emp.slug}'})">Sair</button></div>
+        <div class="tabs" style="padding:8px 16px 0;border-bottom:1.5px solid var(--line);margin:0;gap:0;background:var(--paper);">
+          <div class="tab ${!corner?'active':''}" style="flex:1;text-align:center;padding:10px 6px;font-size:14px;" onclick="setCorner(null)">Agendamentos</div>
+          <div class="tab ${corner==='configurar'?'active':''}" style="flex:1;text-align:center;padding:10px 6px;font-size:14px;" onclick="setCorner('configurar')">Configurar</div>
+          <div class="tab ${corner==='personalizar'?'active':''}" style="flex:1;text-align:center;padding:10px 6px;font-size:14px;" onclick="setCorner('personalizar')">Personalizar</div>
         </div>
-        <div class="card">${body}</div>
+      </div>
+      <div class="container wide">
+        <div class="card" style="${corner==='configurar'?'background:none;box-shadow:none;padding:0;':''}">${body}</div>
       </div>
     `);
   }
 
   window.setCorner = (c)=>{ corner=c; editandoId=null; draw(); };
   window.selecionarDiaGestao = (iso)=>{ diaSelecionado=iso; editandoId=null; draw(); };
+
+  window.bloquearDiaTodo = async ()=>{
+    const horarios = horariosDoMes(emp, diaSelecionado.slice(0,7));
+    if(!horarios.length){ alert("Nenhum horário configurado para este dia."); return; }
+    const livres = horarios.filter(h => !((emp.bloqueios||[]).some(b=>b.data===diaSelecionado && b.hora===h)));
+    if(!livres.length){ alert("Todos os horários deste dia já estão bloqueados."); return; }
+    const dataFmtConf = new Date(diaSelecionado+"T00:00:00").toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'});
+    if(!confirm(`Bloquear todos os ${livres.length} horários de ${dataFmtConf}?`)) return;
+    const rows = livres.map(h=>({ slug: emp.slug, data: diaSelecionado, hora: h }));
+    const { data, error } = await supabaseClient.from('bloqueios').insert(rows).select();
+    if(error){ alert("Erro ao bloquear: " + error.message); return; }
+    if(data) data.forEach(r=>{ (emp.bloqueios=emp.bloqueios||[]).push({id:r.id, data:r.data, hora:r.hora}); });
+    draw();
+  };
 
   window.editarAgendamento = (id)=>{ editandoId=id; draw(); };
   window.cancelarEdicaoAgendamento = ()=>{ editandoId=null; draw(); };
@@ -973,9 +1047,12 @@ function renderGestao(emp){
     draw();
   };
 
-  window.addServico = async ()=>{
+  window.adicionarServico = async ()=>{
+    const inp = document.getElementById('novoServicoInput');
+    const nome = inp ? inp.value.trim() : '';
+    if(!nome){ alert("Digite o nome do serviço."); return; }
     const { data: row, error } = await supabaseClient.from('servicos').insert({
-      empresa_id: emp.id, nome: 'Novo serviço', duracao: 60, preco: 0
+      empresa_id: emp.id, nome, duracao: 60, preco: 0
     }).select().single();
     if(error){ console.error('Erro ao adicionar serviço:', error); return; }
     emp.servicos.push({ id: row.id, nome: row.nome, duracao: row.duracao, preco: Number(row.preco) });
@@ -1108,6 +1185,16 @@ function renderGestao(emp){
     draw();
   };
 
+  window.compartilharLink = async ()=>{
+    const url = location.origin + location.pathname + '?empresa=' + emp.slug;
+    if(navigator.share){
+      try{ await navigator.share({ title: emp.nome, url }); } catch(e){}
+    } else {
+      try{ await navigator.clipboard.writeText(url); alert('Link copiado!'); }
+      catch(e){ prompt('Copie o link abaixo:', url); }
+    }
+  };
+
   draw();
 }
 
@@ -1122,12 +1209,18 @@ let masterAuthed = false;
 function sessionStorage_getMaster(){ return masterAuthed; }
 
 function renderMasterLogin(){
+  applyAccent('#1a1a1a');
   render(`
+    <div class="topbar top-plum"><div class="brand" style="text-align:center;width:100%;">Agenda+</div></div>
     <div class="container">
       <div class="card">
         <div class="eyebrow">Painel master</div>
         <h2 class="display">Entrar</h2>
-        <div class="field"><label>Senha</label><input type="password" id="masterPass" placeholder="Senha master"/></div>
+        <div class="field">
+          <label>Senha</label>
+          <input type="password" id="masterPass" placeholder="Senha master" onkeyup="checkCapsLock(event,'cL2')"/>
+          <div id="cL2" style="display:none;align-items:center;gap:5px;color:var(--danger);font-size:12px;margin-top:6px;"><strong>!</strong> Caps Lock ativado</div>
+        </div>
         <button class="btn" style="width:100%;" onclick="tentarLoginMaster()">Entrar</button>
       </div>
     </div>
@@ -1141,6 +1234,7 @@ window.tentarLoginMaster = ()=>{
 
 let editingSlug = null;
 function renderMasterPanel(){
+  applyAccent('#1a1a1a');
   function draw(){
     const editing = editingSlug ? empresas.find(e=>e.slug===editingSlug) : null;
     const form = editing ? `
@@ -1178,7 +1272,7 @@ function renderMasterPanel(){
       <div class="list-item">
         <div style="flex:1;">
           <strong>${escapeHtml(e.nome)}</strong>
-          <span class="chip ${e.bloqueada?'blocked':'ok'}" style="margin-left:8px;">${e.bloqueada?'bloqueada':'ativa'}</span>
+          <span class="chip ${e.bloqueada?'blocked':'ok'}" style="margin-left:8px;">${e.bloqueada?'Bloqueada':'Ativa'}</span>
           <div class="muted" style="font-size:12px;margin-top:6px;">Link (quando publicado): <input readonly value="${escapeAttr(link)}" style="font-size:12px;padding:6px 8px;" onclick="this.select()"/></div>
           <div class="row" style="margin-top:10px;flex-wrap:wrap;">
             <button class="btn ghost" style="flex:0 0 auto;" onclick="goto({empresa:'${e.slug}'})">Ver página inicial</button>
@@ -1245,6 +1339,8 @@ function renderMasterPanel(){
 
 function escapeHtml(s){ return String(s||"").replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function escapeAttr(s){ return escapeHtml(s); }
+function checkCapsLock(e, id){ const el=document.getElementById(id); if(el) el.style.display=e.getModifierState('CapsLock')?'flex':'none'; }
+function applyAccent(cor){ document.documentElement.style.setProperty('--accent', cor || '#3d1f3a'); }
 
 init();
 </script>
