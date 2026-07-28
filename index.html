@@ -118,21 +118,21 @@ let loaded = false;
 
 async function loadData(){
   try{
-    const r = await window.storage.get(STORE_KEY, true);
-    empresas = r ? JSON.parse(r.value) : [];
+    const r = localStorage.getItem(STORE_KEY);
+    empresas = r ? JSON.parse(r) : [];
   }catch(e){ empresas = []; }
   try{
-    const r2 = await window.storage.get(BOOK_KEY, true);
-    agendamentos = r2 ? JSON.parse(r2.value) : [];
+    const r2 = localStorage.getItem(BOOK_KEY);
+    agendamentos = r2 ? JSON.parse(r2) : [];
   }catch(e){ agendamentos = []; }
   loaded = true;
 }
 
 async function saveEmpresas(){
-  await window.storage.set(STORE_KEY, JSON.stringify(empresas), true);
+  localStorage.setItem(STORE_KEY, JSON.stringify(empresas));
 }
 async function saveAgendamentos(){
-  await window.storage.set(BOOK_KEY, JSON.stringify(agendamentos), true);
+  localStorage.setItem(BOOK_KEY, JSON.stringify(agendamentos));
 }
 
 function slugify(s){
