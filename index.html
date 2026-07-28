@@ -188,6 +188,9 @@ function render(html){ root.innerHTML = html; }
 async function init(){
   render(`<div class="loading">Carregando…</div>`);
   await loadData();
+  const params = new URLSearchParams(location.search);
+  if(params.get('empresa')) currentRoute.empresa = params.get('empresa');
+  else if(params.get('master')) currentRoute.master = 1;
   route();
 }
 
@@ -711,7 +714,7 @@ function renderMasterPanel(){
     nova.senhaGestao = senha;
     empresas.push(nova);
     await saveEmpresas();
-    draw();
+    goto({empresa: s2});
   };
   window.masterUpd = async (field,val)=>{
     const e = empresas.find(x=>x.slug===editingSlug);
