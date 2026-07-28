@@ -125,52 +125,104 @@ async function loadData(){
     const { data, error } = await supabaseClient.from('empresas').select('*');
     if(error) throw error;
     empresas = (data || []).map(e => ({
-      id:           e.id,
-      slug:         e.slug,
-      nome:         e.nome,
-      fotoUrl:      e.foto_url || '',
-      whatsapp:     e.whatsapp || '',
-      senhaGestao:  e.senha_gestao,
-      bloqueada:    e.bloqueada,
-      servicos:     [],
+      id:             e.id,
+      slug:           e.slug,
+      nome:           e.nome,
+      fotoUrl:        e.foto_url || '',
+      whatsapp:       e.whatsapp || '',
+      senhaGestao:    e.senha_gestao,
+      bloqueada:      e.bloqueada,
+      servicos:       [],
       horariosPorMes: {},
-      bloqueios:    []
+      bloqueios:      []
     }));
   }catch(e){ console.error('Erro ao carregar empresas:', e); empresas = []; }
-  try{
-    const r2 = localStorage.getItem(BOOK_KEY);
-    agendamentos = r2 ? JSON.parse(r2) : [];
-  }catch(e){ agendamentos = []; }
+
+  if(empresas.length > 0){
+    const ids = empresas.map(e => e.id);
+
+    try{
+      const { data } = await supabaseClient.from('servicos').select('*').in('empresa_id', ids);
+      (data || []).forEach(s => {
+        const emp = empresas.find(e => e.id === s.empresa_id);
+        if(emp) emp.servicos.push({ id: s.id, nome: s.nome, duracao: s.duracao, preco: Number(s.preco) });
+      });
+    }catch(e){ console.error('Erro ao carregar serviços:', e); }
+
+    try{
+      const { data } = await supabaseClient.from('horarios_disponiveis').select('*').in('empresa_id', ids);
+      (data || []).forEach(h => {
+        const emp = empresas.find(e => e.id === h.empresa_id);
+        if(!emp) return;
+        emp.horariosPorMes[h.mes] = emp.horariosPorMes[h.mes] || [];
+        if(!emp.horariosPorMes[h.mes].includes(h.hora)) emp.horariosPorMes[h.mes].push(h.hora);
+      });
+    }catch(e){ console.error('Erro ao carregar horários:', e); }
+
+    try{
+      const { data } = await supabaseClient.from('bloqueios').select('*').in('empresa_id', ids);
+      (data || []).forEach(b => {
+        const emp = empresas.find(e => e.id === b.empresa_id);
+        if(emp) emp.bloqueios.push({ id: b.id, data: b.data, hora: b.hora });
+      });
+    }catch(e){ console.error('Erro ao carregar bloqueios:', e); }
+
+    try{
+      const { data } = await supabaseClient.from('agendamentos').select('*').in('empresa_id', ids);
+      agendamentos = (data || []).map(a => {
+        const emp = empresas.find(e => e.id === a.empresa_id);
+        return {
+          id:          a.id,
+          slug:        emp ? emp.slug : '',
+          servicoId:   a.servico_id,
+          servicoNome: a.servico_nome,
+          data:        a.data,
+          hora:        a.hora,
+          nome:        a.nome_cliente,
+          telefone:    a.telefone,
+          criadoEm:    a.criado_em
+        };
+      });
+    }catch(e){ console.error('Erro ao carregar agendamentos:', e); agendamentos = []; }
+  } else {
+    agendamentos = [];
+  }
+
   loaded = true;
 }
 
 async function saveEmpresas(){
-  const rows = empresas.map(e => {
-    const row = {
-      slug:         e.slug,
-      nome:         e.nome,
-      foto_url:     e.fotoUrl || '',
-      whatsapp:     e.whatsapp || '',
-      senha_gestao: e.senhaGestao,
-      bloqueada:    e.bloqueada
-    };
-    if(e.id) row.id = e.id;
-    return row;
+  const toRow = e => ({
+    slug:         e.slug,
+    nome:         e.nome,
+    foto_url:     e.fotoUrl || '',
+    whatsapp:     e.whatsapp || '',
+    senha_gestao: e.senhaGestao,
+    bloqueada:    e.bloqueada
   });
-  const { data, error } = await supabaseClient
-    .from('empresas')
-    .upsert(rows, { onConflict: 'slug' })
-    .select();
-  if(error){ console.error('Erro ao salvar empresas:', error); return; }
-  if(data){
-    data.forEach(row => {
+
+  const novas     = empresas.filter(e => !e.id);
+  const existentes = empresas.filter(e =>  e.id);
+
+  if(novas.length > 0){
+    const { data, error } = await supabaseClient
+      .from('empresas').insert(novas.map(toRow)).select();
+    if(error){ console.error('Erro ao criar empresa:', error); return; }
+    (data || []).forEach(row => {
       const emp = empresas.find(e => e.slug === row.slug);
-      if(emp && !emp.id) emp.id = row.id;
+      if(emp) emp.id = row.id;
     });
+  }
+
+  if(existentes.length > 0){
+    const { error } = await supabaseClient
+      .from('empresas')
+      .upsert(existentes.map(e => ({ id: e.id, ...toRow(e) })), { onConflict: 'id' });
+    if(error) console.error('Erro ao atualizar empresa:', error);
   }
 }
 async function saveAgendamentos(){
-  localStorage.setItem(BOOK_KEY, JSON.stringify(agendamentos));
+  // Agendamentos salvos diretamente no Supabase por operação
 }
 
 function slugify(s){
@@ -191,7 +243,7 @@ function goto(params){
 function defaultEmpresa(){
   return {
     slug:"", nome:"", fotoUrl:"", whatsapp:"", senhaGestao:"1234", bloqueada:false,
-    servicos:[{id:uid(), nome:"Serviço padrão", duracao:60, preco:0}],
+    servicos:[],
     horariosPorMes:{},
     bloqueios:[]
   };
@@ -403,12 +455,24 @@ async function confirmarAgendamento(slug){
   if(jaOcupado){ alert("Esse horário acabou de ser reservado ou bloqueado. Escolha outro."); renderAgendar(emp); return; }
 
   const servico = emp.servicos.find(s=>s.id===bookingState.servico);
+  const { data: row, error } = await supabaseClient.from('agendamentos').insert({
+    empresa_id:   emp.id,
+    servico_id:   servico ? servico.id : null,
+    servico_nome: servico ? servico.nome : '',
+    data:         bookingState.data,
+    hora:         bookingState.hora,
+    nome_cliente: bookingState.nome.trim(),
+    telefone:     bookingState.telefone.trim()
+  }).select().single();
+  if(error){
+    if(error.code === '23505'){ alert("Esse horário acabou de ser reservado. Escolha outro."); renderAgendar(emp); return; }
+    alert("Erro ao realizar agendamento. Tente novamente."); return;
+  }
   const novo = {
-    id:uid(), slug, servicoId: servico?servico.id:null, servicoNome: servico?servico.nome:"", data:bookingState.data, hora:bookingState.hora,
-    nome:bookingState.nome.trim(), telefone:bookingState.telefone.trim(), criadoEm:new Date().toISOString()
+    id: row.id, slug, servicoId: row.servico_id, servicoNome: row.servico_nome,
+    data: row.data, hora: row.hora, nome: row.nome_cliente, telefone: row.telefone, criadoEm: row.criado_em
   };
   agendamentos.push(novo);
-  await saveAgendamentos();
   lastBooking = novo;
   goto({empresa:slug, page:'confirmacao'});
 }
@@ -606,27 +670,62 @@ function renderGestao(emp){
       if(ocupado){ alert("Esse horário já está ocupado."); return; }
     }
     const servico = emp.servicos.find(s=>s.id===servicoId);
+    const { error } = await supabaseClient.from('agendamentos').update({
+      nome_cliente: nome,
+      telefone:     tel,
+      servico_id:   servicoId,
+      servico_nome: servico ? servico.nome : ag.servicoNome,
+      hora:         hora
+    }).eq('id', id);
+    if(error){ console.error('Erro ao editar agendamento:', error); return; }
     ag.nome = nome; ag.telefone = tel; ag.servicoId = servicoId; ag.servicoNome = servico?servico.nome:ag.servicoNome; ag.hora = hora;
-    await saveAgendamentos();
     editandoId = null; draw();
   };
   window.cancelarAgendamento = async (id)=>{
+    const { error } = await supabaseClient.from('agendamentos').delete().eq('id', id);
+    if(error){ console.error('Erro ao cancelar agendamento:', error); return; }
     agendamentos = agendamentos.filter(a=>a.id!==id);
-    await saveAgendamentos(); draw();
+    draw();
   };
   window.bloquearHorario = async (data,hora)=>{
+    const { data: row, error } = await supabaseClient.from('bloqueios').insert({
+      empresa_id: emp.id, data, hora
+    }).select().single();
+    if(error){ console.error('Erro ao bloquear horário:', error); return; }
     emp.bloqueios = emp.bloqueios || [];
-    emp.bloqueios.push({data,hora});
-    await saveEmpresas(); draw();
+    emp.bloqueios.push({ id: row.id, data, hora });
+    draw();
   };
   window.desbloquearHorario = async (data,hora)=>{
+    const { error } = await supabaseClient.from('bloqueios')
+      .delete().eq('empresa_id', emp.id).eq('data', data).eq('hora', hora);
+    if(error){ console.error('Erro ao desbloquear horário:', error); return; }
     emp.bloqueios = (emp.bloqueios||[]).filter(b=>!(b.data===data && b.hora===hora));
-    await saveEmpresas(); draw();
+    draw();
   };
 
-  window.addServico = async ()=>{ emp.servicos.push({id:uid(),nome:"Novo serviço",duracao:60,preco:0}); await saveEmpresas(); draw(); };
-  window.removeServico = async (i)=>{ emp.servicos.splice(i,1); await saveEmpresas(); draw(); };
-  window.updServico = async (i,field,val)=>{ emp.servicos[i][field] = (field==='duracao'||field==='preco')?Number(val):val; await saveEmpresas(); };
+  window.addServico = async ()=>{
+    const { data: row, error } = await supabaseClient.from('servicos').insert({
+      empresa_id: emp.id, nome: 'Novo serviço', duracao: 60, preco: 0
+    }).select().single();
+    if(error){ console.error('Erro ao adicionar serviço:', error); return; }
+    emp.servicos.push({ id: row.id, nome: row.nome, duracao: row.duracao, preco: Number(row.preco) });
+    draw();
+  };
+  window.removeServico = async (i)=>{
+    const s = emp.servicos[i];
+    const { error } = await supabaseClient.from('servicos').delete().eq('id', s.id);
+    if(error){ console.error('Erro ao remover serviço:', error); return; }
+    emp.servicos.splice(i,1);
+    draw();
+  };
+  window.updServico = async (i,field,val)=>{
+    const s = emp.servicos[i];
+    const dbVal = (field==='duracao'||field==='preco') ? Number(val) : val;
+    s[field] = dbVal;
+    const { error } = await supabaseClient.from('servicos').update({ [field]: dbVal }).eq('id', s.id);
+    if(error) console.error('Erro ao atualizar serviço:', error);
+  };
 
   window.mudarMesHorario = (val)=>{ mesHorario = val; draw(); };
   window.adicionarHorario = async ()=>{
@@ -634,13 +733,21 @@ function renderGestao(emp){
     if(!val){ return; }
     emp.horariosPorMes = emp.horariosPorMes || {};
     const lista = emp.horariosPorMes[mesHorario] || [];
-    if(!lista.includes(val)) lista.push(val);
+    if(lista.includes(val)){ return; }
+    const { error } = await supabaseClient.from('horarios_disponiveis').insert({
+      empresa_id: emp.id, mes: mesHorario, hora: val
+    });
+    if(error){ console.error('Erro ao adicionar horário:', error); return; }
+    lista.push(val);
     emp.horariosPorMes[mesHorario] = lista;
-    await saveEmpresas(); draw();
+    draw();
   };
   window.removerHorario = async (h)=>{
+    const { error } = await supabaseClient.from('horarios_disponiveis')
+      .delete().eq('empresa_id', emp.id).eq('mes', mesHorario).eq('hora', h);
+    if(error){ console.error('Erro ao remover horário:', error); return; }
     emp.horariosPorMes[mesHorario] = (emp.horariosPorMes[mesHorario]||[]).filter(x=>x!==h);
-    await saveEmpresas(); draw();
+    draw();
   };
 
   draw();
