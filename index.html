@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Agenda+</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,500;9..144,600&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -101,6 +101,96 @@
   .footer-note{text-align:center;font-size:12px;color:var(--ink-soft);margin-top:24px;}
   .icon-btn{background:none;border:none;color:var(--ink-soft);font-size:13px;font-weight:600;text-decoration:underline;padding:0;}
   .loading{display:flex;align-items:center;justify-content:center;min-height:60vh;color:var(--ink-soft);}
+
+  /* ── MOBILE FOUNDATION ─────────────────────────────────── */
+  html { -webkit-text-size-adjust:100%; }
+  body { -webkit-font-smoothing:antialiased; }
+
+  /* Inputs com 16px evitam zoom automático no iOS */
+  input,select,textarea { font-size:16px !important; min-height:48px; }
+
+  /* Botões com área de toque mínima */
+  .btn { min-height:48px; display:inline-flex; align-items:center; justify-content:center; }
+  .icon-btn { min-height:44px; min-width:44px; display:inline-flex; align-items:center; justify-content:center; }
+
+  /* Slots maiores para toque */
+  .slot { min-height:52px; display:flex; align-items:center; justify-content:center; }
+
+  /* Serviço com área maior */
+  .service-opt { min-height:56px; }
+
+  /* Tabs com scroll horizontal sem barra */
+  .tabs { overflow-x:auto; flex-wrap:nowrap; padding-bottom:6px;
+          scrollbar-width:none; -ms-overflow-style:none; }
+  .tabs::-webkit-scrollbar { display:none; }
+  .tab { white-space:nowrap; flex-shrink:0; min-height:40px;
+         display:inline-flex; align-items:center; justify-content:center; }
+
+  @media (max-width:600px){
+    /* Containers com safe-area para notch e barra do iOS */
+    .container {
+      padding: 20px 16px calc(80px + env(safe-area-inset-bottom, 0px));
+    }
+    .container.wide {
+      padding: 20px 16px calc(80px + env(safe-area-inset-bottom, 0px));
+      max-width: 100%;
+    }
+
+    /* Cards com menos padding lateral */
+    .card { padding:20px 16px; border-radius:12px; }
+
+    /* Topbar compacta */
+    .topbar { padding:12px 16px; }
+    .topbar .brand { font-size:17px; }
+
+    /* Botões menores lateralmente mas mantendo altura */
+    .btn { padding:12px 18px; font-size:14px; }
+
+    /* Slots grid com colunas menores */
+    .slots-grid { grid-template-columns:repeat(auto-fill,minmax(62px,1fr)); gap:6px; }
+
+    /* Hero com safe-area no fundo */
+    .hero-content {
+      padding: 32px 20px calc(56px + env(safe-area-inset-bottom, 0px));
+    }
+    .hero-content h1 { font-size:clamp(28px,8vw,42px); }
+
+    /* Rows empilham no mobile */
+    .row { flex-direction:column; gap:0; }
+
+    /* List-item com wrap para ações */
+    .list-item { padding:14px 0; align-items:flex-start; flex-wrap:wrap; gap:8px; }
+    .list-item > div:first-child { flex:1 1 100%; }
+
+    /* Chip menor */
+    .chip { font-size:11px; padding:4px 10px; }
+
+    /* Topbar top-plum com safe-area no topo */
+    .top-plum { padding-top:env(safe-area-inset-top, 0px); }
+
+    /* Barra de aviso master */
+    div[style*="gold-soft"] { padding:10px 16px; font-size:12px; }
+
+    /* Eyebrow menor */
+    .eyebrow { font-size:11px; }
+
+    /* Field sem margin extra quando dentro de row */
+    .row .field { margin-bottom:18px; }
+
+    /* Botão de dias de agendamento */
+    .dias-scroll {
+      display:flex; gap:6px; overflow-x:auto; padding-bottom:6px;
+      scrollbar-width:none; -ms-overflow-style:none;
+      -webkit-overflow-scrolling:touch;
+    }
+    .dias-scroll::-webkit-scrollbar { display:none; }
+    .dias-scroll .btn { flex-shrink:0; min-width:56px; padding:10px 8px; font-size:13px; }
+  }
+
+  @media (min-width:601px){
+    .dias-scroll { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px; }
+    .dias-scroll .btn { flex:1; padding:10px 8px; font-size:13px; min-width:0; }
+  }
 </style>
 </head>
 <body>
@@ -370,7 +460,7 @@ function renderAgendar(emp){
       const iso = isoData(d);
       const sel = bookingState.data===iso;
       const label = d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
-      return `<button class="btn ${sel?'':'ghost'}" style="padding:10px 8px;font-size:13px;flex:1;min-width:0;" onclick="selectDia('${iso}')">${label}</button>`;
+      return `<button class="btn ${sel?'':'ghost'}" onclick="selectDia('${iso}')">${label}</button>`;
     }).join("") : `<p class="muted">Nenhuma data disponível.</p>`;
 
     // verifica se data selecionada não está nos 7 (veio do calendário)
@@ -414,8 +504,9 @@ function renderAgendar(emp){
 
           <div class="eyebrow" style="margin-top:24px;">Passo 2</div>
           <h3 class="display">Escolha o dia</h3>
-          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">${diasHtml}
-            <button class="btn ${dataFmtOutra?'':'ghost'}" style="padding:10px 8px;font-size:13px;flex:1;min-width:0;position:relative;" onclick="document.getElementById('calPicker').showPicker ? document.getElementById('calPicker').showPicker() : document.getElementById('calPicker').click()">
+          <div class="dias-scroll">
+            ${diasHtml}
+            <button class="btn ${dataFmtOutra?'':'ghost'}" style="position:relative;flex-shrink:0;min-width:72px;" onclick="document.getElementById('calPicker').showPicker ? document.getElementById('calPicker').showPicker() : document.getElementById('calPicker').click()">
               ${dataFmtOutra ? dataFmtOutra : 'Outra data'}
               <input type="date" id="calPicker" value="${bookingState.data||''}" style="position:absolute;opacity:0;width:1px;height:1px;top:0;left:0;" onchange="selectDiaOutra(this.value)"/>
             </button>
