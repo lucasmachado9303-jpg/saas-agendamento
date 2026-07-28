@@ -201,10 +201,31 @@
 <script src="supabase.js"></script>
 
 <script>
-const STORE_KEY = "empresas";
-const BOOK_KEY = "agendamentos";
+/*
+ * NOTA DE SEGURANÇA — ler antes de publicar em produção
+ * -------------------------------------------------------
+ * O sistema atualmente chama o Supabase diretamente do frontend
+ * usando a anon key exposta no arquivo supabase.js.
+ *
+ * A senha de gestão de cada empresa é validada apenas no cliente
+ * e NÃO deve ser considerada uma proteção definitiva contra acesso
+ * não autorizado ao banco de dados.
+ *
+ * Autenticação real (Supabase Auth ou API Routes no Vercel com
+ * service_role key) será implementada em versão futura.
+ * -------------------------------------------------------
+ */
+
+const STORE_KEY  = "empresas";
+const BOOK_KEY   = "agendamentos";
 const MASTER_PASS = "admin2026";
 const DIAS = ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
+
+// Ícones padrão por tipo de botão
+const ICONE_POR_TIPO = {
+  whatsapp: '💬', instagram: '📸', telefone: '📞',
+  maps: '📍', site: '🌐', link: '🔗'
+};
 
 let empresas = [];
 let agendamentos = [];
@@ -215,16 +236,23 @@ async function loadData(){
     const { data, error } = await supabaseClient.from('empresas').select('*');
     if(error) throw error;
     empresas = (data || []).map(e => ({
-      id:             e.id,
-      slug:           e.slug,
-      nome:           e.nome,
-      fotoUrl:        e.foto_url || '',
-      whatsapp:       e.whatsapp || '',
-      senhaGestao:    e.senha_gestao,
-      bloqueada:      e.bloqueada,
-      servicos:       [],
-      horariosPorMes: {},
-      bloqueios:      []
+      id:                   e.id,
+      slug:                 e.slug,
+      nome:                 e.nome,
+      fotoUrl:              e.foto_url              || '',
+      whatsapp:             e.whatsapp              || '',
+      senhaGestao:          e.senha_gestao,
+      bloqueada:            e.bloqueada,
+      // Campos de personalização (Fase 2)
+      descricao:            e.descricao             || '',
+      logo:                 e.logo                  || '',
+      corPrincipal:         e.cor_principal         || '#3d1f3a',
+      textoDestaque:        e.texto_destaque        || '',
+      // Relações
+      servicos:             [],
+      horariosPorMes:       {},
+      bloqueios:            [],
+      botoes:               []
     }));
   }catch(e){ console.error('Erro ao carregar empresas:', e); empresas = []; }
 
@@ -258,6 +286,19 @@ async function loadData(){
     }catch(e){ console.error('Erro ao carregar bloqueios:', e); }
 
     try{
+      const { data } = await supabaseClient.from('botoes_empresa').select('*').in('empresa_id', ids);
+      (data || []).forEach(b => {
+        const emp = empresas.find(e => e.id === b.empresa_id);
+        if(emp) emp.botoes.push({
+          id: b.id, nome: b.nome, tipo: b.tipo, link: b.link,
+          icone: b.icone || '', ordem: b.ordem, ativo: b.ativo,
+          abrirNovaAba: b.abrir_nova_aba
+        });
+      });
+      empresas.forEach(e => e.botoes.sort((a, b) => a.ordem - b.ordem));
+    }catch(e){ console.error('Erro ao carregar botões:', e); }
+
+    try{
       const { data } = await supabaseClient.from('agendamentos').select('*').in('empresa_id', ids);
       agendamentos = (data || []).map(a => {
         const emp = empresas.find(e => e.id === a.empresa_id);
@@ -283,12 +324,17 @@ async function loadData(){
 
 async function saveEmpresas(){
   const toRow = e => ({
-    slug:         e.slug,
-    nome:         e.nome,
-    foto_url:     e.fotoUrl || '',
-    whatsapp:     e.whatsapp || '',
-    senha_gestao: e.senhaGestao,
-    bloqueada:    e.bloqueada
+    slug:                  e.slug,
+    nome:                  e.nome,
+    foto_url:              e.fotoUrl              || null,
+    whatsapp:              e.whatsapp              || null,
+    senha_gestao:          e.senhaGestao,
+    bloqueada:             e.bloqueada,
+    // Campos de personalização (Fase 2)
+    descricao:             e.descricao             || null,
+    logo:                  e.logo                  || null,
+    cor_principal:         e.corPrincipal          || '#3d1f3a',
+    texto_destaque:        e.textoDestaque         || null,
   });
 
   const novas     = empresas.filter(e => !e.id);
@@ -421,15 +467,66 @@ function renderHome(emp){
     render(`${barraVoltarMaster()}<div class="container"><div class="empty"><h2 class="display">Agendamentos temporariamente indisponíveis</h2><p>Entre em contato diretamente com ${escapeHtml(emp.nome)}.</p></div></div>`);
     return;
   }
-  const bg = emp.fotoUrl || 'https://images.unsplash.com/photo-1560066984-138dadb4c035?q=80&w=1600&auto=format&fit=crop';
+
+  const bg  = emp.fotoUrl || 'https://images.unsplash.com/photo-1560066984-138dadb4c035?q=80&w=1600&auto=format&fit=crop';
+  const cor = emp.corPrincipal || '#3d1f3a';
+  const botoesAtivos = (emp.botoes || []).filter(b => b.ativo).sort((a,b) => a.ordem - b.ordem);
+
+  const logoHtml = emp.logo
+    ? `<img src="${escapeAttr(emp.logo)}" alt="Logo" style="width:96px;height:96px;border-radius:50%;border:4px solid #fff;object-fit:cover;box-shadow:0 4px 20px rgba(0,0,0,0.18);">`
+    : `<div style="width:96px;height:96px;border-radius:50%;border:4px solid #fff;background:${cor};display:flex;align-items:center;justify-content:center;font-size:38px;font-family:'Fraunces',serif;font-weight:600;color:#fff;box-shadow:0 4px 20px rgba(0,0,0,0.18);">${escapeHtml(emp.nome.charAt(0).toUpperCase())}</div>`;
+
+  const botoesHtml = botoesAtivos.map(b => {
+    const icone  = b.icone || ICONE_POR_TIPO[b.tipo] || '🔗';
+    const target = b.abrirNovaAba ? 'target="_blank" rel="noopener noreferrer"' : '';
+    return `<a href="${escapeAttr(b.link)}" ${target} style="text-decoration:none;display:block;width:100%;max-width:360px;margin:0 auto 10px;">
+      <div style="background:#fff;border:1.5px solid var(--line);border-radius:14px;padding:14px 20px;font-size:15px;font-weight:600;display:flex;align-items:center;gap:12px;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
+        <span style="font-size:22px;line-height:1;">${escapeHtml(icone)}</span>
+        <span style="color:var(--ink);">${escapeHtml(b.nome)}</span>
+      </div>
+    </a>`;
+  }).join('');
+
   render(`
     ${barraVoltarMaster()}
-    <div class="hero" style="background-image:url('${escapeAttr(bg)}')">
-      <div class="hero-content">
-        <div class="eyebrow" style="color:#e9dcc7;">${escapeHtml(emp.nome)}</div>
-        <h1>Reserve seu horário</h1>
-        <p>Escolha o serviço, o dia e o horário que preferir.</p>
-        <button class="btn gold" onclick="goto({empresa:'${emp.slug}', page:'agendar'})">Agendar agora</button>
+    <div style="min-height:100vh;background:var(--paper);padding-bottom:env(safe-area-inset-bottom,0px);">
+
+      <!-- Imagem de fundo -->
+      <div style="position:relative;height:200px;background-image:url('${escapeAttr(bg)}');background-size:cover;background-position:center;">
+        <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(20,10,20,0.1) 0%,rgba(20,10,20,0.55) 100%);"></div>
+      </div>
+
+      <!-- Perfil -->
+      <div style="display:flex;flex-direction:column;align-items:center;padding:0 20px;margin-top:-48px;position:relative;">
+
+        ${logoHtml}
+
+        <h1 style="font-family:'Fraunces',serif;font-size:26px;font-weight:600;margin:14px 0 4px;text-align:center;color:var(--ink);">${escapeHtml(emp.nome)}</h1>
+
+        ${emp.descricao    ? `<p style="color:var(--ink-soft);font-size:14px;text-align:center;margin:0 0 6px;max-width:300px;line-height:1.5;">${escapeHtml(emp.descricao)}</p>` : ''}
+        ${emp.textoDestaque ? `<p style="color:${cor};font-size:13px;font-weight:700;text-align:center;margin:0 0 4px;letter-spacing:.02em;">${escapeHtml(emp.textoDestaque)}</p>` : ''}
+
+        <div style="height:24px;"></div>
+
+        <!-- Botão principal de agendamento -->
+        <div style="width:100%;max-width:360px;margin:0 auto 12px;">
+          <button onclick="goto({empresa:'${emp.slug}', page:'agendar'})"
+            style="width:100%;background:${cor};color:#fff;border:none;border-radius:14px;padding:16px 20px;font-size:16px;font-weight:700;font-family:'Manrope',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 4px 16px rgba(0,0,0,0.15);">
+            <span style="font-size:20px;">📅</span> Agendar horário
+          </button>
+        </div>
+
+        <!-- Botões personalizados -->
+        ${botoesHtml}
+
+        <!-- Link discreto para gestão -->
+        <div style="margin-top:36px;padding-bottom:32px;">
+          <button class="icon-btn" onclick="goto({empresa:'${emp.slug}', page:'gestao'})"
+            style="font-size:11px;color:var(--ink-soft);opacity:0.4;letter-spacing:.05em;">
+            área da empresa
+          </button>
+        </div>
+
       </div>
     </div>
   `);
@@ -623,10 +720,11 @@ function tentarLoginGestao(slug){
 
 // ---------- GESTÃO (PAINEL) ----------
 function renderGestao(emp){
-  let corner = null; // null = agendamentos (padrão) | 'servicos' | 'horarios'
+  let corner = null; // null = agendamentos | 'servicos' | 'horarios' | 'personalizar'
   let diaSelecionado = null;
   let editandoId = null;
   let mesHorario = new Date().toISOString().slice(0,7);
+  let novoBotaoState = null;
 
   function agendamentosBody(){
     if(diaSelecionado===null){
@@ -728,14 +826,94 @@ function renderGestao(emp){
     `;
   }
 
+  function personalizarBody(){
+    const cor = emp.corPrincipal || '#3d1f3a';
+    const botoesSorted = [...(emp.botoes || [])].sort((a,b) => a.ordem - b.ordem);
+
+    const botoesHtml = botoesSorted.length ? botoesSorted.map((b,i) => `
+      <div class="list-item" style="flex-direction:column;align-items:stretch;gap:10px;padding:16px 0;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font-size:22px;">${escapeHtml(b.icone || ICONE_POR_TIPO[b.tipo] || '🔗')}</span>
+          <div style="flex:1;min-width:0;">
+            <div style="font-weight:700;font-size:14px;">${escapeHtml(b.nome)}</div>
+            <div class="muted" style="font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(b.link)}</div>
+          </div>
+          <div style="display:flex;gap:4px;">
+            <button class="btn ghost" style="padding:6px 10px;font-size:13px;" onclick="subirBotao('${b.id}')" ${i===0?'disabled style="opacity:.3;"':''}>↑</button>
+            <button class="btn ghost" style="padding:6px 10px;font-size:13px;" onclick="descerBotao('${b.id}')" ${i===botoesSorted.length-1?'disabled style="opacity:.3;"':''}>↓</button>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <button class="btn ${b.ativo?'ghost':'danger'}" style="padding:6px 14px;font-size:12px;flex:1;" onclick="toggleBotao('${b.id}')">${b.ativo?'✓ Ativo':'✗ Inativo'}</button>
+          <button class="btn ghost" style="padding:6px 14px;font-size:12px;color:var(--danger);border-color:var(--danger);flex:1;" onclick="removerBotao('${b.id}')">Remover</button>
+        </div>
+      </div>
+    `).join('') : `<p class="muted" style="text-align:center;padding:16px 0;">Nenhum botão cadastrado ainda.</p>`;
+
+    const formNovoBotao = novoBotaoState !== null ? `
+      <div style="background:var(--paper);border-radius:12px;padding:20px 16px;margin-top:12px;border:1.5px solid var(--line);">
+        <div class="eyebrow" style="margin-bottom:14px;">Novo botão</div>
+        <div class="field"><label>Nome exibido</label><input id="bNome" placeholder="Ex: WhatsApp"/></div>
+        <div class="field"><label>Tipo</label>
+          <select id="bTipo">
+            <option value="whatsapp">💬 WhatsApp</option>
+            <option value="instagram">📸 Instagram</option>
+            <option value="telefone">📞 Telefone</option>
+            <option value="maps">📍 Google Maps</option>
+            <option value="site">🌐 Site</option>
+            <option value="link">🔗 Link personalizado</option>
+          </select>
+        </div>
+        <div class="field"><label>Link</label><input id="bLink" placeholder="https://wa.me/5511999999999"/></div>
+        <div class="field"><label>Ícone (emoji — deixe vazio para padrão)</label><input id="bIcone" placeholder="💬"/></div>
+        <div class="field" style="display:flex;align-items:center;gap:10px;margin-bottom:18px;">
+          <input type="checkbox" id="bNovaAba" checked style="width:20px;min-height:20px;margin:0;"/>
+          <label style="margin:0;text-transform:none;font-size:14px;font-weight:500;letter-spacing:0;">Abrir em nova aba</label>
+        </div>
+        <div class="row">
+          <button class="btn ghost" onclick="cancelarNovoBotao()">Cancelar</button>
+          <button class="btn" onclick="salvarNovoBotao()">Adicionar</button>
+        </div>
+      </div>
+    ` : `<button class="btn ghost" style="width:100%;margin-top:14px;" onclick="iniciarNovoBotao()">+ Adicionar botão</button>`;
+
+    return `
+      <div class="eyebrow" style="margin-bottom:16px;">Identidade visual</div>
+
+      <div class="field"><label>Nome da empresa</label><input id="pNome" value="${escapeAttr(emp.nome)}"/></div>
+      <div class="field"><label>Descrição curta</label><textarea id="pDescricao" rows="2" style="resize:vertical;min-height:80px;">${escapeHtml(emp.descricao||'')}</textarea></div>
+      <div class="field"><label>Texto de destaque</label><input id="pTextoDestaque" value="${escapeAttr(emp.textoDestaque||'')}" placeholder="Ex: Atendimento premium"/></div>
+      <div class="field"><label>Logo — URL da imagem</label><input id="pLogo" value="${escapeAttr(emp.logo||'')}" placeholder="https://..."/></div>
+      <div class="field"><label>Imagem de fundo — URL</label><input id="pFotoUrl" value="${escapeAttr(emp.fotoUrl||'')}" placeholder="https://..."/></div>
+      <div class="field">
+        <label>Cor principal</label>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <input type="color" id="pCor" value="${escapeAttr(cor)}" style="padding:4px;height:48px;width:64px;border-radius:10px;cursor:pointer;"/>
+          <span class="muted" style="font-size:13px;">Usada nos botões e destaques da página</span>
+        </div>
+      </div>
+
+      <button class="btn" style="width:100%;" onclick="salvarInfoEmpresa()">Salvar informações</button>
+
+      <div class="eyebrow" style="margin-top:36px;margin-bottom:4px;">Botões da página</div>
+      <p class="muted" style="font-size:13px;margin:0 0 16px;">Aparecem na página pública abaixo do botão de agendamento.</p>
+      ${botoesHtml}
+      ${formNovoBotao}
+    `;
+  }
+
   function draw(){
-    const body = corner==='servicos' ? servicosBody() : corner==='horarios' ? horariosBody() : agendamentosBody();
+    const body = corner==='servicos'     ? servicosBody()
+               : corner==='horarios'     ? horariosBody()
+               : corner==='personalizar' ? personalizarBody()
+               : agendamentosBody();
     render(`
       ${barraVoltarMaster()}
       <div class="topbar top-plum"><div class="brand">${escapeHtml(emp.nome)} · Gestão</div><button class="icon-btn" style="color:#e9dcc7;" onclick="goto({empresa:'${emp.slug}'})">Sair</button></div>
       <div class="container wide">
         <div class="tabs" style="justify-content:flex-end;">
           ${corner ? `<div class="tab" style="font-size:12px;padding:6px 14px;" onclick="setCorner(null)">← Agendamentos</div>` : ''}
+          <div class="tab ${corner==='personalizar'?'active':''}" style="font-size:12px;padding:6px 14px;" onclick="setCorner('personalizar')">✦ Personalizar</div>
           <div class="tab ${corner==='servicos'?'active':''}" style="font-size:12px;padding:6px 14px;" onclick="setCorner('servicos')">Serviços</div>
           <div class="tab ${corner==='horarios'?'active':''}" style="font-size:12px;padding:6px 14px;" onclick="setCorner('horarios')">Horários</div>
         </div>
@@ -838,6 +1016,95 @@ function renderGestao(emp){
       .delete().eq('empresa_id', emp.id).eq('mes', mesHorario).eq('hora', h);
     if(error){ console.error('Erro ao remover horário:', error); return; }
     emp.horariosPorMes[mesHorario] = (emp.horariosPorMes[mesHorario]||[]).filter(x=>x!==h);
+    draw();
+  };
+
+  // ── PERSONALIZAR PÁGINA ──────────────────────────────────
+
+  window.salvarInfoEmpresa = async ()=>{
+    emp.nome               = document.getElementById('pNome').value.trim() || emp.nome;
+    emp.descricao          = document.getElementById('pDescricao').value.trim();
+    emp.textoDestaque      = document.getElementById('pTextoDestaque').value.trim();
+    emp.logo               = document.getElementById('pLogo').value.trim();
+    emp.fotoUrl            = document.getElementById('pFotoUrl').value.trim();
+    emp.corPrincipal       = document.getElementById('pCor').value;
+    const { error } = await supabaseClient.from('empresas').update({
+      nome:                  emp.nome,
+      descricao:             emp.descricao             || null,
+      logo:                  emp.logo                  || null,
+      foto_url:              emp.fotoUrl               || null,
+      cor_principal:         emp.corPrincipal,
+      texto_destaque:        emp.textoDestaque         || null,
+    }).eq('id', emp.id);
+    if(error){ console.error('Erro ao salvar informações:', error); alert('Erro ao salvar. Verifique o console.'); return; }
+    alert('Informações salvas!');
+    draw();
+  };
+
+  window.iniciarNovoBotao  = ()=>{ novoBotaoState = {}; draw(); };
+  window.cancelarNovoBotao = ()=>{ novoBotaoState = null; draw(); };
+
+  window.salvarNovoBotao = async ()=>{
+    const nome    = document.getElementById('bNome').value.trim();
+    const tipo    = document.getElementById('bTipo').value;
+    const link    = document.getElementById('bLink').value.trim();
+    const icone   = document.getElementById('bIcone').value.trim();
+    const novaAba = document.getElementById('bNovaAba').checked;
+    if(!nome){ alert('Preencha o nome do botão.'); return; }
+    if(!link){ alert('Preencha o link do botão.'); return; }
+    const ordemMax = emp.botoes.length > 0 ? Math.max(...emp.botoes.map(b=>b.ordem)) + 1 : 0;
+    const { data: row, error } = await supabaseClient.from('botoes_empresa').insert({
+      empresa_id:    emp.id,
+      nome, tipo, link,
+      icone:         icone || ICONE_POR_TIPO[tipo] || '🔗',
+      ordem:         ordemMax,
+      ativo:         true,
+      abrir_nova_aba: novaAba
+    }).select().single();
+    if(error){ console.error('Erro ao adicionar botão:', error); alert('Erro ao salvar. Verifique o console.'); return; }
+    emp.botoes.push({ id:row.id, nome:row.nome, tipo:row.tipo, link:row.link,
+      icone:row.icone, ordem:row.ordem, ativo:row.ativo, abrirNovaAba:row.abrir_nova_aba });
+    emp.botoes.sort((a,b)=>a.ordem-b.ordem);
+    novoBotaoState = null;
+    draw();
+  };
+
+  window.removerBotao = async (id)=>{
+    if(!confirm('Remover este botão?')) return;
+    const { error } = await supabaseClient.from('botoes_empresa').delete().eq('id', id);
+    if(error){ console.error('Erro ao remover botão:', error); return; }
+    emp.botoes = emp.botoes.filter(b=>b.id!==id);
+    draw();
+  };
+
+  window.toggleBotao = async (id)=>{
+    const b = emp.botoes.find(x=>x.id===id);
+    const novoAtivo = !b.ativo;
+    const { error } = await supabaseClient.from('botoes_empresa').update({ ativo: novoAtivo }).eq('id', id);
+    if(error){ console.error('Erro ao atualizar botão:', error); return; }
+    b.ativo = novoAtivo;
+    draw();
+  };
+
+  window.subirBotao = async (id)=>{
+    const idx = emp.botoes.findIndex(b=>b.id===id);
+    if(idx <= 0) return;
+    const curr = emp.botoes[idx], prev = emp.botoes[idx-1];
+    [curr.ordem, prev.ordem] = [prev.ordem, curr.ordem];
+    await supabaseClient.from('botoes_empresa').update({ ordem: curr.ordem }).eq('id', curr.id);
+    await supabaseClient.from('botoes_empresa').update({ ordem: prev.ordem }).eq('id', prev.id);
+    emp.botoes.sort((a,b)=>a.ordem-b.ordem);
+    draw();
+  };
+
+  window.descerBotao = async (id)=>{
+    const idx = emp.botoes.findIndex(b=>b.id===id);
+    if(idx >= emp.botoes.length-1) return;
+    const curr = emp.botoes[idx], next = emp.botoes[idx+1];
+    [curr.ordem, next.ordem] = [next.ordem, curr.ordem];
+    await supabaseClient.from('botoes_empresa').update({ ordem: curr.ordem }).eq('id', curr.id);
+    await supabaseClient.from('botoes_empresa').update({ ordem: next.ordem }).eq('id', next.id);
+    emp.botoes.sort((a,b)=>a.ordem-b.ordem);
     draw();
   };
 
