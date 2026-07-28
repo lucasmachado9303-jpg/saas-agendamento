@@ -122,9 +122,21 @@ let loaded = false;
 
 async function loadData(){
   try{
-    const r = localStorage.getItem(STORE_KEY);
-    empresas = r ? JSON.parse(r) : [];
-  }catch(e){ empresas = []; }
+    const { data, error } = await supabaseClient.from('empresas').select('*');
+    if(error) throw error;
+    empresas = (data || []).map(e => ({
+      id:           e.id,
+      slug:         e.slug,
+      nome:         e.nome,
+      fotoUrl:      e.foto_url || '',
+      whatsapp:     e.whatsapp || '',
+      senhaGestao:  e.senha_gestao,
+      bloqueada:    e.bloqueada,
+      servicos:     [],
+      horariosPorMes: {},
+      bloqueios:    []
+    }));
+  }catch(e){ console.error('Erro ao carregar empresas:', e); empresas = []; }
   try{
     const r2 = localStorage.getItem(BOOK_KEY);
     agendamentos = r2 ? JSON.parse(r2) : [];
@@ -133,7 +145,29 @@ async function loadData(){
 }
 
 async function saveEmpresas(){
-  localStorage.setItem(STORE_KEY, JSON.stringify(empresas));
+  const rows = empresas.map(e => {
+    const row = {
+      slug:         e.slug,
+      nome:         e.nome,
+      foto_url:     e.fotoUrl || '',
+      whatsapp:     e.whatsapp || '',
+      senha_gestao: e.senhaGestao,
+      bloqueada:    e.bloqueada
+    };
+    if(e.id) row.id = e.id;
+    return row;
+  });
+  const { data, error } = await supabaseClient
+    .from('empresas')
+    .upsert(rows, { onConflict: 'slug' })
+    .select();
+  if(error){ console.error('Erro ao salvar empresas:', error); return; }
+  if(data){
+    data.forEach(row => {
+      const emp = empresas.find(e => e.slug === row.slug);
+      if(emp && !emp.id) emp.id = row.id;
+    });
+  }
 }
 async function saveAgendamentos(){
   localStorage.setItem(BOOK_KEY, JSON.stringify(agendamentos));
@@ -731,9 +765,12 @@ function renderMasterPanel(){
   window.masterExcluir = async (slug)=>{
     const e = empresas.find(x=>x.slug===slug);
     if(!confirm(`Excluir "${e.nome}" definitivamente? Isso também apaga os agendamentos dela. Essa ação não pode ser desfeita.`)) return;
+    if(e.id){
+      const { error } = await supabaseClient.from('empresas').delete().eq('id', e.id);
+      if(error){ console.error('Erro ao excluir empresa:', error); return; }
+    }
     empresas = empresas.filter(x=>x.slug!==slug);
     agendamentos = agendamentos.filter(a=>a.slug!==slug);
-    await saveEmpresas();
     await saveAgendamentos();
     editingSlug = null;
     draw();
