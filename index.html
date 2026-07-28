@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agenda+</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,500;9..144,600&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1b1620;
+    --ink-soft:#4a4350;
+    --paper:#f7f5f8;
+    --card:#ffffff;
+    --line:#e6e1ea;
+    --plum:#3d1f3a;
+    --plum-deep:#2a1428;
+    --gold:#b8935f;
+    --gold-soft:#e9dcc7;
+    --danger:#a3423a;
+    --ok:#3f6b4f;
+    --radius:14px;
+    --shadow:0 10px 30px -12px rgba(43,20,40,0.25);
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:'Manrope',sans-serif;background:var(--paper);color:var(--ink);}
+  h1,h2,h3,.display{font-family:'Fraunces',serif;font-weight:600;letter-spacing:-0.01em;}
+  a{color:inherit;}
+  button{font-family:inherit;cursor:pointer;}
+  .btn{
+    background:var(--plum);color:#fff;border:none;padding:14px 26px;border-radius:999px;
+    font-size:15px;font-weight:600;letter-spacing:.02em;transition:transform .15s ease, background .15s ease;
+  }
+  .btn:hover{background:var(--plum-deep);transform:translateY(-1px);}
+  .btn:active{transform:translateY(0);}
+  .btn.gold{background:var(--gold);color:var(--plum-deep);}
+  .btn.gold:hover{background:#a67e4c;}
+  .btn.ghost{background:transparent;color:var(--plum);border:1.5px solid var(--line);}
+  .btn.ghost:hover{border-color:var(--plum);}
+  .btn.danger{background:var(--danger);}
+  .btn:disabled{opacity:.45;cursor:not-allowed;transform:none;}
+  input,select,textarea{
+    font-family:'Manrope',sans-serif;padding:12px 14px;border-radius:10px;border:1.5px solid var(--line);
+    background:#fff;font-size:15px;width:100%;color:var(--ink);
+  }
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--gold);}
+  label{font-size:13px;font-weight:600;color:var(--ink-soft);display:block;margin-bottom:6px;letter-spacing:.02em;text-transform:uppercase;}
+  .field{margin-bottom:18px;}
+  .card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:28px;}
+  .container{max-width:520px;margin:0 auto;padding:32px 20px 80px;}
+  .container.wide{max-width:960px;}
+  .eyebrow{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);font-weight:700;margin-bottom:8px;}
+  .top-plum{background:var(--plum);color:#fff;}
+  .top-plum .eyebrow{color:var(--gold-soft);}
+  .muted{color:var(--ink-soft);}
+  .row{display:flex;gap:12px;}
+  .row > *{flex:1;}
+  .chip{
+    display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;font-size:12px;font-weight:700;
+  }
+  .chip.ok{background:#e3ede6;color:var(--ok);}
+  .chip.blocked{background:#f3e2e0;color:var(--danger);}
+  .service-opt{
+    border:1.5px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:10px;cursor:pointer;
+    display:flex;justify-content:space-between;align-items:center;transition:.15s;
+  }
+  .service-opt:hover{border-color:var(--gold);}
+  .service-opt.selected{border-color:var(--plum);background:#faf7fb;box-shadow:inset 0 0 0 1px var(--plum);}
+  .slot{
+    padding:10px 6px;text-align:center;border-radius:10px;border:1.5px solid var(--line);font-size:14px;font-weight:600;
+  }
+  .slot.free{cursor:pointer;}
+  .slot.free:hover{border-color:var(--gold);}
+  .slot.selected{background:var(--plum);color:#fff;border-color:var(--plum);}
+  .slot.taken{opacity:.35;text-decoration:line-through;cursor:not-allowed;}
+  .slots-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:8px;}
+  .hero{
+    position:relative;min-height:100vh;display:flex;align-items:flex-end;background-size:cover;background-position:center;
+  }
+  .hero::before{
+    content:"";position:absolute;inset:0;background:linear-gradient(180deg, rgba(20,10,20,0.15) 0%, rgba(20,10,20,0.75) 90%);
+  }
+  .hero-content{position:relative;z-index:1;padding:48px 28px 64px;color:#fff;width:100%;max-width:640px;margin:0 auto;text-align:center;}
+  .hero-content h1{font-size:clamp(32px,7vw,52px);margin:0 0 10px;}
+  .hero-content p{font-size:16px;opacity:.9;margin:0 0 28px;}
+  .topbar{display:flex;justify-content:space-between;align-items:center;padding:20px 24px;}
+  .topbar .brand{font-family:'Fraunces',serif;font-weight:600;font-size:20px;}
+  .empty{text-align:center;padding:60px 20px;color:var(--ink-soft);}
+  .list-item{
+    display:flex;justify-content:space-between;align-items:center;padding:16px 0;border-bottom:1px solid var(--line);
+  }
+  .list-item:last-child{border-bottom:none;}
+  .tabs{display:flex;gap:8px;margin-bottom:24px;flex-wrap:wrap;}
+  .tab{padding:10px 18px;border-radius:999px;border:1.5px solid var(--line);font-weight:600;font-size:14px;background:#fff;}
+  .tab.active{background:var(--plum);color:#fff;border-color:var(--plum);}
+  .day-toggle{
+    padding:10px;border-radius:10px;border:1.5px solid var(--line);text-align:center;font-weight:700;font-size:13px;cursor:pointer;background:#fff;
+  }
+  .day-toggle.on{background:var(--plum);color:#fff;border-color:var(--plum);}
+  .days-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:10px;}
+  .footer-note{text-align:center;font-size:12px;color:var(--ink-soft);margin-top:24px;}
+  .icon-btn{background:none;border:none;color:var(--ink-soft);font-size:13px;font-weight:600;text-decoration:underline;padding:0;}
+  .loading{display:flex;align-items:center;justify-content:center;min-height:60vh;color:var(--ink-soft);}
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script>
+const STORE_KEY = "empresas";
+const BOOK_KEY = "agendamentos";
+const MASTER_PASS = "admin2026";
+const DIAS = ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
+
+let empresas = [];
+let agendamentos = [];
+let loaded = false;
+
+async function loadData(){
+  try{
+    const r = await window.storage.get(STORE_KEY, true);
+    empresas = r ? JSON.parse(r.value) : [];
+  }catch(e){ empresas = []; }
+  try{
+    const r2 = await window.storage.get(BOOK_KEY, true);
+    agendamentos = r2 ? JSON.parse(r2.value) : [];
+  }catch(e){ agendamentos = []; }
+  loaded = true;
+}
+
+async function saveEmpresas(){
+  await window.storage.set(STORE_KEY, JSON.stringify(empresas), true);
+}
+async function saveAgendamentos(){
+  await window.storage.set(BOOK_KEY, JSON.stringify(agendamentos), true);
+}
+
+function slugify(s){
+  return s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/(^-|-$)/g,"");
+}
+function uid(){ return Math.random().toString(36).slice(2,9); }
+
+let currentRoute = { master:null, empresa:null, page:"" };
+
+function getParams(){
+  return currentRoute;
+}
+function goto(params){
+  currentRoute = { master:null, empresa:null, page:"", ...params };
+  route();
+}
+
+function defaultEmpresa(){
+  return {
+    slug:"", nome:"", fotoUrl:"", whatsapp:"", senhaGestao:"1234", bloqueada:false,
+    servicos:[{id:uid(), nome:"Serviço padrão", duracao:60, preco:0}],
+    horariosPorMes:{},
+    bloqueios:[]
+  };
+}
+
+function mesKey(d){ return d.toISOString().slice(0,7); }
+function horariosDoMes(emp, key){
+  const lista = (emp.horariosPorMes && emp.horariosPorMes[key]) || [];
+  return [...lista].sort();
+}
+function proximosDiasComHorario(emp, qtd=21){
+  const out = [];
+  const hoje = new Date();
+  for(let i=0;i<120 && out.length<qtd;i++){
+    const d = new Date(hoje);
+    d.setDate(hoje.getDate()+i);
+    if(horariosDoMes(emp, mesKey(d)).length>0){
+      out.push(d);
+    }
+  }
+  return out;
+}
+function fmtData(d){
+  return d.toLocaleDateString('pt-BR',{weekday:'short', day:'2-digit', month:'2-digit'});
+}
+function isoData(d){ return d.toISOString().slice(0,10); }
+
+const root = document.getElementById('root');
+function render(html){ root.innerHTML = html; }
+
+// ---------- INIT ----------
+async function init(){
+  render(`<div class="loading">Carregando…</div>`);
+  await loadData();
+  route();
+}
+
+function route(){
+  const {master, empresa, page} = getParams();
+  if(master){
+    renderMaster();
+  } else if(empresa){
+    const emp = empresas.find(e=>e.slug===empresa);
+    if(!emp){ renderNotFound(); return; }
+    if(page==="agendar") renderAgendar(emp);
+    else if(page==="confirmacao") renderConfirmacao(emp);
+    else if(page==="gestao") renderGestaoLogin(emp);
+    else renderHome(emp);
+  } else {
+    renderLanding();
+  }
+}
+
+function barraVoltarMaster(){
+  if(!masterAuthed) return "";
+  return `<div style="background:var(--gold-soft);padding:10px 20px;text-align:center;font-size:13px;font-weight:700;">
+    Modo visualização (via painel master) — <span style="text-decoration:underline;cursor:pointer;" onclick="goto({master:1})">voltar ao painel master</span>
+  </div>`;
+}
+
+function renderNotFound(){
+  render(`<div class="container"><div class="empty"><h2 class="display">Empresa não encontrada</h2><p>Verifique o link e tente novamente.</p></div></div>`);
+}
+
+function renderLanding(){
+  render(`
+    <div class="topbar"><div class="brand">Agenda+</div></div>
+    <div class="container">
+      <div class="card" style="text-align:center;">
+        <div class="eyebrow">Plataforma de agendamentos</div>
+        <h1 class="display">Bem-vindo ao Agenda+</h1>
+        <p class="muted">Este é o link raiz da plataforma. Acesse o painel master para cadastrar empresas, ou use o link individual de uma empresa (?empresa=slug) para agendar.</p>
+        <button class="btn" onclick="goto({master:1})">Entrar no painel master</button>
+      </div>
+    </div>
+  `);
+}
+
+// ---------- HOME DA EMPRESA ----------
+function renderHome(emp){
+  if(emp.bloqueada){
+    render(`${barraVoltarMaster()}<div class="container"><div class="empty"><h2 class="display">Agendamentos temporariamente indisponíveis</h2><p>Entre em contato diretamente com ${escapeHtml(emp.nome)}.</p></div></div>`);
+    return;
+  }
+  const bg = emp.fotoUrl || 'https://images.unsplash.com/photo-1560066984-138dadb4c035?q=80&w=1600&auto=format&fit=crop';
+  render(`
+    ${barraVoltarMaster()}
+    <div class="hero" style="background-image:url('${escapeAttr(bg)}')">
+      <div class="hero-content">
+        <div class="eyebrow" style="color:#e9dcc7;">${escapeHtml(emp.nome)}</div>
+        <h1>Reserve seu horário</h1>
+        <p>Escolha o serviço, o dia e o horário que preferir.</p>
+        <button class="btn gold" onclick="goto({empresa:'${emp.slug}', page:'agendar'})">Agendar agora</button>
+      </div>
+    </div>
+  `);
+}
+
+// ---------- AGENDAMENTO ----------
+let bookingState = {};
+function renderAgendar(emp){
+  bookingState = { servico:null, data:null, hora:null, nome:"", telefone:"" };
+
+  function primeiros7Dias(emp){
+    const out = [];
+    const hoje = new Date();
+    for(let i=0;i<120 && out.length<7;i++){
+      const d = new Date(hoje);
+      d.setDate(hoje.getDate()+i);
+      const key = mesKey(d);
+      const h = horariosDoMes(emp, key);
+      if(h.length>0) out.push(d);
+    }
+    return out;
+  }
+
+  function draw(){
+    const dias7 = primeiros7Dias(emp);
+
+    const diasHtml = dias7.length ? dias7.map(d=>{
+      const iso = isoData(d);
+      const sel = bookingState.data===iso;
+      const label = d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
+      return `<button class="btn ${sel?'':'ghost'}" style="padding:10px 8px;font-size:13px;flex:1;min-width:0;" onclick="selectDia('${iso}')">${label}</button>`;
+    }).join("") : `<p class="muted">Nenhuma data disponível.</p>`;
+
+    // verifica se data selecionada não está nos 7 (veio do calendário)
+    const dataForaDos7 = bookingState.data && !dias7.some(d=>isoData(d)===bookingState.data);
+    const dataFmtOutra = bookingState.data && dataForaDos7
+      ? new Date(bookingState.data+"T00:00:00").toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'})
+      : null;
+
+    const slots = bookingState.data ? horariosDoMes(emp, bookingState.data.slice(0,7)) : [];
+    const slotsHtml = bookingState.data ? (slots.length ? slots.map(h=>{
+      const taken = agendamentos.some(a=>a.slug===emp.slug && a.data===bookingState.data && a.hora===h);
+      const bloqueado = (emp.bloqueios||[]).some(b=>b.data===bookingState.data && b.hora===h);
+      const sel = bookingState.hora===h;
+      if(taken || bloqueado) return `<div class="slot taken">${h}</div>`;
+      return `<div class="slot free ${sel?'selected':''}" onclick="selectHora('${h}')">${h}</div>`;
+    }).join("") : `<p class="muted">Nenhum horário disponível nesta data.</p>`) : `<p class="muted">Escolha um dia primeiro.</p>`;
+
+    const servicosHtml = emp.servicos.map(s=>{
+      const sel = bookingState.servico===s.id;
+      return `<div class="service-opt ${sel?'selected':''}" onclick="selectServico('${s.id}')">
+        <strong>${escapeHtml(s.nome)}</strong>
+      </div>`;
+    }).join("");
+
+    const canSubmit = bookingState.servico && bookingState.data && bookingState.hora && bookingState.nome.trim() && bookingState.telefone.trim();
+
+    render(`
+      ${barraVoltarMaster()}
+      <div class="topbar top-plum">
+        <div class="brand">${escapeHtml(emp.nome)}</div>
+        <div style="display:flex;gap:12px;align-items:center;">
+          <button class="icon-btn" style="color:#e9dcc7;font-size:12px;opacity:.7;" onclick="goto({empresa:'${emp.slug}', page:'gestao'})">gestão</button>
+          <button class="icon-btn" style="color:#e9dcc7;" onclick="goto({empresa:'${emp.slug}'})">Voltar</button>
+        </div>
+      </div>
+      <div class="container">
+        <div class="card">
+          <div class="eyebrow">Passo 1</div>
+          <h3 class="display">Escolha o serviço</h3>
+          ${servicosHtml}
+
+          <div class="eyebrow" style="margin-top:24px;">Passo 2</div>
+          <h3 class="display">Escolha o dia</h3>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">${diasHtml}
+            <button class="btn ${dataFmtOutra?'':'ghost'}" style="padding:10px 8px;font-size:13px;flex:1;min-width:0;position:relative;" onclick="document.getElementById('calPicker').showPicker ? document.getElementById('calPicker').showPicker() : document.getElementById('calPicker').click()">
+              ${dataFmtOutra ? dataFmtOutra : 'Outra data'}
+              <input type="date" id="calPicker" value="${bookingState.data||''}" style="position:absolute;opacity:0;width:1px;height:1px;top:0;left:0;" onchange="selectDiaOutra(this.value)"/>
+            </button>
+          </div>
+
+          <div class="eyebrow" style="margin-top:24px;">Passo 3</div>
+          <h3 class="display">Escolha o horário</h3>
+          <div class="slots-grid">${slotsHtml}</div>
+
+          <div class="eyebrow" style="margin-top:24px;">Passo 4</div>
+          <h3 class="display">Seus dados</h3>
+          <div class="field"><label>Nome</label><input id="inpNome" value="${escapeAttr(bookingState.nome)}" oninput="bookingState.nome=this.value.toUpperCase();this.value=this.value.toUpperCase()" placeholder="SEU NOME" style="text-transform:uppercase;"/></div>
+          <div class="field"><label>Telefone (WhatsApp)</label><input id="inpTel" value="${escapeAttr(bookingState.telefone)}" oninput="bookingState.telefone=this.value" placeholder="(11) 91234-5678"/></div>
+
+          <button class="btn" style="width:100%;margin-top:8px;" ${canSubmit?'':'disabled'} onclick="confirmarAgendamento('${emp.slug}')">Agendar</button>
+        </div>
+      </div>
+    `);
+  }
+  window.selectServico = (id)=>{ bookingState.servico = id; draw(); };
+  window.selectDia = (iso)=>{ bookingState.data = iso; bookingState.hora=null; draw(); };
+  window.selectDiaOutra = (iso)=>{ if(iso){ bookingState.data = iso; bookingState.hora=null; draw(); } };
+  window.selectHora = (h)=>{ bookingState.hora = h; draw(); };
+  draw();
+}
+
+async function confirmarAgendamento(slug){
+  const emp = empresas.find(e=>e.slug===slug);
+  const nomeInp = document.getElementById('inpNome');
+  const telInp = document.getElementById('inpTel');
+  bookingState.nome = nomeInp ? nomeInp.value : bookingState.nome;
+  bookingState.telefone = telInp ? telInp.value : bookingState.telefone;
+  if(!bookingState.servico || !bookingState.data || !bookingState.hora || !bookingState.nome.trim() || !bookingState.telefone.trim()) return;
+
+  const jaOcupado = agendamentos.some(a=>a.slug===slug && a.data===bookingState.data && a.hora===bookingState.hora)
+    || (emp.bloqueios||[]).some(b=>b.data===bookingState.data && b.hora===bookingState.hora);
+  if(jaOcupado){ alert("Esse horário acabou de ser reservado ou bloqueado. Escolha outro."); renderAgendar(emp); return; }
+
+  const servico = emp.servicos.find(s=>s.id===bookingState.servico);
+  const novo = {
+    id:uid(), slug, servicoId: servico?servico.id:null, servicoNome: servico?servico.nome:"", data:bookingState.data, hora:bookingState.hora,
+    nome:bookingState.nome.trim(), telefone:bookingState.telefone.trim(), criadoEm:new Date().toISOString()
+  };
+  agendamentos.push(novo);
+  await saveAgendamentos();
+  lastBooking = novo;
+  goto({empresa:slug, page:'confirmacao'});
+}
+
+let lastBooking = null;
+
+// ---------- CONFIRMAÇÃO ----------
+function renderConfirmacao(emp){
+  const b = lastBooking;
+  if(!b){
+    render(`<div class="container"><div class="empty"><h2 class="display">Nenhum agendamento recente</h2><button class="btn" onclick="goto({empresa:'${emp.slug}'})">Voltar</button></div></div>`);
+    return;
+  }
+  const dataFmt = new Date(b.data+"T00:00:00").toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'});
+  const msg = `Olá! Gostaria de confirmar meu agendamento em ${emp.nome}: ${b.servicoNome}, dia ${dataFmt} às ${b.hora}. Nome: ${b.nome}.`;
+  const numero = (emp.whatsapp||"").replace(/\D/g,"");
+  const link = `https://wa.me/${numero}?text=${encodeURIComponent(msg)}`;
+  render(`
+    <div class="container">
+      <div class="card" style="text-align:center;">
+        <div class="eyebrow" style="color:var(--ok);">Agendamento reservado</div>
+        <h1 class="display">Falta pouco!</h1>
+        <p class="muted">Confirme seu horário direto pelo WhatsApp de ${escapeHtml(emp.nome)}.</p>
+        <div style="text-align:left;background:var(--paper);border-radius:10px;padding:16px;margin:20px 0;">
+          <div><strong>Serviço:</strong> ${escapeHtml(b.servicoNome)}</div>
+          <div><strong>Dia:</strong> ${dataFmt}</div>
+          <div><strong>Hora:</strong> ${b.hora}</div>
+          <div><strong>Nome:</strong> ${escapeHtml(b.nome)}</div>
+        </div>
+        <a href="${link}" target="_blank"><button class="btn gold" style="width:100%;">Confirmar no WhatsApp</button></a>
+        <div style="margin-top:14px;"><button class="icon-btn" onclick="goto({empresa:'${emp.slug}'})">Voltar ao início</button></div>
+      </div>
+    </div>
+  `);
+}
+
+// ---------- GESTÃO (LOGIN) ----------
+function renderGestaoLogin(emp){
+  render(`
+    ${barraVoltarMaster()}
+    <div class="container">
+      <div class="card">
+        <div class="eyebrow">Área restrita</div>
+        <h2 class="display">Gestão — ${escapeHtml(emp.nome)}</h2>
+        <div class="field"><label>Senha</label><input type="password" id="senhaGestao" placeholder="Digite a senha"/></div>
+        <button class="btn" style="width:100%;" onclick="tentarLoginGestao('${emp.slug}')">Entrar</button>
+      </div>
+    </div>
+  `);
+}
+function tentarLoginGestao(slug){
+  const emp = empresas.find(e=>e.slug===slug);
+  const val = document.getElementById('senhaGestao').value;
+  if(val === emp.senhaGestao){ renderGestao(emp); }
+  else{ alert("Senha incorreta."); }
+}
+
+// ---------- GESTÃO (PAINEL) ----------
+function renderGestao(emp){
+  let corner = null; // null = agendamentos (padrão) | 'servicos' | 'horarios'
+  let diaSelecionado = null;
+  let editandoId = null;
+  let mesHorario = new Date().toISOString().slice(0,7);
+
+  function agendamentosBody(){
+    if(diaSelecionado===null){
+      // começa no dia de hoje independente de ter horário ou não
+      diaSelecionado = isoData(new Date());
+    }
+    const dataObj = new Date(diaSelecionado+"T00:00:00");
+    const dataFmt = dataObj.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'});
+
+    function isoAddDias(iso, n){
+      const d = new Date(iso+"T00:00:00");
+      d.setDate(d.getDate()+n);
+      return isoData(d);
+    }
+
+    const horarios = horariosDoMes(emp, diaSelecionado.slice(0,7));
+    const linhas = horarios.length ? horarios.map(h=>{
+      const ag = agendamentos.find(a=>a.slug===emp.slug && a.data===diaSelecionado && a.hora===h);
+      const bloqueado = (emp.bloqueios||[]).some(b=>b.data===diaSelecionado && b.hora===h);
+      if(ag && editandoId===ag.id){
+        const servicoOpts = emp.servicos.map(s=>`<option value="${s.id}" ${ (ag.servicoId===s.id) ?'selected':''}>${escapeHtml(s.nome)}</option>`).join("");
+        const horariosOpts = horarios.map(hh=>`<option value="${hh}" ${hh===ag.hora?'selected':''}>${hh}</option>`).join("");
+        return `<div class="list-item" style="flex-direction:column;align-items:stretch;">
+          <div class="field"><label>Nome</label><input id="editNome" value="${escapeAttr(ag.nome)}"/></div>
+          <div class="field"><label>Telefone</label><input id="editTel" value="${escapeAttr(ag.telefone)}"/></div>
+          <div class="row">
+            <div class="field"><label>Serviço</label><select id="editServico">${servicoOpts}</select></div>
+            <div class="field"><label>Horário</label><select id="editHora">${horariosOpts}</select></div>
+          </div>
+          <div class="row">
+            <button class="btn ghost" onclick="cancelarEdicaoAgendamento()">Cancelar</button>
+            <button class="btn" onclick="salvarEdicaoAgendamento('${ag.id}')">Salvar</button>
+          </div>
+        </div>`;
+      }
+      if(ag){
+        return `<div class="list-item">
+          <div><strong>${h}</strong> — ${escapeHtml(ag.nome)} · ${escapeHtml(ag.servicoNome)}<br/><span class="muted" style="font-size:13px;">${escapeHtml(ag.telefone)}</span></div>
+          <div style="display:flex;gap:8px;flex:0 0 auto;">
+            <button class="btn ghost" onclick="editarAgendamento('${ag.id}')">Editar</button>
+            <button class="icon-btn" style="color:var(--danger);" onclick="cancelarAgendamento('${ag.id}')">cancelar</button>
+          </div>
+        </div>`;
+      }
+      if(bloqueado){
+        return `<div class="list-item" style="opacity:.55;">
+          <div><strong>${h}</strong> — <span class="muted">bloqueado</span></div>
+          <button class="btn ghost" onclick="desbloquearHorario('${diaSelecionado}','${h}')">Desbloquear</button>
+        </div>`;
+      }
+      return `<div class="list-item" style="opacity:.55;">
+        <div><strong>${h}</strong> — <span class="muted">livre</span></div>
+        <button class="btn ghost" onclick="bloquearHorario('${diaSelecionado}','${h}')">Bloquear</button>
+      </div>`;
+    }).join("") : `<p class="muted" style="text-align:center;padding:20px 0;">Nenhum horário configurado para este dia.</p>`;
+
+    return `
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+        <button class="btn ghost" style="padding:10px 16px;font-size:18px;line-height:1;" onclick="selecionarDiaGestao('${isoAddDias(diaSelecionado,-1)}')">&#8592;</button>
+        <div style="position:relative;text-align:center;">
+          <div style="font-family:'Fraunces',serif;font-size:18px;font-weight:600;cursor:pointer;" onclick="document.getElementById('calGestao').showPicker ? document.getElementById('calGestao').showPicker() : document.getElementById('calGestao').click()">${dataFmt}</div>
+          <div class="muted" style="font-size:12px;">clique para escolher</div>
+          <input type="date" id="calGestao" value="${diaSelecionado}" style="position:absolute;opacity:0;width:1px;height:1px;top:0;left:50%;" onchange="selecionarDiaGestao(this.value)"/>
+        </div>
+        <button class="btn ghost" style="padding:10px 16px;font-size:18px;line-height:1;" onclick="selecionarDiaGestao('${isoAddDias(diaSelecionado,1)}')">&#8594;</button>
+      </div>
+      ${linhas}
+    `;
+  }
+
+  function servicosBody(){
+    return `
+      <h3 class="display">Serviços</h3>
+      ${emp.servicos.map((s,i)=>`
+        <div class="list-item">
+          <input value="${escapeAttr(s.nome)}" onchange="updServico(${i},'nome',this.value)"/>
+          <button class="icon-btn" style="color:var(--danger);margin-left:12px;white-space:nowrap;" onclick="removeServico(${i})">remover</button>
+        </div>
+      `).join("")}
+      <button class="btn ghost" style="margin-top:14px;" onclick="addServico()">+ Adicionar serviço</button>
+    `;
+  }
+
+  function horariosBody(){
+    const lista = horariosDoMes(emp, mesHorario);
+    return `
+      <h3 class="display">Horários</h3>
+      <div class="field"><label>Mês</label><input type="month" value="${mesHorario}" onchange="mudarMesHorario(this.value)"/></div>
+      ${lista.length ? lista.map(h=>`
+        <div class="list-item">
+          <div><strong>${h}</strong></div>
+          <button class="icon-btn" style="color:var(--danger);" onclick="removerHorario('${h}')">remover</button>
+        </div>
+      `).join("") : `<p class="muted">Nenhum horário adicionado para este mês ainda.</p>`}
+      <div class="row" style="margin-top:14px;">
+        <input type="time" id="novoHorarioInput"/>
+        <button class="btn ghost" style="flex:0 0 auto;" onclick="adicionarHorario()">+ Adicionar horário</button>
+      </div>
+    `;
+  }
+
+  function draw(){
+    const body = corner==='servicos' ? servicosBody() : corner==='horarios' ? horariosBody() : agendamentosBody();
+    render(`
+      ${barraVoltarMaster()}
+      <div class="topbar top-plum"><div class="brand">${escapeHtml(emp.nome)} · Gestão</div><button class="icon-btn" style="color:#e9dcc7;" onclick="goto({empresa:'${emp.slug}'})">Sair</button></div>
+      <div class="container wide">
+        <div class="tabs" style="justify-content:flex-end;">
+          ${corner ? `<div class="tab" style="font-size:12px;padding:6px 14px;" onclick="setCorner(null)">← Agendamentos</div>` : ''}
+          <div class="tab ${corner==='servicos'?'active':''}" style="font-size:12px;padding:6px 14px;" onclick="setCorner('servicos')">Serviços</div>
+          <div class="tab ${corner==='horarios'?'active':''}" style="font-size:12px;padding:6px 14px;" onclick="setCorner('horarios')">Horários</div>
+        </div>
+        <div class="card">${body}</div>
+      </div>
+    `);
+  }
+
+  window.setCorner = (c)=>{ corner=c; editandoId=null; draw(); };
+  window.selecionarDiaGestao = (iso)=>{ diaSelecionado=iso; editandoId=null; draw(); };
+
+  window.editarAgendamento = (id)=>{ editandoId=id; draw(); };
+  window.cancelarEdicaoAgendamento = ()=>{ editandoId=null; draw(); };
+  window.salvarEdicaoAgendamento = async (id)=>{
+    const ag = agendamentos.find(a=>a.id===id);
+    const nome = document.getElementById('editNome').value.trim();
+    const tel = document.getElementById('editTel').value.trim();
+    const servicoId = document.getElementById('editServico').value;
+    const hora = document.getElementById('editHora').value;
+    if(!nome || !tel){ alert("Preencha nome e telefone."); return; }
+    if(hora !== ag.hora){
+      const ocupado = agendamentos.some(a=>a.id!==ag.id && a.slug===emp.slug && a.data===ag.data && a.hora===hora);
+      if(ocupado){ alert("Esse horário já está ocupado."); return; }
+    }
+    const servico = emp.servicos.find(s=>s.id===servicoId);
+    ag.nome = nome; ag.telefone = tel; ag.servicoId = servicoId; ag.servicoNome = servico?servico.nome:ag.servicoNome; ag.hora = hora;
+    await saveAgendamentos();
+    editandoId = null; draw();
+  };
+  window.cancelarAgendamento = async (id)=>{
+    agendamentos = agendamentos.filter(a=>a.id!==id);
+    await saveAgendamentos(); draw();
+  };
+  window.bloquearHorario = async (data,hora)=>{
+    emp.bloqueios = emp.bloqueios || [];
+    emp.bloqueios.push({data,hora});
+    await saveEmpresas(); draw();
+  };
+  window.desbloquearHorario = async (data,hora)=>{
+    emp.bloqueios = (emp.bloqueios||[]).filter(b=>!(b.data===data && b.hora===hora));
+    await saveEmpresas(); draw();
+  };
+
+  window.addServico = async ()=>{ emp.servicos.push({id:uid(),nome:"Novo serviço",duracao:60,preco:0}); await saveEmpresas(); draw(); };
+  window.removeServico = async (i)=>{ emp.servicos.splice(i,1); await saveEmpresas(); draw(); };
+  window.updServico = async (i,field,val)=>{ emp.servicos[i][field] = (field==='duracao'||field==='preco')?Number(val):val; await saveEmpresas(); };
+
+  window.mudarMesHorario = (val)=>{ mesHorario = val; draw(); };
+  window.adicionarHorario = async ()=>{
+    const val = document.getElementById('novoHorarioInput').value;
+    if(!val){ return; }
+    emp.horariosPorMes = emp.horariosPorMes || {};
+    const lista = emp.horariosPorMes[mesHorario] || [];
+    if(!lista.includes(val)) lista.push(val);
+    emp.horariosPorMes[mesHorario] = lista;
+    await saveEmpresas(); draw();
+  };
+  window.removerHorario = async (h)=>{
+    emp.horariosPorMes[mesHorario] = (emp.horariosPorMes[mesHorario]||[]).filter(x=>x!==h);
+    await saveEmpresas(); draw();
+  };
+
+  draw();
+}
+
+// ---------- PAINEL MASTER ----------
+function renderMaster(){
+  const authed = sessionStorage_getMaster();
+  if(!authed){ renderMasterLogin(); return; }
+  renderMasterPanel();
+}
+// (usamos variável em memória em vez de sessionStorage do navegador, que não é permitido)
+let masterAuthed = false;
+function sessionStorage_getMaster(){ return masterAuthed; }
+
+function renderMasterLogin(){
+  render(`
+    <div class="container">
+      <div class="card">
+        <div class="eyebrow">Painel master</div>
+        <h2 class="display">Entrar</h2>
+        <div class="field"><label>Senha</label><input type="password" id="masterPass" placeholder="Senha master"/></div>
+        <button class="btn" style="width:100%;" onclick="tentarLoginMaster()">Entrar</button>
+      </div>
+    </div>
+  `);
+}
+window.tentarLoginMaster = ()=>{
+  const val = document.getElementById('masterPass').value;
+  if(val === MASTER_PASS){ masterAuthed = true; renderMasterPanel(); }
+  else alert("Senha incorreta.");
+};
+
+let editingSlug = null;
+function renderMasterPanel(){
+  function draw(){
+    const editing = editingSlug ? empresas.find(e=>e.slug===editingSlug) : null;
+    const form = editing ? `
+      <div class="card" style="margin-bottom:24px;">
+        <h3 class="display">Editar empresa</h3>
+        <div class="field"><label>Nome</label><input value="${escapeAttr(editing.nome)}" onchange="masterUpd('nome',this.value)"/></div>
+        <div class="field"><label>Foto de fundo (URL)</label><input value="${escapeAttr(editing.fotoUrl)}" onchange="masterUpd('fotoUrl',this.value)"/></div>
+        <div class="field"><label>WhatsApp</label><input value="${escapeAttr(editing.whatsapp)}" onchange="masterUpd('whatsapp',this.value)"/></div>
+        <div class="field"><label>Senha de gestão da empresa</label><input value="${escapeAttr(editing.senhaGestao)}" onchange="masterUpd('senhaGestao',this.value)"/></div>
+        <div class="field"><label>Link público (quando publicado)</label>
+          <input readonly value="${escapeAttr(location.origin+location.pathname+'?empresa='+editing.slug)}" onclick="this.select()"/>
+        </div>
+        <div class="row">
+          <button class="btn ghost" onclick="goto({empresa:'${editing.slug}'})">Ver página inicial</button>
+          <button class="btn ghost" onclick="goto({empresa:'${editing.slug}', page:'agendar'})">Ver agendamento</button>
+        </div>
+        <div class="row" style="margin-top:12px;">
+          <button class="btn ghost" onclick="editingSlug=null; drawMaster();">Fechar</button>
+          <button class="btn ${editing.bloqueada?'':'danger'}" onclick="masterToggleBloqueio()">${editing.bloqueada?'Desbloquear':'Bloquear'}</button>
+        </div>
+        <button class="btn danger" style="width:100%;margin-top:12px;" onclick="masterExcluir('${editing.slug}')">Excluir empresa</button>
+      </div>
+    ` : `
+      <div class="card" style="margin-bottom:24px;">
+        <h3 class="display">Nova empresa</h3>
+        <div class="field"><label>Nome</label><input id="novoNome" placeholder="Ex: Studio Bella"/></div>
+        <div class="field"><label>Foto de fundo (URL)</label><input id="novaFoto" placeholder="https://..."/></div>
+        <div class="field"><label>WhatsApp (com DDD)</label><input id="novoWhats" placeholder="11912345678"/></div>
+        <div class="field"><label>Senha de gestão da empresa</label><input id="novaSenha" placeholder="Ex: minha123"/></div>
+        <button class="btn" onclick="masterCriar()">Criar empresa</button>
+      </div>
+    `;
+    const lista = empresas.map(e=>{
+      const link = location.origin + location.pathname + "?empresa=" + e.slug;      return `
+      <div class="list-item">
+        <div style="flex:1;">
+          <strong>${escapeHtml(e.nome)}</strong>
+          <span class="chip ${e.bloqueada?'blocked':'ok'}" style="margin-left:8px;">${e.bloqueada?'bloqueada':'ativa'}</span>
+          <div class="muted" style="font-size:12px;margin-top:6px;">Link (quando publicado): <input readonly value="${escapeAttr(link)}" style="font-size:12px;padding:6px 8px;" onclick="this.select()"/></div>
+          <div class="row" style="margin-top:10px;flex-wrap:wrap;">
+            <button class="btn ghost" style="flex:0 0 auto;" onclick="goto({empresa:'${e.slug}'})">Ver página inicial</button>
+            <button class="btn ghost" style="flex:0 0 auto;" onclick="goto({empresa:'${e.slug}', page:'agendar'})">Ver agendamento</button>
+            <button class="btn ghost" style="flex:0 0 auto;" onclick="goto({empresa:'${e.slug}', page:'gestao'})">Ver gestão</button>
+          </div>
+        </div>
+        <button class="btn ghost" style="margin-left:12px;" onclick="editingSlug='${e.slug}'; drawMaster();">Editar</button>
+      </div>
+    `;}).join("") || `<p class="muted">Nenhuma empresa cadastrada ainda.</p>`;
+
+    render(`
+      <div class="topbar top-plum"><div class="brand">Agenda+ · Master</div><button class="icon-btn" style="color:#e9dcc7;" onclick="masterAuthed=false; renderMaster();">Sair</button></div>
+      <div class="container wide">
+        ${form}
+        <div class="card">
+          <h3 class="display">Empresas cadastradas</h3>
+          ${lista}
+        </div>
+      </div>
+    `);
+  }
+  window.drawMaster = draw;
+  window.masterCriar = async ()=>{
+    const nome = document.getElementById('novoNome').value.trim();
+    if(!nome){ alert("Digite o nome da empresa."); return; }
+    const senha = document.getElementById('novaSenha').value.trim();
+    if(!senha){ alert("Defina uma senha de gestão para a empresa."); return; }
+    let slug = slugify(nome);
+    let s2 = slug, n=1;
+    while(empresas.some(e=>e.slug===s2)){ s2 = slug+"-"+(++n); }
+    const nova = defaultEmpresa();
+    nova.slug = s2; nova.nome = nome;
+    nova.fotoUrl = document.getElementById('novaFoto').value.trim();
+    nova.whatsapp = document.getElementById('novoWhats').value.trim();
+    nova.senhaGestao = senha;
+    empresas.push(nova);
+    await saveEmpresas();
+    draw();
+  };
+  window.masterUpd = async (field,val)=>{
+    const e = empresas.find(x=>x.slug===editingSlug);
+    e[field] = val; await saveEmpresas();
+  };
+  window.masterToggleBloqueio = async ()=>{
+    const e = empresas.find(x=>x.slug===editingSlug);
+    e.bloqueada = !e.bloqueada; await saveEmpresas(); draw();
+  };
+  window.masterExcluir = async (slug)=>{
+    const e = empresas.find(x=>x.slug===slug);
+    if(!confirm(`Excluir "${e.nome}" definitivamente? Isso também apaga os agendamentos dela. Essa ação não pode ser desfeita.`)) return;
+    empresas = empresas.filter(x=>x.slug!==slug);
+    agendamentos = agendamentos.filter(a=>a.slug!==slug);
+    await saveEmpresas();
+    await saveAgendamentos();
+    editingSlug = null;
+    draw();
+  };
+  draw();
+}
+
+function escapeHtml(s){ return String(s||"").replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function escapeAttr(s){ return escapeHtml(s); }
+
+init();
+</script>
+</body>
+</html>
