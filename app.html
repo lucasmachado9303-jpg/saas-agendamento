@@ -1359,24 +1359,19 @@ function renderMasterPanel(){
     `;
     const lista = empresas.map(e=>{
       const link = location.origin + '/app.html?empresa=' + e.slug;      return `
-      <div class="list-item" style="align-items:flex-start;gap:12px;">
+      <div class="list-item" style="align-items:center;gap:16px;padding:20px 0;">
         <div style="flex:1;min-width:0;">
-          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px;">
-            <strong>${escapeHtml(e.nome)}</strong>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+            <strong style="font-size:16px;">${escapeHtml(e.nome)}</strong>
             <span class="chip ${e.bloqueada?'blocked':'ok'}">${e.bloqueada?'Bloqueada':'Ativa'}</span>
           </div>
-          <div style="display:flex;align-items:center;gap:8px;">
-            <input readonly value="${escapeAttr(link)}" style="font-size:12px;padding:6px 8px;flex:1;min-width:0;" onclick="this.select()"/>
-          </div>
-          <div class="row" style="margin-top:10px;flex-wrap:wrap;">
-            <button class="btn ghost" style="flex:0 0 auto;" onclick="goto({empresa:'${e.slug}'})">Ver página inicial</button>
-            <button class="btn ghost" style="flex:0 0 auto;" onclick="goto({empresa:'${e.slug}', page:'agendar'})">Ver agendamento</button>
-            <button class="btn ghost" style="flex:0 0 auto;" onclick="goto({empresa:'${e.slug}', page:'gestao'})">Ver gestão</button>
-          </div>
+          <div style="font-size:12px;color:var(--ink-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:320px;">${escapeHtml(link)}</div>
         </div>
-        <div style="display:flex;flex-direction:column;gap:8px;flex-shrink:0;">
-          <button class="btn ghost" style="padding:6px 14px;font-size:12px;white-space:nowrap;" onclick="navigator.clipboard.writeText('${escapeAttr(link)}').then(()=>alert('Link copiado!'))">Copiar link</button>
-          <button class="btn ghost" style="padding:6px 14px;font-size:12px;" onclick="editingSlug='${e.slug}'; drawMaster();">Editar</button>
+        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end;">
+          <button class="btn ghost" style="padding:8px 16px;font-size:13px;min-height:40px;" onclick="goto({empresa:'${e.slug}'})">Visualizar</button>
+          <button class="btn ghost" style="padding:8px 16px;font-size:13px;min-height:40px;" onclick="goto({empresa:'${e.slug}', page:'gestao'})">Ver gestão</button>
+          <button class="btn ghost" style="padding:8px 16px;font-size:13px;min-height:40px;" onclick="navigator.clipboard.writeText('${escapeAttr(link)}').then(()=>alert('Link copiado!'))">Copiar link</button>
+          <button class="btn" style="padding:8px 16px;font-size:13px;min-height:40px;" onclick="editingSlug='${e.slug}'; drawMaster();">Editar</button>
         </div>
       </div>
     `;}).join("") || `<p class="muted">Nenhuma empresa cadastrada ainda.</p>`;
