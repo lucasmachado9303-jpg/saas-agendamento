@@ -951,10 +951,10 @@ function renderGestao(empInicial){
       if(ag){
         const waNum = '55' + ag.telefone.replace(/\D/g,'').replace(/^0/,'');
         const waLink = `https://wa.me/${waNum}`;
-        return `<div class="list-item" style="flex-direction:column;align-items:stretch;gap:8px;">
+        return `<div style="padding:16px;margin-bottom:8px;border-radius:12px;border:1.5px solid #e0e0e0;background:var(--card);display:flex;flex-direction:column;gap:12px;">
           <div>
             <div style="font-weight:700;font-size:15px;">${h} — ${escapeHtml(ag.nome)}</div>
-            <div class="muted" style="font-size:13px;margin-top:2px;">${escapeHtml(ag.servicoNome)}</div>
+            <div class="muted" style="font-size:13px;margin-top:4px;">${escapeHtml(ag.servicoNome)}</div>
           </div>
           <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
             <button class="btn ghost" style="font-size:13px;" onclick="editarAgendamento('${ag.id}')">Editar</button>
@@ -964,12 +964,12 @@ function renderGestao(empInicial){
         </div>`;
       }
       if(bloqueado){
-        return `<div class="list-item" style="opacity:.55;">
+        return `<div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;margin-bottom:8px;border-radius:12px;background:#f7f7f7;opacity:.6;">
           <div><strong>${h}</strong> — <span class="muted">Bloqueado</span></div>
           <button class="btn ghost" onclick="desbloquearHorario('${diaSelecionado}','${h}')">Desbloquear</button>
         </div>`;
       }
-      return `<div class="list-item" style="opacity:.55;">
+      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;margin-bottom:8px;border-radius:12px;background:#f7f7f7;opacity:.55;">
         <div><strong>${h}</strong> — <span class="muted">Livre</span></div>
         <button class="btn ghost" onclick="bloquearHorario('${diaSelecionado}','${h}')">Bloquear</button>
       </div>`;
@@ -1033,22 +1033,22 @@ function renderGestao(empInicial){
     const botoesSorted = [...(emp.botoes || [])].sort((a,b) => a.ordem - b.ordem);
 
     const botoesHtml = botoesSorted.length ? `<div id="botoes-drag-list">${botoesSorted.map((b) => `
-      <div class="list-item" data-id="${b.id}" draggable="true"
-        style="flex-direction:column;align-items:stretch;gap:10px;padding:14px 0;cursor:default;transition:opacity .15s;"
+      <div data-id="${b.id}" draggable="true"
+        style="display:flex;flex-direction:column;gap:10px;padding:14px 16px;margin-bottom:8px;border-radius:12px;border:1.5px solid var(--line);background:var(--card);cursor:default;transition:opacity .15s;overflow:hidden;"
         ondragstart="dragBotaoStart(event,'${b.id}')"
         ondragover="dragBotaoOver(event)"
         ondrop="dragBotaoDrop(event,'${b.id}')"
         ondragend="dragBotaoEnd(event)">
-        <div style="display:flex;align-items:center;gap:10px;">
-          <div style="color:#bbb;font-size:20px;cursor:grab;padding:0 4px;line-height:1;touch-action:none;" title="Arraste para reordenar">⠿</div>
+        <div style="display:flex;align-items:center;gap:10px;min-width:0;">
+          <div style="color:#bbb;font-size:20px;cursor:grab;padding:0 4px;line-height:1;touch-action:none;flex-shrink:0;" title="Arraste para reordenar">⠿</div>
           <div style="flex:1;min-width:0;">
             <div style="font-weight:700;font-size:14px;">${escapeHtml(b.nome)}</div>
             <div class="muted" style="font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(b.link)}</div>
           </div>
         </div>
-        <div style="display:flex;gap:8px;align-items:center;">
-          <button class="btn ghost" style="padding:6px 14px;font-size:12px;flex:1;" onclick="editarBotao('${b.id}')">Editar</button>
-          <button class="btn ghost" style="padding:6px 14px;font-size:12px;color:var(--danger);border-color:var(--danger);flex:1;" onclick="removerBotao('${b.id}')">Excluir</button>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <button class="btn ghost" style="font-size:13px;" onclick="editarBotao('${b.id}')">Editar</button>
+          <button class="btn ghost" style="font-size:13px;color:var(--danger);border-color:var(--danger);" onclick="removerBotao('${b.id}')">Excluir</button>
         </div>
       </div>
     `).join('')}</div>` : `<p class="muted" style="text-align:center;padding:16px 0;">Nenhum botão cadastrado ainda.</p>`;
@@ -1093,7 +1093,7 @@ function renderGestao(empInicial){
           <button class="btn" onclick="salvarEdicaoBotao('${editandoBotaoId}')">Salvar</button>
         </div>
       </div>
-    `; })() : `<button class="btn ghost" style="width:100%;margin-top:14px;" onclick="iniciarNovoBotao()">+ Adicionar botão</button>`;
+    `; })() : `<button onclick="iniciarNovoBotao()" style="width:100%;margin-top:14px;padding:14px;border:2px dashed #bbb;border-radius:12px;background:none;font-size:14px;font-weight:600;color:#888;cursor:pointer;letter-spacing:.01em;">+ Adicionar botão</button>`;
 
     return `
       <div class="eyebrow" style="margin-bottom:16px;color:#1a1a1a;">Identidade visual</div>
