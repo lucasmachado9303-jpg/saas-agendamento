@@ -1540,6 +1540,7 @@ let masterShowForm = false;
 let masterSearch = '';
 let masterAba = 'dashboard'; // 'dashboard' | 'empresas' | 'financeiro'
 let financeiroData = []; // registros da tabela financeiro
+let _finForm = null; // { mode:'configurar'|'editar', empresaId, regId, valor, dia }
 
 async function carregarFinanceiro(){
   const { data, error } = await supabaseClient.from('financeiro').select('*');
@@ -1555,8 +1556,8 @@ function finStatusInfo(reg){
   const dia = reg.dia_vencimento;
   // Verificar se pagou no mês atual
   if(reg.pago_em){
-    const p = new Date(reg.pago_em);
-    if(p.getFullYear() === ano && p.getMonth() === mes){
+    const mesStr = `${ano}-${String(mes+1).padStart(2,'0')}`;
+    if(reg.pago_em.slice(0,7) === mesStr){
       return { label:'Pago', cor:'#2e7d32', bg:'#e8f5e9' };
     }
   }
@@ -1831,7 +1832,19 @@ function renderMasterPanel(){
 
   function drawFinanceiro(){
     const hoje = new Date();
-    const mesAtual = hoje.toLocaleString('pt-BR',{month:'long', year:'numeric'});
+    const mesAtual = hoje.toLocaleString('pt-BR',{month:'long', year:'numeric'}).replace(' De ', ' de ');
+
+    const formFin = _finForm ? `
+      <div class="card" style="margin-bottom:20px;">
+        <h3 class="display" style="margin:0 0 16px;">${_finForm.mode==='configurar'?'Configurar plano':'Editar plano'}</h3>
+        <div class="field"><label>Valor mensal (R$)</label><input type="number" id="finFormValor" value="${_finForm.valor||''}" min="0" step="0.01" placeholder="Ex: 99.90"/></div>
+        <div class="field"><label>Dia de vencimento (1 a 28)</label><input type="number" id="finFormDia" value="${_finForm.dia||''}" min="1" max="28" placeholder="Ex: 10"/></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
+          <button class="btn ghost" onclick="finCancelarForm()">Cancelar</button>
+          <button class="btn" onclick="finSalvarForm()">Salvar</button>
+        </div>
+      </div>
+    ` : '';
 
     const rows = empresas.map(e => {
       const reg = financeiroData.find(f=>f.empresa_id===e.id);
@@ -1884,6 +1897,7 @@ function renderMasterPanel(){
     }).join('') : `<p class="muted">Nenhuma empresa nesta categoria.</p>`;
 
     drawMasterShell(`
+      ${formFin}
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px;">
         <div>
           <h2 class="display" style="margin:0;">Financeiro</h2>
@@ -1899,38 +1913,40 @@ function renderMasterPanel(){
   window.masterIrAba = (aba) => { masterAba = aba; draw(); };
 
   window.finConfigurar = (empresaId) => {
-    const valor = prompt("Valor mensal do plano (ex: 99.90):");
-    if(valor === null) return;
-    const dia = prompt("Dia de vencimento todo mês (1 a 28):");
-    if(dia === null) return;
-    const diaNum = parseInt(dia);
-    if(isNaN(diaNum) || diaNum < 1 || diaNum > 28){ alert("Dia inválido. Use um número entre 1 e 28."); return; }
-    supabaseClient.from('financeiro').insert({ empresa_id: empresaId, valor: parseFloat(valor)||0, dia_vencimento: diaNum })
-      .then(async ({ error }) => {
-        if(error){ alert("Erro ao salvar: " + error.message); return; }
-        await carregarFinanceiro();
-        draw();
-      });
+    _finForm = { mode:'configurar', empresaId, regId:null, valor:'', dia:'' };
+    draw();
   };
 
   window.finEditar = (empresaId, regId, valorAtual, diaAtual) => {
-    const valor = prompt("Novo valor mensal:", valorAtual);
-    if(valor === null) return;
-    const dia = prompt("Novo dia de vencimento (1 a 28):", diaAtual);
-    if(dia === null) return;
-    const diaNum = parseInt(dia);
+    _finForm = { mode:'editar', empresaId, regId, valor:valorAtual, dia:diaAtual };
+    draw();
+  };
+
+  window.finCancelarForm = () => { _finForm = null; draw(); };
+
+  window.finSalvarForm = async () => {
+    const valorEl = document.getElementById('finFormValor');
+    const diaEl   = document.getElementById('finFormDia');
+    const valor = parseFloat(valorEl?.value) || 0;
+    const diaNum = parseInt(diaEl?.value);
     if(isNaN(diaNum) || diaNum < 1 || diaNum > 28){ alert("Dia inválido. Use um número entre 1 e 28."); return; }
-    supabaseClient.from('financeiro').update({ valor: parseFloat(valor)||0, dia_vencimento: diaNum, updated_at: new Date().toISOString() }).eq('id', regId)
-      .then(async ({ error }) => {
-        if(error){ alert("Erro ao salvar: " + error.message); return; }
-        await carregarFinanceiro();
-        draw();
-      });
+    const form = _finForm;
+    _finForm = null;
+    if(form.mode === 'configurar'){
+      const { error } = await supabaseClient.from('financeiro').insert({ empresa_id: form.empresaId, valor, dia_vencimento: diaNum });
+      if(error){ alert("Erro ao salvar: " + error.message); return; }
+    } else {
+      const { error } = await supabaseClient.from('financeiro').update({ valor, dia_vencimento: diaNum, updated_at: new Date().toISOString() }).eq('id', form.regId);
+      if(error){ alert("Erro ao salvar: " + error.message); return; }
+    }
+    await carregarFinanceiro();
+    draw();
   };
 
   window.finMarcarPago = (regId) => {
     if(!confirm("Confirmar pagamento recebido?")) return;
-    const hoje = new Date().toISOString().slice(0,10);
+    const _d = new Date();
+    const hoje = `${_d.getFullYear()}-${String(_d.getMonth()+1).padStart(2,'0')}-${String(_d.getDate()).padStart(2,'0')}`;
     supabaseClient.from('financeiro').update({ pago_em: hoje, updated_at: new Date().toISOString() }).eq('id', regId)
       .then(async ({ error }) => {
         if(error){ alert("Erro ao salvar: " + error.message); return; }
