@@ -422,6 +422,12 @@ footer {
   background-clip: text; margin-bottom: 8px;
 }
 footer p { font-size: 13px; color: rgba(255,255,255,0.3); }
+footer a.master-link {
+  display: inline-block; margin-top: 20px;
+  font-size: 12px; color: rgba(255,255,255,0.15); text-decoration: none;
+  transition: color 0.2s;
+}
+footer a.master-link:hover { color: rgba(255,255,255,0.4); }
 
 /* ── DIVIDER ── */
 .divider {
@@ -685,6 +691,7 @@ footer p { font-size: 13px; color: rgba(255,255,255,0.3); }
 <footer>
   <div class="footer-brand">Agenda+</div>
   <p>Agendamentos online para o seu negócio.</p>
+  <a class="master-link" href="/app.html?master=1">Área administrativa</a>
 </footer>
 
 </body>
