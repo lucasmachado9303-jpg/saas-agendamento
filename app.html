@@ -496,20 +496,6 @@ function renderNotFound(){
   render(`<div class="container"><div class="empty"><h2 class="display">Empresa não encontrada</h2><p>Verifique o link e tente novamente.</p></div></div>`);
 }
 
-function renderLanding(){
-  render(`
-    <div class="topbar"><div class="brand">Agenda+</div></div>
-    <div class="container">
-      <div class="card" style="text-align:center;">
-        <div class="eyebrow">Plataforma de agendamentos</div>
-        <h1 class="display">Bem-vindo ao Agenda+</h1>
-        <p class="muted">Este é o link raiz da plataforma. Acesse o painel master para cadastrar empresas, ou use o link individual de uma empresa (?empresa=slug) para agendar.</p>
-        <button class="btn" onclick="goto({master:1})">Entrar no painel master</button>
-      </div>
-    </div>
-  `);
-}
-
 // ---------- HOME DA EMPRESA ----------
 function renderHome(emp){
   applyAccent(emp.corPrincipal);
