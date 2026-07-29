@@ -1682,6 +1682,7 @@ let editingSlug = null;
 let masterShowForm = false;
 let masterSearch = '';
 let masterAba = 'dashboard'; // 'dashboard' | 'empresas' | 'financeiro'
+let masterNavAberta = false;
 let financeiroData = []; // registros da tabela financeiro
 let _finForm = null; // { mode:'configurar'|'editar', empresaId, regId, valor, dia }
 
@@ -1719,72 +1720,114 @@ function renderMasterPanel(){
   applyAccent('#1c1917');
   mostrarBannerPWA();
 
+  const M_ICO = {
+    dashboard:   `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:100%;height:100%;"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>`,
+    empresas:    `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:100%;height:100%;"><rect x="2" y="7" width="20" height="15" rx="1"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="8" y1="12" x2="8" y2="16"/><line x1="16" y1="12" x2="16" y2="16"/></svg>`,
+    financeiro:  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:100%;height:100%;"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>`,
+    sair:        `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:100%;height:100%;"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>`,
+  };
+
+  const MASTER_NAV = [
+    { id:'dashboard',  label:'Dashboard',  ico: M_ICO.dashboard },
+    { id:'empresas',   label:'Empresas',   ico: M_ICO.empresas },
+    { id:'financeiro', label:'Financeiro', ico: M_ICO.financeiro },
+  ];
+
   const SIDEBAR_CSS = `
     <style>
-      .master-layout { display:flex; min-height:calc(100vh - 56px); }
+      .master-layout { display:flex; min-height:calc(100vh - 56px); position:relative; }
       .master-sidebar {
-        width:148px; min-width:148px; background:#1c1917; color:#fff;
-        display:flex; flex-direction:column; padding:16px 0;
-        position:sticky; top:56px; height:calc(100vh - 56px);
+        background:#1c1917; color:#fff; display:flex; flex-direction:column;
+        overflow:hidden; flex-shrink:0; z-index:200;
+      }
+      .master-sidebar-toggle {
+        display:flex; align-items:center; justify-content:center;
+        border:none; background:none; color:rgba(255,255,255,0.5); cursor:pointer;
+        border-bottom:1px solid rgba(255,255,255,0.08); flex-shrink:0; width:100%;
       }
       .master-nav-item {
-        display:flex; align-items:center; gap:10px; padding:12px 20px;
+        display:flex; align-items:center; gap:10px;
         cursor:pointer; font-size:14px; font-weight:500; color:rgba(255,255,255,0.65);
-        border:none; background:none; width:100%; text-align:left; transition:all .15s;
+        border:none; background:none; width:100%; text-align:left;
+        transition:background .15s, color .15s; white-space:nowrap; overflow:hidden;
       }
       .master-nav-item:hover { color:#fff; background:rgba(255,255,255,0.07); }
-      .master-nav-item.active { color:#fff; background:rgba(255,255,255,0.12); border-left:3px solid #fff; }
+      .master-nav-item.active { color:#fff; background:rgba(255,255,255,0.12); }
       .master-nav-item.danger { color:#ef9a9a; margin-top:auto; }
       .master-nav-item.danger:hover { color:#fff; background:rgba(198,40,40,0.3); }
+      .master-nav-ico { flex-shrink:0; }
+      .master-nav-label { /* always visible on desktop */ }
+      .master-overlay {
+        display:none; position:fixed; inset:0; z-index:199;
+        background:rgba(0,0,0,0.45); cursor:pointer;
+      }
+      .master-overlay.on { display:block; }
       .master-content { flex:1; padding:24px; overflow-y:auto; }
       .dash-cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:14px; margin-bottom:28px; }
       .dash-card { background:var(--paper); border:1.5px solid var(--line); border-radius:12px; padding:18px 16px; }
       .dash-card-val { font-size:28px; font-weight:800; color:var(--ink); line-height:1; }
       .dash-card-label { font-size:12px; color:var(--ink-soft); margin-top:6px; }
       .fin-status { display:inline-block; padding:3px 10px; border-radius:20px; font-size:12px; font-weight:600; }
-      @media(max-width:600px){
-        .master-sidebar { display:none; }
-        .master-mobile-tabs {
-          display:flex; background:#1c1917; overflow-x:auto;
+
+      @media(min-width:768px){
+        .master-sidebar {
+          width:148px; min-width:148px; padding:16px 0;
+          position:sticky; top:56px; height:calc(100vh - 56px); overflow-y:auto;
         }
-        .master-mobile-tab {
-          flex:1; min-width:80px; padding:12px 8px; text-align:center; color:rgba(255,255,255,0.6);
-          font-size:12px; font-weight:600; cursor:pointer; border:none; background:none;
-          border-bottom:3px solid transparent;
-        }
-        .master-mobile-tab.active { color:#fff; border-bottom-color:#fff; }
+        .master-nav-item { padding:12px 20px; }
+        .master-nav-item.active { border-left:3px solid #fff; }
+        .master-nav-ico { width:18px; height:18px; }
+        .master-sidebar-toggle { display:none; }
       }
-      @media(min-width:601px){ .master-mobile-tabs { display:none; } }
+
+      @media(max-width:767px){
+        .master-sidebar {
+          position:fixed; left:0; top:56px; bottom:0;
+          width:36px; padding:4px 0;
+          transition:width .22s ease;
+          box-shadow:2px 0 8px rgba(0,0,0,0.3);
+        }
+        .master-sidebar.open { width:185px; box-shadow:4px 0 24px rgba(0,0,0,0.5); }
+        .master-sidebar-toggle { padding:13px 0; font-size:20px; }
+        .master-nav-item { padding:13px; justify-content:center; }
+        .master-sidebar.open .master-nav-item { padding:13px 16px; justify-content:flex-start; }
+        .master-nav-ico { width:22px; height:22px; }
+        .master-nav-label { display:none; }
+        .master-sidebar.open .master-nav-label { display:block; }
+        .master-content { margin-left:36px; padding:16px; }
+      }
     </style>
   `;
 
   function drawMasterShell(conteudo){
+    const navItems = MASTER_NAV.map(n=>`
+      <button class="master-nav-item ${masterAba===n.id?'active':''}" onclick="masterIrAba('${n.id}')">
+        <span class="master-nav-ico">${n.ico}</span>
+        <span class="master-nav-label">${n.label}</span>
+      </button>`).join('');
+
     render(`
       ${SIDEBAR_CSS}
-      <div class="topbar" style="background:#1c1917;color:#fff;">
-        <div class="brand">Agenda+ · Master</div>
-      </div>
-      <div class="master-mobile-tabs">
-        <button class="master-mobile-tab ${masterAba==='dashboard'?'active':''}" onclick="masterIrAba('dashboard')">Dashboard</button>
-        <button class="master-mobile-tab ${masterAba==='empresas'?'active':''}" onclick="masterIrAba('empresas')">Empresas</button>
-        <button class="master-mobile-tab ${masterAba==='financeiro'?'active':''}" onclick="masterIrAba('financeiro')">Financeiro</button>
-        <button class="master-mobile-tab danger" onclick="masterLogout()" style="color:#ef9a9a;">Sair</button>
+      <div style="position:sticky;top:0;z-index:300;background:#1c1917;">
+        <div class="topbar" style="background:#1c1917;color:#fff;">
+          <div class="brand">Agenda+ · Master</div>
+        </div>
       </div>
       <div class="master-layout">
-        <nav class="master-sidebar">
-          <button class="master-nav-item ${masterAba==='dashboard'?'active':''}" onclick="masterIrAba('dashboard')">
-            <span>📊</span> Dashboard
+        <nav class="master-sidebar${masterNavAberta?' open':''}">
+          <button class="master-sidebar-toggle" onclick="masterToggleNav()" aria-label="Menu">
+            ${masterNavAberta
+              ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:20px;height:20px;"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`
+              : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:20px;height:20px;"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>`
+            }
           </button>
-          <button class="master-nav-item ${masterAba==='empresas'?'active':''}" onclick="masterIrAba('empresas')">
-            <span>🏢</span> Empresas
-          </button>
-          <button class="master-nav-item ${masterAba==='financeiro'?'active':''}" onclick="masterIrAba('financeiro')">
-            <span>💰</span> Financeiro
-          </button>
+          ${navItems}
           <button class="master-nav-item danger" onclick="masterLogout()">
-            <span>🚪</span> Sair
+            <span class="master-nav-ico">${M_ICO.sair}</span>
+            <span class="master-nav-label">Sair</span>
           </button>
         </nav>
+        <div class="master-overlay${masterNavAberta?' on':''}" onclick="masterToggleNav()"></div>
         <div class="master-content">
           ${conteudo}
         </div>
@@ -2053,7 +2096,8 @@ function renderMasterPanel(){
   }
 
   window.drawMaster = draw;
-  window.masterIrAba = (aba) => { masterAba = aba; draw(); };
+  window.masterIrAba = (aba) => { masterAba = aba; masterNavAberta = false; draw(); };
+  window.masterToggleNav = () => { masterNavAberta = !masterNavAberta; draw(); };
 
   window.finConfigurar = (empresaId) => {
     _finForm = { mode:'configurar', empresaId, regId:null, valor:'', dia:'' };
