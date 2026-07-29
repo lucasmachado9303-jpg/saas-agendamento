@@ -7,6 +7,11 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#1a1a1a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Agenda+">
 <style>
   :root{
     --ink:#1b1620;
@@ -246,6 +251,17 @@ let empresas = [];
 let agendamentos = [];
 let loaded = false;
 
+// ── PWA ──────────────────────────────────────────────────────
+let _pwaPrompt = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  _pwaPrompt = e;
+});
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('/sw.js').catch(()=>{});
+}
+// ─────────────────────────────────────────────────────────────
+
 async function loadData(){
   try{
     const { data, error } = await supabaseClient.from('empresas').select('*');
@@ -394,9 +410,8 @@ function goto(params){
 function defaultEmpresa(){
   return {
     slug:"", nome:"", fotoUrl:"", whatsapp:"", senhaGestao:"1234", bloqueada:false,
-    servicos:[],
-    horariosPorMes:{},
-    bloqueios:[]
+    descricao:"", logo:"", corPrincipal:"#3d1f3a", textoDestaque:"",
+    servicos:[], horariosPorMes:{}, bloqueios:[], botoes:[]
   };
 }
 
@@ -754,21 +769,21 @@ function renderGestaoLogin(emp){
   applyAccent('#1a1a1a');
   render(`
     ${barraVoltarMaster()}
-    <div class="topbar top-plum" style="display:grid;grid-template-columns:44px 1fr 44px;align-items:center;">
-      <button class="icon-btn" style="color:#e9dcc7;font-size:22px;line-height:1;" onclick="goto({empresa:'${emp.slug}'})">←</button>
+    <div class="topbar" style="background:#1a1a1a;color:#fff;display:grid;grid-template-columns:44px 1fr 44px;align-items:center;">
+      <button class="icon-btn" style="color:#fff;font-size:22px;line-height:1;" onclick="goto({empresa:'${emp.slug}'})">←</button>
       <div class="brand" style="text-align:center;font-size:17px;">${escapeHtml(emp.nome)}</div>
       <div></div>
     </div>
     <div class="container">
       <div class="card">
-        <div class="eyebrow">Área restrita</div>
+        <div class="eyebrow" style="color:#1a1a1a;">Área restrita</div>
         <h2 class="display">Gestão — ${escapeHtml(emp.nome)}</h2>
         <div class="field">
           <label>Senha</label>
           <input type="password" id="senhaGestao" placeholder="Digite a senha" onkeyup="checkCapsLock(event,'cL1')"/>
           <div id="cL1" style="display:none;align-items:center;gap:5px;color:var(--danger);font-size:12px;margin-top:6px;"><strong>!</strong> Caps Lock ativado</div>
         </div>
-        <button class="btn" style="width:100%;" onclick="tentarLoginGestao('${emp.slug}')">Entrar</button>
+        <button class="btn" style="width:100%;background:#1a1a1a;" onclick="tentarLoginGestao('${emp.slug}')">Entrar</button>
       </div>
     </div>
   `);
@@ -783,11 +798,38 @@ function tentarLoginGestao(slug){
 // ---------- GESTÃO (PAINEL) ----------
 function renderGestao(emp){
   applyAccent('#1a1a1a');
+
+  // Banner PWA — mostra uma vez por sessão se o prompt estiver disponível
+  if(_pwaPrompt && !sessionStorage.getItem('pwa-banner-dismissed')){
+    const banner = document.createElement('div');
+    banner.id = 'pwa-banner';
+    banner.style.cssText = 'position:fixed;bottom:0;left:0;right:0;z-index:9998;background:#1a1a1a;color:#fff;padding:14px 20px;display:flex;align-items:center;gap:12px;box-shadow:0 -4px 20px rgba(0,0,0,0.2);';
+    banner.innerHTML = `
+      <div style="flex:1;font-size:14px;font-weight:600;line-height:1.3;">Instale o Agenda+ no seu aparelho para acesso rápido</div>
+      <button onclick="instalarPWA()" style="background:#fff;color:#1a1a1a;border:none;border-radius:999px;padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;">Instalar</button>
+      <button onclick="dispensarPWA()" style="background:none;border:none;color:#aaa;font-size:20px;cursor:pointer;padding:0 4px;line-height:1;">×</button>
+    `;
+    document.body.appendChild(banner);
+  }
+  window.instalarPWA = async ()=>{
+    if(!_pwaPrompt) return;
+    _pwaPrompt.prompt();
+    const { outcome } = await _pwaPrompt.userChoice;
+    if(outcome === 'accepted') _pwaPrompt = null;
+    dispensarPWA();
+  };
+  window.dispensarPWA = ()=>{
+    sessionStorage.setItem('pwa-banner-dismissed','1');
+    const b = document.getElementById('pwa-banner');
+    if(b) b.remove();
+  };
+
   let corner = null; // null = agendamentos | 'servicos' | 'horarios' | 'personalizar'
   let diaSelecionado = null;
   let editandoId = null;
   let mesHorario = new Date().toISOString().slice(0,7);
   let novoBotaoState = null;
+  let editandoBotaoId = null;
 
   function agendamentosBody(){
     if(diaSelecionado===null){
@@ -867,7 +909,7 @@ function renderGestao(emp){
     const lista = horariosDoMes(emp, mesHorario);
     return `
       <div class="card" style="margin-bottom:16px;">
-        <div class="eyebrow" style="margin-bottom:12px;">Serviços</div>
+        <div class="eyebrow" style="margin-bottom:12px;color:#1a1a1a;">Serviços</div>
         ${emp.servicos.map((s,i)=>`
           <div class="list-item">
             <input value="${escapeAttr(s.nome)}" onchange="updServico(${i},'nome',this.value)"/>
@@ -881,15 +923,15 @@ function renderGestao(emp){
       </div>
 
       <div class="card">
-        <div class="eyebrow" style="margin-bottom:12px;">Horários</div>
+        <div class="eyebrow" style="margin-bottom:12px;color:#1a1a1a;">Horários</div>
         <div class="field"><label>Mês</label><input type="month" value="${mesHorario}" onchange="mudarMesHorario(this.value)"/></div>
-        ${lista.length ? lista.map(h=>`
-          <div class="list-item">
-            <div><strong>${h}</strong></div>
-            <button class="icon-btn" style="color:var(--danger);" onclick="removerHorario('${h}')">Remover</button>
+        ${lista.length ? `<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;">${lista.map(h=>`
+          <div style="display:inline-flex;align-items:center;gap:8px;background:#f4f4f4;border:1.5px solid #e0e0e0;border-radius:10px;padding:8px 12px;">
+            <span style="font-size:14px;font-weight:600;color:#1a1a1a;">${h}</span>
+            <button onclick="removerHorario('${h}')" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:18px;line-height:1;padding:0;min-height:0;">×</button>
           </div>
-        `).join("") : `<p class="muted">Nenhum horário adicionado para este mês ainda.</p>`}
-        <div class="row" style="margin-top:14px;">
+        `).join('')}</div>` : `<p class="muted" style="margin-bottom:14px;">Nenhum horário adicionado para este mês ainda.</p>`}
+        <div class="row" style="margin-top:4px;">
           <input type="time" id="novoHorarioInput"/>
           <button class="btn ghost" style="flex:0 0 auto;" onclick="adicionarHorario()">+ Adicionar horário</button>
         </div>
@@ -914,15 +956,15 @@ function renderGestao(emp){
           </div>
         </div>
         <div style="display:flex;gap:8px;align-items:center;">
-          <button class="btn ${b.ativo?'ghost':'danger'}" style="padding:6px 14px;font-size:12px;flex:1;" onclick="toggleBotao('${b.id}')">${b.ativo?'Ativo':'Inativo'}</button>
-          <button class="btn ghost" style="padding:6px 14px;font-size:12px;color:var(--danger);border-color:var(--danger);flex:1;" onclick="removerBotao('${b.id}')">Remover</button>
+          <button class="btn ghost" style="padding:6px 14px;font-size:12px;flex:1;" onclick="editarBotao('${b.id}')">Editar</button>
+          <button class="btn ghost" style="padding:6px 14px;font-size:12px;color:var(--danger);border-color:var(--danger);flex:1;" onclick="removerBotao('${b.id}')">Excluir</button>
         </div>
       </div>
     `).join('') : `<p class="muted" style="text-align:center;padding:16px 0;">Nenhum botão cadastrado ainda.</p>`;
 
     const formNovoBotao = novoBotaoState !== null ? `
       <div style="background:var(--paper);border-radius:12px;padding:20px 16px;margin-top:12px;border:1.5px solid var(--line);">
-        <div class="eyebrow" style="margin-bottom:14px;">Novo botão</div>
+        <div class="eyebrow" style="margin-bottom:14px;color:#1a1a1a;">Novo botão</div>
         <div class="field"><label>Nome exibido</label><input id="bNome" placeholder="Ex: WhatsApp"/></div>
         <div class="field"><label>Tipo</label>
           <select id="bTipo">
@@ -945,10 +987,35 @@ function renderGestao(emp){
           <button class="btn" onclick="salvarNovoBotao()">Adicionar</button>
         </div>
       </div>
-    ` : `<button class="btn ghost" style="width:100%;margin-top:14px;" onclick="iniciarNovoBotao()">+ Adicionar botão</button>`;
+    ` : editandoBotaoId !== null ? (()=>{ const eb = emp.botoes.find(x=>x.id===editandoBotaoId)||{}; return `
+      <div style="background:var(--paper);border-radius:12px;padding:20px 16px;margin-top:12px;border:1.5px solid var(--line);">
+        <div class="eyebrow" style="margin-bottom:14px;color:#1a1a1a;">Editar botão</div>
+        <div class="field"><label>Nome exibido</label><input id="ebNome" value="${escapeAttr(eb.nome||'')}"/></div>
+        <div class="field"><label>Tipo</label>
+          <select id="ebTipo">
+            <option value="whatsapp" ${eb.tipo==='whatsapp'?'selected':''}>WhatsApp</option>
+            <option value="instagram" ${eb.tipo==='instagram'?'selected':''}>Instagram</option>
+            <option value="telefone" ${eb.tipo==='telefone'?'selected':''}>Telefone</option>
+            <option value="maps" ${eb.tipo==='maps'?'selected':''}>Google Maps</option>
+            <option value="site" ${eb.tipo==='site'?'selected':''}>Site</option>
+            <option value="link" ${eb.tipo==='link'?'selected':''}>Link personalizado</option>
+          </select>
+        </div>
+        <div class="field"><label>Link</label><input id="ebLink" value="${escapeAttr(eb.link||'')}"/></div>
+        <div class="field"><label>Ícone (deixe vazio para padrão)</label><input id="ebIcone" value="${escapeAttr(eb.icone||'')}"/></div>
+        <div class="field" style="display:flex;align-items:center;gap:10px;margin-bottom:18px;">
+          <input type="checkbox" id="ebNovaAba" ${eb.abrirNovaAba?'checked':''} style="width:20px;min-height:20px;margin:0;"/>
+          <label style="margin:0;text-transform:none;font-size:14px;font-weight:500;letter-spacing:0;">Abrir em nova aba</label>
+        </div>
+        <div class="row">
+          <button class="btn ghost" onclick="cancelarEdicaoBotao()">Cancelar</button>
+          <button class="btn" onclick="salvarEdicaoBotao('${editandoBotaoId}')">Salvar</button>
+        </div>
+      </div>
+    `; })() : `<button class="btn ghost" style="width:100%;margin-top:14px;" onclick="iniciarNovoBotao()">+ Adicionar botão</button>`;
 
     return `
-      <div class="eyebrow" style="margin-bottom:16px;">Identidade visual</div>
+      <div class="eyebrow" style="margin-bottom:16px;color:#1a1a1a;">Identidade visual</div>
 
       <div class="field"><label>Nome da empresa</label><input id="pNome" value="${escapeAttr(emp.nome)}"/></div>
       <div class="field"><label>Descrição curta</label><textarea id="pDescricao" rows="2" style="resize:vertical;min-height:80px;">${escapeHtml(emp.descricao||'')}</textarea></div>
@@ -977,7 +1044,7 @@ function renderGestao(emp){
         <button class="btn ghost" style="flex:1;" onclick="compartilharLink()">Compartilhar link</button>
       </div>
 
-      <div class="eyebrow" style="margin-top:36px;margin-bottom:4px;">Botões da página</div>
+      <div class="eyebrow" style="margin-top:36px;margin-bottom:4px;color:#1a1a1a;">Botões da página</div>
       <p class="muted" style="font-size:13px;margin:0 0 16px;">Aparecem na página pública abaixo do botão de agendamento.</p>
       ${botoesHtml}
       ${formNovoBotao}
@@ -991,11 +1058,11 @@ function renderGestao(emp){
     render(`
       <div style="position:sticky;top:0;z-index:100;background:var(--paper);">
         ${barraVoltarMaster()}
-        <div class="topbar top-plum"><div class="brand">${escapeHtml(emp.nome)} · Gestão</div><button class="icon-btn" style="color:#e9dcc7;" onclick="goto({empresa:'${emp.slug}'})">Sair</button></div>
+        <div class="topbar" style="background:#1a1a1a;color:#fff;"><div class="brand">${escapeHtml(emp.nome)} · Gestão</div><button class="icon-btn" style="color:#fff;" onclick="goto({empresa:'${emp.slug}'})">Sair</button></div>
         <div class="tabs" style="padding:8px 16px 0;border-bottom:1.5px solid var(--line);margin:0;gap:0;background:var(--paper);">
-          <div class="tab ${!corner?'active':''}" style="flex:1;text-align:center;padding:10px 6px;font-size:14px;" onclick="setCorner(null)">Agendamentos</div>
-          <div class="tab ${corner==='configurar'?'active':''}" style="flex:1;text-align:center;padding:10px 6px;font-size:14px;" onclick="setCorner('configurar')">Configurar</div>
-          <div class="tab ${corner==='personalizar'?'active':''}" style="flex:1;text-align:center;padding:10px 6px;font-size:14px;" onclick="setCorner('personalizar')">Personalizar</div>
+          <div class="tab ${!corner?'active':''}\" style="flex:1;text-align:center;padding:10px 6px;font-size:14px;${!corner?'background:#1a1a1a;color:#fff;border-color:#1a1a1a;':''}" onclick="setCorner(null)">Agendamentos</div>
+          <div class="tab ${corner==='configurar'?'active':''}" style="flex:1;text-align:center;padding:10px 6px;font-size:14px;${corner==='configurar'?'background:#1a1a1a;color:#fff;border-color:#1a1a1a;':''}" onclick="setCorner('configurar')">Configurar</div>
+          <div class="tab ${corner==='personalizar'?'active':''}" style="flex:1;text-align:center;padding:10px 6px;font-size:14px;${corner==='personalizar'?'background:#1a1a1a;color:#fff;border-color:#1a1a1a;':''}" onclick="setCorner('personalizar')">Personalizar</div>
         </div>
       </div>
       <div class="container wide">
@@ -1021,7 +1088,7 @@ function renderGestao(emp){
     if(!livres.length){ alert("Todos os horários deste dia já estão bloqueados."); return; }
     const dataFmtConf = new Date(diaSelecionado+"T00:00:00").toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'});
     if(!confirm(`Bloquear todos os ${livres.length} horários de ${dataFmtConf}?`)) return;
-    const rows = livres.map(h=>({ slug: emp.slug, data: diaSelecionado, hora: h }));
+    const rows = livres.map(h=>({ empresa_id: emp.id, data: diaSelecionado, hora: h }));
     const { data, error } = await supabaseClient.from('bloqueios').insert(rows).select();
     if(error){ alert("Erro ao bloquear: " + error.message); return; }
     if(data) data.forEach(r=>{ (emp.bloqueios=emp.bloqueios||[]).push({id:r.id, data:r.data, hora:r.hora}); });
@@ -1054,6 +1121,7 @@ function renderGestao(emp){
     editandoId = null; draw();
   };
   window.cancelarAgendamento = async (id)=>{
+    if(!confirm('Cancelar este agendamento? Essa ação não pode ser desfeita.')) return;
     const { error } = await supabaseClient.from('agendamentos').delete().eq('id', id);
     if(error){ console.error('Erro ao cancelar agendamento:', error); return; }
     agendamentos = agendamentos.filter(a=>a.id!==id);
@@ -1089,6 +1157,7 @@ function renderGestao(emp){
   };
   window.removeServico = async (i)=>{
     const s = emp.servicos[i];
+    if(!confirm(`Remover o serviço "${s.nome}"?`)) return;
     const { error } = await supabaseClient.from('servicos').delete().eq('id', s.id);
     if(error){ console.error('Erro ao remover serviço:', error); return; }
     emp.servicos.splice(i,1);
@@ -1143,8 +1212,27 @@ function renderGestao(emp){
     draw();
   };
 
-  window.iniciarNovoBotao  = ()=>{ novoBotaoState = {}; draw(); };
+  window.iniciarNovoBotao  = ()=>{ novoBotaoState = {}; editandoBotaoId = null; draw(); };
   window.cancelarNovoBotao = ()=>{ novoBotaoState = null; draw(); };
+  window.editarBotao       = (id)=>{ editandoBotaoId = id; novoBotaoState = null; draw(); };
+  window.cancelarEdicaoBotao = ()=>{ editandoBotaoId = null; draw(); };
+  window.salvarEdicaoBotao = async (id)=>{
+    const nome    = document.getElementById('ebNome').value.trim();
+    const tipo    = document.getElementById('ebTipo').value;
+    const link    = document.getElementById('ebLink').value.trim();
+    const icone   = document.getElementById('ebIcone').value.trim();
+    const novaAba = document.getElementById('ebNovaAba').checked;
+    if(!nome){ alert('Preencha o nome do botão.'); return; }
+    if(!link){ alert('Preencha o link do botão.'); return; }
+    const { error } = await supabaseClient.from('botoes_empresa').update({
+      nome, tipo, link, icone: icone || ICONE_POR_TIPO[tipo] || '🔗', abrir_nova_aba: novaAba
+    }).eq('id', id);
+    if(error){ console.error('Erro ao editar botão:', error); alert('Erro ao salvar.'); return; }
+    const b = emp.botoes.find(x=>x.id===id);
+    Object.assign(b, { nome, tipo, link, icone: icone || ICONE_POR_TIPO[tipo] || '🔗', abrirNovaAba: novaAba });
+    editandoBotaoId = null;
+    draw();
+  };
 
   window.salvarNovoBotao = async ()=>{
     const nome    = document.getElementById('bNome').value.trim();
@@ -1176,15 +1264,6 @@ function renderGestao(emp){
     const { error } = await supabaseClient.from('botoes_empresa').delete().eq('id', id);
     if(error){ console.error('Erro ao remover botão:', error); return; }
     emp.botoes = emp.botoes.filter(b=>b.id!==id);
-    draw();
-  };
-
-  window.toggleBotao = async (id)=>{
-    const b = emp.botoes.find(x=>x.id===id);
-    const novoAtivo = !b.ativo;
-    const { error } = await supabaseClient.from('botoes_empresa').update({ ativo: novoAtivo }).eq('id', id);
-    if(error){ console.error('Erro ao atualizar botão:', error); return; }
-    b.ativo = novoAtivo;
     draw();
   };
 
@@ -1236,17 +1315,17 @@ function sessionStorage_getMaster(){ return masterAuthed; }
 function renderMasterLogin(){
   applyAccent('#1a1a1a');
   render(`
-    <div class="topbar top-plum"><div class="brand" style="text-align:center;width:100%;">Agenda+</div></div>
+    <div class="topbar" style="background:#1a1a1a;color:#fff;"><div class="brand" style="text-align:center;width:100%;">Agenda+</div></div>
     <div class="container">
       <div class="card">
-        <div class="eyebrow">Painel master</div>
+        <div class="eyebrow" style="color:#1a1a1a;">Painel master</div>
         <h2 class="display">Entrar</h2>
         <div class="field">
           <label>Senha</label>
           <input type="password" id="masterPass" placeholder="Senha master" onkeyup="checkCapsLock(event,'cL2')"/>
           <div id="cL2" style="display:none;align-items:center;gap:5px;color:var(--danger);font-size:12px;margin-top:6px;"><strong>!</strong> Caps Lock ativado</div>
         </div>
-        <button class="btn" style="width:100%;" onclick="tentarLoginMaster()">Entrar</button>
+        <button class="btn" style="width:100%;background:#1a1a1a;" onclick="tentarLoginMaster()">Entrar</button>
       </div>
     </div>
   `);
@@ -1281,13 +1360,9 @@ function renderMasterPanel(){
         <div class="field"><label>Link público (quando publicado)</label>
           <input readonly value="${escapeAttr(location.origin+location.pathname+'?empresa='+editing.slug)}" onclick="this.select()"/>
         </div>
-        <div class="row">
-          <button class="btn ghost" onclick="goto({empresa:'${editing.slug}'})">Ver página inicial</button>
-          <button class="btn ghost" onclick="goto({empresa:'${editing.slug}', page:'agendar'})">Ver agendamento</button>
-        </div>
-        <div class="row" style="margin-top:12px;">
-          <button class="btn ghost" onclick="editingSlug=null; drawMaster();">Fechar</button>
-          <button class="btn ${editing.bloqueada?'':'danger'}" onclick="masterToggleBloqueio()">${editing.bloqueada?'Desbloquear':'Bloquear'}</button>
+        <div class="row" style="margin-top:8px;">
+          <button class="btn ghost" onclick="editingSlug=null; drawMaster();">Salvar</button>
+          <button class="btn ghost" onclick="masterToggleBloqueio()">${editing.bloqueada?'Desbloquear':'Bloquear'}</button>
         </div>
         <button class="btn danger" style="width:100%;margin-top:12px;" onclick="masterExcluir('${editing.slug}')">Excluir empresa</button>
       </div>
@@ -1302,23 +1377,30 @@ function renderMasterPanel(){
     `;
     const lista = empresas.map(e=>{
       const link = location.origin + location.pathname + "?empresa=" + e.slug;      return `
-      <div class="list-item">
-        <div style="flex:1;">
-          <strong>${escapeHtml(e.nome)}</strong>
-          <span class="chip ${e.bloqueada?'blocked':'ok'}" style="margin-left:8px;">${e.bloqueada?'Bloqueada':'Ativa'}</span>
-          <div class="muted" style="font-size:12px;margin-top:6px;">Link (quando publicado): <input readonly value="${escapeAttr(link)}" style="font-size:12px;padding:6px 8px;" onclick="this.select()"/></div>
+      <div class="list-item" style="align-items:flex-start;gap:12px;">
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px;">
+            <strong>${escapeHtml(e.nome)}</strong>
+            <span class="chip ${e.bloqueada?'blocked':'ok'}">${e.bloqueada?'Bloqueada':'Ativa'}</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <input readonly value="${escapeAttr(link)}" style="font-size:12px;padding:6px 8px;flex:1;min-width:0;" onclick="this.select()"/>
+          </div>
           <div class="row" style="margin-top:10px;flex-wrap:wrap;">
             <button class="btn ghost" style="flex:0 0 auto;" onclick="goto({empresa:'${e.slug}'})">Ver página inicial</button>
             <button class="btn ghost" style="flex:0 0 auto;" onclick="goto({empresa:'${e.slug}', page:'agendar'})">Ver agendamento</button>
             <button class="btn ghost" style="flex:0 0 auto;" onclick="goto({empresa:'${e.slug}', page:'gestao'})">Ver gestão</button>
           </div>
         </div>
-        <button class="btn ghost" style="margin-left:12px;" onclick="editingSlug='${e.slug}'; drawMaster();">Editar</button>
+        <div style="display:flex;flex-direction:column;gap:8px;flex-shrink:0;">
+          <button class="btn ghost" style="padding:6px 14px;font-size:12px;white-space:nowrap;" onclick="navigator.clipboard.writeText('${escapeAttr(link)}').then(()=>alert('Link copiado!'))">Copiar link</button>
+          <button class="btn ghost" style="padding:6px 14px;font-size:12px;" onclick="editingSlug='${e.slug}'; drawMaster();">Editar</button>
+        </div>
       </div>
     `;}).join("") || `<p class="muted">Nenhuma empresa cadastrada ainda.</p>`;
 
     render(`
-      <div class="topbar top-plum"><div class="brand">Agenda+ · Master</div><button class="icon-btn" style="color:#e9dcc7;" onclick="masterAuthed=false; renderMaster();">Sair</button></div>
+      <div class="topbar" style="background:#1a1a1a;color:#fff;"><div class="brand">Agenda+ · Master</div><button class="icon-btn" style="color:#fff;" onclick="masterAuthed=false; renderMaster();">Sair</button></div>
       <div class="container wide">
         ${form}
         <div class="card">
@@ -1431,8 +1513,9 @@ async function confirmarCrop(){
     if(emp && emp.id){
       await supabaseClient.from('empresas').update({ [col]: url }).eq('id', emp.id);
     }
+    const cb = _cropCallback;
     fecharCrop();
-    if(_cropCallback) _cropCallback(url);
+    if(cb) cb(url);
   }, 'image/jpeg', 0.92);
 }
 
