@@ -865,10 +865,10 @@ function renderConfirmacao(emp){
 
 // ---------- GESTÃO (LOGIN) ----------
 function renderGestaoLogin(emp){
-  applyAccent('#1a1a1a');
+  applyAccent('#1c1917');
   render(`
     ${barraVoltarMaster()}
-    <div class="topbar" style="background:#1a1a1a;color:#fff;display:grid;grid-template-columns:44px 1fr 44px;align-items:center;">
+    <div class="topbar" style="background:#1c1917;color:#fff;display:grid;grid-template-columns:44px 1fr 44px;align-items:center;">
       <button class="icon-btn" style="color:#fff;font-size:22px;line-height:1;" onclick="goto({empresa:'${emp.slug}'})">←</button>
       <div class="brand" style="text-align:center;font-size:17px;">${escapeHtml(emp.nome)}</div>
       <div></div>
@@ -888,7 +888,7 @@ function renderGestaoLogin(emp){
             onkeyup="checkCapsLock(event,'cL1'); if(event.key==='Enter') tentarLoginGestao('${emp.slug}')"/>
           <div id="cL1" style="display:none;align-items:center;gap:5px;color:var(--danger);font-size:12px;margin-top:6px;"><strong>!</strong> Caps Lock ativado</div>
         </div>
-        <button class="btn" style="width:100%;background:#1a1a1a;" onclick="tentarLoginGestao('${emp.slug}')">Entrar</button>
+        <button class="btn" style="width:100%;background:#1c1917;" onclick="tentarLoginGestao('${emp.slug}')">Entrar</button>
         <div style="text-align:center;margin-top:14px;">
           <button class="icon-btn" onclick="recuperarSenha('${emp.slug}')">Esqueci minha senha</button>
         </div>
@@ -942,7 +942,7 @@ function renderGestao(empInicial){
   // 'let' porque o polling recria os objetos de empresa a cada 30s
   // e precisamos trocar a referência, senão a tela congela nos dados antigos.
   let emp = empInicial;
-  applyAccent('#1a1a1a');
+  applyAccent('#1c1917');
   dispensarPWA();
   let corner = 'dashboard'; // 'dashboard' | null=agendamentos | 'configurar' | 'personalizar'
   let gestaoNavAberta = false;
@@ -1191,7 +1191,7 @@ function renderGestao(empInicial){
   const GESTAO_CSS = `<style>
     .g-layout { display:flex; min-height:calc(100vh - 56px); position:relative; }
     .g-sidebar {
-      background:#111; color:#fff; display:flex; flex-direction:column;
+      background:#1c1917; color:#fff; display:flex; flex-direction:column;
       overflow:hidden; flex-shrink:0; z-index:200;
     }
     .g-sidebar-toggle {
@@ -1224,7 +1224,7 @@ function renderGestao(empInicial){
     /* ── Desktop ── */
     @media(min-width:768px){
       .g-sidebar {
-        width:200px; min-width:200px; padding:16px 0;
+        width:168px; min-width:168px; padding:16px 0;
         position:sticky; top:56px; height:calc(100vh - 56px); overflow-y:auto;
       }
       .g-nav-item { padding:12px 20px; }
@@ -1238,18 +1238,18 @@ function renderGestao(empInicial){
     @media(max-width:767px){
       .g-sidebar {
         position:fixed; left:0; top:56px; bottom:0;
-        width:52px; padding:4px 0;
+        width:44px; padding:4px 0;
         transition:width .22s ease;
         box-shadow:2px 0 8px rgba(0,0,0,0.3);
       }
-      .g-sidebar.open { width:200px; box-shadow:4px 0 24px rgba(0,0,0,0.5); }
+      .g-sidebar.open { width:168px; box-shadow:4px 0 24px rgba(0,0,0,0.5); }
       .g-sidebar-toggle { padding:13px 0; font-size:20px; }
       .g-nav-item { padding:13px; justify-content:center; }
       .g-sidebar.open .g-nav-item { padding:13px 16px; justify-content:flex-start; }
       .g-nav-ico { width:22px; height:22px; }
       .g-nav-label { display:none; }
       .g-sidebar.open .g-nav-label { display:block; }
-      .g-content { margin-left:52px; }
+      .g-content { margin-left:44px; }
     }
   </style>`;
 
@@ -1304,9 +1304,9 @@ function renderGestao(empInicial){
 
     render(`
       ${GESTAO_CSS}
-      <div style="position:sticky;top:0;z-index:300;background:#1a1a1a;">
+      <div style="position:sticky;top:0;z-index:300;background:#1c1917;">
         ${barraVoltarMaster()}
-        <div class="topbar" style="background:#1a1a1a;color:#fff;">
+        <div class="topbar" style="background:#1c1917;color:#fff;">
           <div class="brand">${escapeHtml(emp.nome)} · Gestão</div>
           <button class="icon-btn" style="color:#fff;" onclick="${exitAction}">${exitLabel}</button>
         </div>
@@ -1594,10 +1594,10 @@ function renderMaster(){
 }
 
 function renderMasterLogin(){
-  applyAccent('#1a1a1a');
+  applyAccent('#1c1917');
   mostrarBannerPWA();
   render(`
-    <div class="topbar" style="background:#1a1a1a;color:#fff;"><div class="brand" style="text-align:center;width:100%;">Agenda+</div></div>
+    <div class="topbar" style="background:#1c1917;color:#fff;"><div class="brand" style="text-align:center;width:100%;">Agenda+</div></div>
     <div class="container">
       <div class="card">
         <div class="eyebrow" style="color:#1a1a1a;">Painel master</div>
@@ -1613,7 +1613,7 @@ function renderMasterLogin(){
             onkeyup="checkCapsLock(event,'cL2'); if(event.key==='Enter') tentarLoginMaster()"/>
           <div id="cL2" style="display:none;align-items:center;gap:5px;color:var(--danger);font-size:12px;margin-top:6px;"><strong>!</strong> Caps Lock ativado</div>
         </div>
-        <button class="btn" style="width:100%;background:#1a1a1a;" onclick="tentarLoginMaster()">Entrar</button>
+        <button class="btn" style="width:100%;background:#1c1917;" onclick="tentarLoginMaster()">Entrar</button>
         <div style="text-align:center;margin-top:14px;">
           <button class="icon-btn" onclick="recuperarSenha(null)">Esqueci minha senha</button>
         </div>
@@ -1643,9 +1643,9 @@ window.tentarLoginMaster = async ()=>{
 
 // ---------- TELA: REDEFINIR SENHA ----------
 function renderRedefinirSenha(){
-  applyAccent('#1a1a1a');
+  applyAccent('#1c1917');
   render(`
-    <div class="topbar" style="background:#1a1a1a;color:#fff;"><div class="brand" style="text-align:center;width:100%;">Agenda+</div></div>
+    <div class="topbar" style="background:#1c1917;color:#fff;"><div class="brand" style="text-align:center;width:100%;">Agenda+</div></div>
     <div class="container">
       <div class="card">
         <div class="eyebrow" style="color:#1a1a1a;">Redefinição de senha</div>
@@ -1660,7 +1660,7 @@ function renderRedefinirSenha(){
           <input type="password" id="confirmarSenhaReset" placeholder="Repita a senha"
             onkeyup="if(event.key==='Enter') confirmarRedefinicaoSenha()"/>
         </div>
-        <button class="btn" style="width:100%;background:#1a1a1a;" onclick="confirmarRedefinicaoSenha()">Salvar nova senha</button>
+        <button class="btn" style="width:100%;background:#1c1917;" onclick="confirmarRedefinicaoSenha()">Salvar nova senha</button>
       </div>
     </div>
   `);
@@ -1716,14 +1716,14 @@ function finStatusInfo(reg){
 }
 
 function renderMasterPanel(){
-  applyAccent('#1a1a1a');
+  applyAccent('#1c1917');
   mostrarBannerPWA();
 
   const SIDEBAR_CSS = `
     <style>
       .master-layout { display:flex; min-height:calc(100vh - 56px); }
       .master-sidebar {
-        width:200px; min-width:200px; background:#111; color:#fff;
+        width:168px; min-width:168px; background:#1c1917; color:#fff;
         display:flex; flex-direction:column; padding:16px 0;
         position:sticky; top:56px; height:calc(100vh - 56px);
       }
@@ -1745,7 +1745,7 @@ function renderMasterPanel(){
       @media(max-width:600px){
         .master-sidebar { display:none; }
         .master-mobile-tabs {
-          display:flex; background:#111; overflow-x:auto;
+          display:flex; background:#1c1917; overflow-x:auto;
         }
         .master-mobile-tab {
           flex:1; min-width:80px; padding:12px 8px; text-align:center; color:rgba(255,255,255,0.6);
@@ -1761,7 +1761,7 @@ function renderMasterPanel(){
   function drawMasterShell(conteudo){
     render(`
       ${SIDEBAR_CSS}
-      <div class="topbar" style="background:#1a1a1a;color:#fff;">
+      <div class="topbar" style="background:#1c1917;color:#fff;">
         <div class="brand">Agenda+ · Master</div>
       </div>
       <div class="master-mobile-tabs">
@@ -2008,7 +2008,7 @@ function renderMasterPanel(){
     const tabBtns = ['todos','pagos','vencidos','a-vencer'].map(f => `
       <button onclick="window._filtroFin='${f}'; drawMaster();"
         style="padding:6px 14px;border-radius:20px;border:1.5px solid var(--line);font-size:13px;cursor:pointer;
-        background:${filtroFin===f?'#1a1a1a':'var(--paper)'};color:${filtroFin===f?'#fff':'var(--ink)'};">
+        background:${filtroFin===f?'#1c1917':'var(--paper)'};color:${filtroFin===f?'#fff':'var(--ink)'};">
         ${{todos:'Todos',pagos:'Pagos',vencidos:'Vencidos','a-vencer':'A vencer'}[f]}
       </button>
     `).join('');
