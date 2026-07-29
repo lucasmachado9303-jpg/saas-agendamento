@@ -309,7 +309,7 @@ async function loadData(){
         : Promise.resolve({ data: null })
     ];
 
-    let [rServicos, rHorarios, rBloqueios, rBotoes, rAg, rProfiles];
+    let rServicos, rHorarios, rBloqueios, rBotoes, rAg, rProfiles;
     try{
       [rServicos, rHorarios, rBloqueios, rBotoes, rAg, rProfiles] = await Promise.all(queries);
     }catch(e){
