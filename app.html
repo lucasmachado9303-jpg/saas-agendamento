@@ -505,6 +505,12 @@ async function init(){
   const params = new URLSearchParams(location.search);
   if(params.get('empresa')) currentRoute.empresa = params.get('empresa');
   else if(params.get('master')) currentRoute.master = 1;
+  else {
+    // URL limpa: /slug → Vercel reescreve para /app.html?empresa=slug,
+    // mas o browser ainda vê /slug no pathname.
+    const slug = location.pathname.replace(/^\/+|\/+$/g, '');
+    if(slug && slug !== 'app.html') currentRoute.empresa = slug;
+  }
   route();
 }
 
@@ -1362,7 +1368,7 @@ function renderGestao(empInicial){
   };
 
   window.compartilharLink = async ()=>{
-    const url = location.origin + '/app.html?empresa=' + emp.slug;
+    const url = location.origin + '/' + emp.slug;
     if(navigator.share){
       try{ await navigator.share({ title: emp.nome, url }); } catch(e){}
     } else {
@@ -1486,7 +1492,7 @@ function renderMasterPanel(){
         <div class="field"><label>WhatsApp</label><input value="${escapeAttr(editing.whatsapp)}" onchange="masterUpd('whatsapp',this.value)"/></div>
         <div class="field">
           <label>Link público</label>
-          <input readonly value="${escapeAttr(location.origin+'/app.html?empresa='+editing.slug)}" onclick="this.select()"/>
+          <input readonly value="${escapeAttr(location.origin+'/'+editing.slug)}" onclick="this.select()"/>
         </div>
         <div class="field">
           <label>E-mail do gestor</label>
@@ -1518,7 +1524,7 @@ function renderMasterPanel(){
       : empresas;
 
     const lista = listaFiltrada.length ? `<div style="display:flex;flex-direction:column;gap:10px;">${listaFiltrada.map(e=>{
-      const link = location.origin + '/app.html?empresa=' + e.slug;
+      const link = location.origin + '/' + e.slug;
       return `
       <div style="background:var(--paper);border:1.5px solid var(--line);border-radius:12px;padding:16px;">
         <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:12px;">
