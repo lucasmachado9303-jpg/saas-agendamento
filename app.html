@@ -1318,6 +1318,8 @@ window.tentarLoginMaster = ()=>{
 };
 
 let editingSlug = null;
+let masterShowForm = false;
+let masterSearch = '';
 function renderMasterPanel(){
   applyAccent('#1a1a1a');
   mostrarBannerPWA();
@@ -1348,30 +1350,40 @@ function renderMasterPanel(){
         </div>
         <button class="btn danger" style="width:100%;margin-top:12px;" onclick="masterExcluir('${editing.slug}')">Excluir empresa</button>
       </div>
-    ` : `
+    ` : masterShowForm ? `
       <div class="card" style="margin-bottom:24px;">
-        <h3 class="display">Nova empresa</h3>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+          <h3 class="display" style="margin:0;">Nova empresa</h3>
+          <button class="icon-btn" style="font-size:22px;color:var(--ink-soft);" onclick="masterShowForm=false; drawMaster();">×</button>
+        </div>
         <div class="field"><label>Nome</label><input id="novoNome" placeholder="Ex: Studio Bella"/></div>
         <div class="field"><label>WhatsApp (com DDD)</label><input id="novoWhats" placeholder="11912345678"/></div>
         <div class="field"><label>Senha de gestão da empresa</label><input id="novaSenha" placeholder="Ex: minha123"/></div>
-        <button class="btn" onclick="masterCriar()">Criar empresa</button>
+        <button class="btn" style="width:100%;" onclick="masterCriar()">Criar empresa</button>
       </div>
-    `;
-    const lista = empresas.map(e=>{
+    ` : '';
+
+    const listaFiltrada = masterSearch
+      ? empresas.filter(e => e.nome.toLowerCase().includes(masterSearch.toLowerCase()))
+      : empresas;
+
+    const lista = listaFiltrada.map(e=>{
       const link = location.origin + '/app.html?empresa=' + e.slug;      return `
-      <div class="list-item" style="align-items:center;gap:16px;padding:20px 0;">
-        <div style="flex:1;min-width:0;">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-            <strong style="font-size:16px;">${escapeHtml(e.nome)}</strong>
-            <span class="chip ${e.bloqueada?'blocked':'ok'}">${e.bloqueada?'Bloqueada':'Ativa'}</span>
+      <div class="list-item" style="flex-direction:column;align-items:stretch;gap:12px;padding:20px 0;">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+          <div>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+              <strong style="font-size:16px;">${escapeHtml(e.nome)}</strong>
+              <span class="chip ${e.bloqueada?'blocked':'ok'}">${e.bloqueada?'Bloqueada':'Ativa'}</span>
+            </div>
+            <div style="font-size:12px;color:var(--ink-soft);word-break:break-all;">${escapeHtml(link)}</div>
           </div>
-          <div style="font-size:12px;color:var(--ink-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:320px;">${escapeHtml(link)}</div>
         </div>
-        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end;">
-          <button class="btn ghost" style="padding:8px 16px;font-size:13px;min-height:40px;" onclick="goto({empresa:'${e.slug}'})">Visualizar</button>
-          <button class="btn ghost" style="padding:8px 16px;font-size:13px;min-height:40px;" onclick="goto({empresa:'${e.slug}', page:'gestao'})">Ver gestão</button>
-          <button class="btn ghost" style="padding:8px 16px;font-size:13px;min-height:40px;" onclick="navigator.clipboard.writeText('${escapeAttr(link)}').then(()=>alert('Link copiado!'))">Copiar link</button>
-          <button class="btn" style="padding:8px 16px;font-size:13px;min-height:40px;" onclick="editingSlug='${e.slug}'; drawMaster();">Editar</button>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <button class="btn ghost" style="padding:0 12px;font-size:13px;height:40px;" onclick="goto({empresa:'${e.slug}'})">Visualizar</button>
+          <button class="btn ghost" style="padding:0 12px;font-size:13px;height:40px;" onclick="goto({empresa:'${e.slug}', page:'gestao'})">Ver gestão</button>
+          <button class="btn ghost" style="padding:0 12px;font-size:13px;height:40px;" onclick="navigator.clipboard.writeText('${escapeAttr(link)}').then(()=>alert('Link copiado!'))">Copiar link</button>
+          <button class="btn ghost" style="padding:0 12px;font-size:13px;height:40px;" onclick="editingSlug='${e.slug}'; drawMaster();">Editar</button>
         </div>
       </div>
     `;}).join("") || `<p class="muted">Nenhuma empresa cadastrada ainda.</p>`;
@@ -1381,8 +1393,19 @@ function renderMasterPanel(){
       <div class="container wide">
         ${form}
         <div class="card">
-          <h3 class="display">Empresas cadastradas</h3>
-          ${lista}
+          ${!editing ? `
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:24px;flex-wrap:wrap;">
+              <div>
+                <h3 class="display" style="margin:0;">Empresas cadastradas</h3>
+                <div style="font-size:13px;color:var(--ink-soft);margin-top:2px;">${empresas.length} ${empresas.length === 1 ? 'empresa' : 'empresas'}</div>
+              </div>
+              ${!masterShowForm ? `<button class="btn" style="white-space:nowrap;" onclick="masterShowForm=true; drawMaster();">+ Cadastrar nova empresa</button>` : ''}
+            </div>
+            <div class="field" style="margin-bottom:20px;">
+              <input placeholder="Buscar empresa..." value="${escapeAttr(masterSearch)}" oninput="masterSearch=this.value; drawMaster()" style="background:#f5f5f5;border-color:#e0e0e0;"/>
+            </div>
+            ${listaFiltrada.length === 0 ? `<p class="muted">${masterSearch ? 'Nenhuma empresa encontrada.' : 'Nenhuma empresa cadastrada ainda.'}</p>` : lista}
+          ` : lista}
         </div>
       </div>
     `);
@@ -1401,6 +1424,7 @@ function renderMasterPanel(){
     nova.whatsapp = document.getElementById('novoWhats').value.trim();
     nova.senhaGestao = senha;
     empresas.push(nova);
+    masterShowForm = false;
     await saveEmpresas();
     goto({empresa: s2});
   };
