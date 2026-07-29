@@ -877,7 +877,10 @@ async function tentarLoginGestao(slug){
 window.recuperarSenha = async (slug)=>{
   const email = prompt("Digite seu e-mail para receber o link de redefinição de senha:");
   if(!email) return;
-  const redirectTo = window.location.origin + '/app.html' + (slug ? `?empresa=${slug}&page=gestao` : '?master=1');
+  const base = location.hostname === 'localhost' || location.hostname === '127.0.0.1'
+    ? location.origin
+    : 'https://saas-agendamento-seven.vercel.app';
+  const redirectTo = base + '/app.html';
   const { error } = await supabaseClient.auth.resetPasswordForEmail(email, { redirectTo });
   if(error){ alert("Erro: " + error.message); return; }
   alert("Se o e-mail estiver cadastrado, você receberá um link para redefinir a senha.");
