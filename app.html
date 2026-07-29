@@ -352,6 +352,17 @@ async function loadData(){
         };
       });
     }catch(e){ console.error('Erro ao carregar agendamentos:', e); agendamentos = []; }
+
+    // Carrega e-mail dos gestores (apenas para master)
+    if(currentProfile?.role === 'master'){
+      try{
+        const { data } = await supabaseClient.from('profiles').select('empresa_id, email, status').eq('role','owner_empresa');
+        (data || []).forEach(p => {
+          const emp = empresas.find(e => e.id === p.empresa_id);
+          if(emp){ emp.gestorEmail = p.email; emp.gestorStatus = p.status; }
+        });
+      }catch(e){ console.error('Erro ao carregar perfis:', e); }
+    }
   } else {
     agendamentos = [];
   }
@@ -1453,23 +1464,17 @@ function renderMasterPanel(){
       <div class="card" style="margin-bottom:24px;">
         <h3 class="display">Editar empresa</h3>
         <div class="field"><label>Nome</label><input value="${escapeAttr(editing.nome)}" onchange="masterUpd('nome',this.value)"/></div>
-        <div class="field">
-          <label>Logo</label>
-          ${editing.logo ? `<img src="${escapeAttr(editing.logo)}" style="width:72px;height:72px;object-fit:cover;border-radius:50%;display:block;margin-bottom:8px;border:2px solid var(--line);"/>` : `<div style="width:72px;height:72px;border-radius:50%;background:#f0f0f0;display:flex;align-items:center;justify-content:center;margin-bottom:8px;color:#999999;font-size:12px;text-align:center;">Sem logo</div>`}
-          <button class="btn ghost" style="width:100%;" onclick="masterSelecionarImagem('logo','${editing.slug}')">Enviar logo</button>
-        </div>
-        <div class="field">
-          <label>Imagem de fundo</label>
-          ${editing.fotoUrl ? `<img src="${escapeAttr(editing.fotoUrl)}" style="width:100%;height:90px;object-fit:cover;border-radius:10px;display:block;margin-bottom:8px;border:1.5px solid var(--line);"/>` : `<div style="width:100%;height:90px;border-radius:10px;background:#f0f0f0;display:flex;align-items:center;justify-content:center;margin-bottom:8px;color:#999999;font-size:13px;">Sem imagem de fundo</div>`}
-          <button class="btn ghost" style="width:100%;" onclick="masterSelecionarImagem('background','${editing.slug}')">Enviar imagem de fundo</button>
-        </div>
         <div class="field"><label>WhatsApp</label><input value="${escapeAttr(editing.whatsapp)}" onchange="masterUpd('whatsapp',this.value)"/></div>
         <div class="field">
           <label>Link público</label>
           <input readonly value="${escapeAttr(location.origin+'/app.html?empresa='+editing.slug)}" onclick="this.select()"/>
         </div>
+        <div class="field">
+          <label>E-mail do gestor</label>
+          <input readonly value="${escapeAttr(editing.gestorEmail||'Não cadastrado')}" style="background:#f5f5f5;color:var(--ink-soft);" onclick="this.select()"/>
+        </div>
         <div class="row" style="margin-top:8px;">
-          <button class="btn ghost" onclick="editingSlug=null; drawMaster();">Fechar</button>
+          <button class="btn" onclick="editingSlug=null; drawMaster();">Salvar</button>
           <button class="btn ghost" onclick="masterToggleBloqueio()">${editing.bloqueada?'Desbloquear':'Bloquear'}</button>
         </div>
         <button class="btn ghost" style="width:100%;margin-top:10px;" onclick="masterRedefinirSenha()">Redefinir senha do gestor</button>
