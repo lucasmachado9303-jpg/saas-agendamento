@@ -215,12 +215,9 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
 
 <script>
-const STORE_KEY  = "empresas";
-const BOOK_KEY   = "agendamentos";
-const DIAS = ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
-
-let currentUser    = null;
-let currentProfile = null;
+let currentUser      = null;
+let currentProfile   = null;
+let modoRecuperacao  = false;   // true quando o usuário chega pelo link de redefinir senha
 
 // Ícones padrão por tipo de botão
 const ICONE_POR_TIPO = {
@@ -335,22 +332,34 @@ async function loadData(){
       empresas.forEach(e => e.botoes.sort((a, b) => a.ordem - b.ordem));
     }catch(e){ console.error('Erro ao carregar botões:', e); }
 
+    // Visitante comum lê apenas a view "horarios_ocupados" (sem nome/telefone).
+    // Só master e dono da empresa carregam os dados completos do cliente.
+    const podeVerDadosPessoais = currentProfile?.role === 'master'
+                              || currentProfile?.role === 'owner_empresa';
     try{
-      const { data } = await supabaseClient.from('agendamentos').select('*').in('empresa_id', ids);
-      agendamentos = (data || []).map(a => {
-        const emp = empresas.find(e => e.id === a.empresa_id);
-        return {
-          id:          a.id,
-          slug:        emp ? emp.slug : '',
-          servicoId:   a.servico_id,
-          servicoNome: a.servico_nome,
-          data:        a.data,
-          hora:        a.hora,
-          nome:        a.nome_cliente,
-          telefone:    a.telefone,
-          criadoEm:    a.criado_em
-        };
-      });
+      if(podeVerDadosPessoais){
+        const { data } = await supabaseClient.from('agendamentos').select('*').in('empresa_id', ids);
+        agendamentos = (data || []).map(a => {
+          const emp = empresas.find(e => e.id === a.empresa_id);
+          return {
+            id:          a.id,
+            slug:        emp ? emp.slug : '',
+            servicoId:   a.servico_id,
+            servicoNome: a.servico_nome,
+            data:        a.data,
+            hora:        a.hora,
+            nome:        a.nome_cliente,
+            telefone:    a.telefone,
+            criadoEm:    a.criado_em
+          };
+        });
+      } else {
+        const { data } = await supabaseClient.from('horarios_ocupados').select('*').in('empresa_id', ids);
+        agendamentos = (data || []).map(a => {
+          const emp = empresas.find(e => e.id === a.empresa_id);
+          return { slug: emp ? emp.slug : '', data: a.data, hora: a.hora };
+        });
+      }
     }catch(e){ console.error('Erro ao carregar agendamentos:', e); agendamentos = []; }
 
     // Carrega e-mail dos gestores (apenas para master)
@@ -405,14 +414,9 @@ async function saveEmpresas(){
     if(error) console.error('Erro ao atualizar empresa:', error);
   }
 }
-async function saveAgendamentos(){
-  // Agendamentos salvos diretamente no Supabase por operação
-}
-
 function slugify(s){
   return s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/(^-|-$)/g,"");
 }
-function uid(){ return Math.random().toString(36).slice(2,9); }
 
 let currentRoute = { master:null, empresa:null, page:"" };
 
@@ -433,27 +437,19 @@ function defaultEmpresa(){
   };
 }
 
-function mesKey(d){ return d.toISOString().slice(0,7); }
+// IMPORTANTE: usa a data LOCAL, não UTC.
+// toISOString() converteria para UTC e, no Brasil (UTC-3), a partir
+// das 21h o sistema passaria a considerar que já é o dia seguinte.
+function mesKey(d){
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+}
 function horariosDoMes(emp, key){
   const lista = (emp.horariosPorMes && emp.horariosPorMes[key]) || [];
   return [...lista].sort();
 }
-function proximosDiasComHorario(emp, qtd=21){
-  const out = [];
-  const hoje = new Date();
-  for(let i=0;i<120 && out.length<qtd;i++){
-    const d = new Date(hoje);
-    d.setDate(hoje.getDate()+i);
-    if(horariosDoMes(emp, mesKey(d)).length>0){
-      out.push(d);
-    }
-  }
-  return out;
+function isoData(d){
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
-function fmtData(d){
-  return d.toLocaleDateString('pt-BR',{weekday:'short', day:'2-digit', month:'2-digit'});
-}
-function isoData(d){ return d.toISOString().slice(0,10); }
 
 const root = document.getElementById('root');
 function render(html){ root.innerHTML = html; }
@@ -479,6 +475,9 @@ async function init(){
   // Escuta mudanças de auth (inclui PASSWORD_RECOVERY vindo do e-mail)
   supabaseClient.auth.onAuthStateChange(async (event, session) => {
     if (event === 'PASSWORD_RECOVERY') {
+      // Trava a navegação: sem isso, o route() no fim do init()
+      // apagaria a tela de redefinição assim que ela aparecesse.
+      modoRecuperacao = true;
       currentUser = session?.user || null;
       renderRedefinirSenha();
       return;
@@ -501,6 +500,8 @@ async function init(){
   }
 
   await loadData();
+  if(modoRecuperacao) return;   // não sobrepõe a tela de redefinir senha
+
   const params = new URLSearchParams(location.search);
   if(params.get('empresa')) currentRoute.empresa = params.get('empresa');
   else if(params.get('master')) currentRoute.master = 1;
@@ -559,7 +560,7 @@ function renderHome(emp){
 
   const botoesHtml = botoesAtivos.map(b => {
     const target = b.abrirNovaAba ? 'target="_blank" rel="noopener noreferrer"' : '';
-    return `<a href="${escapeAttr(b.link)}" ${target} style="text-decoration:none;display:block;width:100%;max-width:360px;margin:0 auto 10px;">
+    return `<a href="${escapeAttr(linkSeguro(b.link))}" ${target} style="text-decoration:none;display:block;width:100%;max-width:360px;margin:0 auto 10px;">
       <div style="background:#fff;border:1.5px solid var(--line);border-radius:14px;padding:14px 20px;font-size:15px;font-weight:600;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,0.06);color:var(--ink);">
         ${escapeHtml(b.nome)}
       </div>
@@ -754,7 +755,9 @@ async function confirmarAgendamento(slug){
   if(jaOcupado){ alert("Esse horário acabou de ser reservado ou bloqueado. Escolha outro."); renderAgendar(emp); return; }
 
   const servico = emp.servicos.find(s=>s.id===bookingState.servico);
-  const { data: row, error } = await supabaseClient.from('agendamentos').insert({
+  // Sem .select(): o visitante tem permissão de gravar, mas não de ler
+  // a tabela de agendamentos (protege nome e telefone dos outros clientes).
+  const { error } = await supabaseClient.from('agendamentos').insert({
     empresa_id:   emp.id,
     servico_id:   servico ? servico.id : null,
     servico_nome: servico ? servico.nome : '',
@@ -762,14 +765,19 @@ async function confirmarAgendamento(slug){
     hora:         bookingState.hora,
     nome_cliente: bookingState.nome.trim(),
     telefone:     bookingState.telefone.trim()
-  }).select().single();
+  });
   if(error){
     if(error.code === '23505'){ alert("Esse horário acabou de ser reservado. Escolha outro."); renderAgendar(emp); return; }
     alert("Erro ao realizar agendamento. Tente novamente."); return;
   }
   const novo = {
-    id: row.id, slug, servicoId: row.servico_id, servicoNome: row.servico_nome,
-    data: row.data, hora: row.hora, nome: row.nome_cliente, telefone: row.telefone, criadoEm: row.criado_em
+    slug,
+    servicoId:   servico ? servico.id : null,
+    servicoNome: servico ? servico.nome : '',
+    data:        bookingState.data,
+    hora:        bookingState.hora,
+    nome:        bookingState.nome.trim(),
+    telefone:    bookingState.telefone.trim()
   };
   agendamentos.push(novo);
   lastBooking = novo;
@@ -887,13 +895,16 @@ window.recuperarSenha = async (slug)=>{
 };
 
 // ---------- GESTÃO (PAINEL) ----------
-function renderGestao(emp){
+function renderGestao(empInicial){
+  // 'let' porque o polling recria os objetos de empresa a cada 30s
+  // e precisamos trocar a referência, senão a tela congela nos dados antigos.
+  let emp = empInicial;
   applyAccent('#1a1a1a');
   dispensarPWA();
   let corner = null; // null = agendamentos | 'servicos' | 'horarios' | 'personalizar'
   let diaSelecionado = null;
   let editandoId = null;
-  let mesHorario = new Date().toISOString().slice(0,7);
+  let mesHorario = mesKey(new Date());
   let novoBotaoState = null;
   let editandoBotaoId = null;
 
@@ -1118,7 +1129,7 @@ function renderGestao(emp){
         ${barraVoltarMaster()}
         <div class="topbar" style="background:#1a1a1a;color:#fff;"><div class="brand">${escapeHtml(emp.nome)} · Gestão</div>${currentProfile?.role==='master'?`<button class="icon-btn" style="color:#fff;" onclick="goto({empresa:'${emp.slug}'})">← Voltar</button>`:`<button class="icon-btn" style="color:#fff;" onclick="gestaoLogout('${emp.slug}')">Sair</button>`}</div>
         <div class="tabs" style="padding:8px 16px 0;border-bottom:1.5px solid var(--line);margin:0;gap:0;background:var(--paper);">
-          <div class="tab ${!corner?'active':''}\" style="flex:1;text-align:center;padding:10px 6px;font-size:14px;${!corner?'background:#1a1a1a;color:#fff;border-color:#1a1a1a;':''}" onclick="setCorner(null)">Agendamentos</div>
+          <div class="tab ${!corner?'active':''}" style="flex:1;text-align:center;padding:10px 6px;font-size:14px;${!corner?'background:#1a1a1a;color:#fff;border-color:#1a1a1a;':''}" onclick="setCorner(null)">Agendamentos</div>
           <div class="tab ${corner==='configurar'?'active':''}" style="flex:1;text-align:center;padding:10px 6px;font-size:14px;${corner==='configurar'?'background:#1a1a1a;color:#fff;border-color:#1a1a1a;':''}" onclick="setCorner('configurar')">Configurar</div>
           <div class="tab ${corner==='personalizar'?'active':''}" style="flex:1;text-align:center;padding:10px 6px;font-size:14px;${corner==='personalizar'?'background:#1a1a1a;color:#fff;border-color:#1a1a1a;':''}" onclick="setCorner('personalizar')">Personalizar</div>
         </div>
@@ -1361,7 +1372,12 @@ function renderGestao(emp){
   };
 
   draw();
-  iniciarPolling(()=>{ if(corner===null) draw(); });
+  iniciarPolling(()=>{
+    // Reaponta para o objeto novo criado pelo loadData()
+    const atual = empresas.find(e => e.slug === emp.slug);
+    if(atual) emp = atual;
+    if(corner===null) draw();
+  });
 }
 
 // ---------- PAINEL MASTER ----------
@@ -1450,7 +1466,7 @@ window.confirmarRedefinicaoSenha = async ()=>{
   const { error } = await supabaseClient.auth.updateUser({ password: nova });
   if(error){ alert("Erro ao redefinir senha: " + error.message); return; }
   alert("Senha redefinida com sucesso! Você já pode fazer login.");
-  currentUser = null; currentProfile = null;
+  currentUser = null; currentProfile = null; modoRecuperacao = false;
   await supabaseClient.auth.signOut();
   goto({master:1});
 };
@@ -1564,7 +1580,10 @@ function renderMasterPanel(){
 
     const empCriada = empresas.find(e=>e.slug===s2);
     if(!empCriada?.id){
-      alert("Empresa criada mas ID não retornado. Verifique o banco de dados.");
+      // A gravação falhou: remove a empresa que só existia na tela,
+      // senão ela ficaria aparecendo na lista até recarregar a página.
+      empresas = empresas.filter(e=>e.slug!==s2);
+      alert("Não foi possível criar a empresa. Verifique sua conexão e tente novamente.");
       masterShowForm = false; draw(); return;
     }
 
@@ -1597,13 +1616,6 @@ function renderMasterPanel(){
     }
     draw();
   };
-  window.masterSelecionarImagem = (tipo, slug)=>{
-    abrirCrop(tipo, slug, async (url)=>{
-      const e = empresas.find(x=>x.slug===slug);
-      if(tipo==='logo'){ e.logo = url; } else { e.fotoUrl = url; }
-      draw();
-    });
-  };
   window.masterUpd = async (field,val)=>{
     const e = empresas.find(x=>x.slug===editingSlug);
     e[field] = val; await saveEmpresas();
@@ -1621,7 +1633,6 @@ function renderMasterPanel(){
     }
     empresas = empresas.filter(x=>x.slug!==slug);
     agendamentos = agendamentos.filter(a=>a.slug!==slug);
-    await saveAgendamentos();
     await excluirImagensEmpresa(slug);
     editingSlug = null;
     draw();
@@ -1728,6 +1739,13 @@ async function excluirImagensEmpresa(slug){
 
 function escapeHtml(s){ return String(s||"").replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function escapeAttr(s){ return escapeHtml(s); }
+
+// Bloqueia links do tipo "javascript:" salvos nos botões da empresa,
+// que executariam código na página pública.
+function linkSeguro(url){
+  const u = String(url||"").trim();
+  return /^(https?:|tel:|mailto:)/i.test(u) ? u : '#';
+}
 function checkCapsLock(e, id){ const el=document.getElementById(id); if(el) el.style.display=e.getModifierState('CapsLock')?'flex':'none'; }
 function applyAccent(cor){ document.documentElement.style.setProperty('--accent', cor || '#3d1f3a'); }
 

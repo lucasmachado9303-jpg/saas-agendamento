@@ -1,5 +1,5 @@
-const CACHE = 'agendaplus-v1';
-const ASSETS = ['/', '/index.html', '/supabase.js', '/manifest.json', '/icon.svg'];
+const CACHE = 'agendaplus-v2';
+const ASSETS = ['/', '/index.html', '/app.html', '/supabase.js', '/manifest.json', '/icon.svg'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
