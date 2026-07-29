@@ -584,7 +584,7 @@ function renderHome(emp){
         <h1 style="font-family:'Fraunces',serif;font-size:26px;font-weight:600;margin:14px 0 4px;text-align:center;color:var(--ink);">${escapeHtml(emp.nome)}</h1>
 
         ${emp.descricao    ? `<p style="color:var(--ink-soft);font-size:14px;text-align:center;margin:0 0 6px;max-width:300px;line-height:1.5;">${escapeHtml(emp.descricao)}</p>` : ''}
-        ${emp.textoDestaque ? `<p style="color:${cor};font-size:13px;font-weight:700;text-align:center;margin:0 0 4px;letter-spacing:.02em;">${escapeHtml(emp.textoDestaque)}</p>` : ''}
+        ${emp.textoDestaque ? `<p style="color:var(--ink);font-size:13px;font-weight:700;text-align:center;margin:0 0 4px;letter-spacing:.02em;">${escapeHtml(emp.textoDestaque)}</p>` : ''}
 
         <div style="height:24px;"></div>
 
@@ -1492,12 +1492,12 @@ function renderMasterPanel(){
           <label>E-mail do gestor</label>
           <input readonly value="${escapeAttr(editing.gestorEmail||'Não cadastrado')}" style="background:#f5f5f5;color:var(--ink-soft);" onclick="this.select()"/>
         </div>
-        <div class="row" style="margin-top:8px;">
-          <button class="btn" onclick="editingSlug=null; drawMaster();">Salvar</button>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px;">
+          <button class="btn ghost" onclick="editingSlug=null; drawMaster();">Salvar</button>
           <button class="btn ghost" onclick="masterToggleBloqueio()">${editing.bloqueada?'Desbloquear':'Bloquear'}</button>
+          <button class="btn ghost" onclick="masterRedefinirSenha()">Redefinir senha</button>
+          <button class="btn danger" onclick="masterExcluir('${editing.slug}')">Excluir empresa</button>
         </div>
-        <button class="btn ghost" style="width:100%;margin-top:10px;" onclick="masterRedefinirSenha()">Redefinir senha do gestor</button>
-        <button class="btn danger" style="width:100%;margin-top:10px;" onclick="masterExcluir('${editing.slug}')">Excluir empresa</button>
       </div>
     ` : masterShowForm ? `
       <div class="card" style="margin-bottom:24px;">
