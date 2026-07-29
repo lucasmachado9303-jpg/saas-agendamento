@@ -1656,7 +1656,10 @@ window.gestaoLogout = async (slug)=>{
 window.masterRedefinirSenha = async ()=>{
   const email = prompt("Digite o e-mail do gestor para enviar a redefinição de senha:");
   if(!email) return;
-  const { error } = await supabaseClient.auth.resetPasswordForEmail(email);
+  const base = location.hostname === 'localhost' || location.hostname === '127.0.0.1'
+    ? location.origin
+    : 'https://saas-agendamento-seven.vercel.app';
+  const { error } = await supabaseClient.auth.resetPasswordForEmail(email, { redirectTo: base + '/app.html' });
   if(error){ alert("Erro: " + error.message); return; }
   alert("E-mail de redefinição de senha enviado para " + email);
 };
