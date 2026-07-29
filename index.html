@@ -6,6 +6,7 @@
 <title>Agenda+</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css">
 <style>
   :root{
     --ink:#1b1620;
@@ -197,9 +198,22 @@
 <body>
 <div id="root"></div>
 
+<!-- Modal de recorte de imagem (fora do #root para não ser destruído na navegação) -->
+<div id="cropModal" style="position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.88);display:none;flex-direction:column;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:#fff;border-radius:16px;overflow:hidden;max-width:480px;width:100%;display:flex;flex-direction:column;max-height:90vh;">
+    <div style="padding:14px 20px;border-bottom:1px solid #e6e1ea;font-weight:700;font-size:16px;flex-shrink:0;">Ajuste a imagem</div>
+    <div style="background:#111;overflow:hidden;flex:1;min-height:260px;"><img id="cropImg" src="" style="display:block;max-width:100%;"/></div>
+    <div style="padding:14px 16px;display:flex;gap:12px;flex-shrink:0;">
+      <button onclick="cancelarCrop()" style="flex:1;background:transparent;color:#3d1f3a;border:1.5px solid #e6e1ea;padding:12px;border-radius:999px;font-size:15px;font-weight:600;cursor:pointer;">Cancelar</button>
+      <button id="btnConfirmarCrop" onclick="confirmarCrop()" style="flex:1;background:#1a1a1a;color:#fff;border:none;padding:12px;border-radius:999px;font-size:15px;font-weight:600;cursor:pointer;">Confirmar recorte</button>
+    </div>
+  </div>
+</div>
+
 <!-- Supabase SDK -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
 
 <script>
 /*
@@ -470,7 +484,7 @@ function renderHome(emp){
     return;
   }
 
-  const bg  = emp.fotoUrl || 'https://images.unsplash.com/photo-1560066984-138dadb4c035?q=80&w=1600&auto=format&fit=crop';
+  const bg  = emp.fotoUrl || null;
   const cor = emp.corPrincipal || '#3d1f3a';
   const botoesAtivos = (emp.botoes || []).filter(b => b.ativo).sort((a,b) => a.ordem - b.ordem);
 
@@ -492,7 +506,7 @@ function renderHome(emp){
     <div style="min-height:100vh;background:var(--paper);display:flex;flex-direction:column;">
 
       <!-- Imagem de fundo -->
-      <div style="position:relative;height:220px;background-image:url('${escapeAttr(bg)}');background-size:cover;background-position:center;">
+      <div style="position:relative;height:220px;${bg ? `background-image:url('${escapeAttr(bg)}');background-size:cover;background-position:center;` : `background:linear-gradient(135deg,${cor} 0%,#1a0a1a 100%);`}">
         <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(20,10,20,0.1) 0%,rgba(20,10,20,0.55) 100%);"></div>
       </div>
 
@@ -939,8 +953,16 @@ function renderGestao(emp){
       <div class="field"><label>Nome da empresa</label><input id="pNome" value="${escapeAttr(emp.nome)}"/></div>
       <div class="field"><label>Descrição curta</label><textarea id="pDescricao" rows="2" style="resize:vertical;min-height:80px;">${escapeHtml(emp.descricao||'')}</textarea></div>
       <div class="field"><label>Texto de destaque</label><input id="pTextoDestaque" value="${escapeAttr(emp.textoDestaque||'')}" placeholder="Ex: Atendimento premium"/></div>
-      <div class="field"><label>Logo — URL da imagem</label><input id="pLogo" value="${escapeAttr(emp.logo||'')}" placeholder="https://..."/></div>
-      <div class="field"><label>Imagem de fundo — URL</label><input id="pFotoUrl" value="${escapeAttr(emp.fotoUrl||'')}" placeholder="https://..."/></div>
+      <div class="field">
+        <label>Logo</label>
+        ${emp.logo ? `<img src="${escapeAttr(emp.logo)}" style="width:90px;height:90px;object-fit:cover;border-radius:50%;display:block;margin-bottom:10px;border:2px solid var(--line);"/>` : `<div style="width:90px;height:90px;border-radius:50%;background:#f0eaf6;display:flex;align-items:center;justify-content:center;margin-bottom:10px;color:#b0a0b8;font-size:13px;text-align:center;">Sem logo</div>`}
+        <button class="btn ghost" style="width:100%;" onclick="selecionarImagem('logo')">Enviar logo</button>
+      </div>
+      <div class="field">
+        <label>Imagem de fundo</label>
+        ${emp.fotoUrl ? `<img src="${escapeAttr(emp.fotoUrl)}" style="width:100%;height:110px;object-fit:cover;border-radius:10px;display:block;margin-bottom:10px;border:1.5px solid var(--line);"/>` : `<div style="width:100%;height:110px;border-radius:10px;background:#f0eaf6;display:flex;align-items:center;justify-content:center;margin-bottom:10px;color:#b0a0b8;font-size:13px;">Sem imagem de fundo</div>`}
+        <button class="btn ghost" style="width:100%;" onclick="selecionarImagem('background')">Enviar imagem de fundo</button>
+      </div>
       <div class="field">
         <label>Cor principal</label>
         <div style="display:flex;align-items:center;gap:12px;">
@@ -984,6 +1006,13 @@ function renderGestao(emp){
 
   window.setCorner = (c)=>{ corner=c; editandoId=null; draw(); };
   window.selecionarDiaGestao = (iso)=>{ diaSelecionado=iso; editandoId=null; draw(); };
+
+  window.selecionarImagem = (tipo)=>{
+    abrirCrop(tipo, emp.slug, async (url)=>{
+      if(tipo==='logo'){ emp.logo = url; } else { emp.fotoUrl = url; }
+      draw();
+    });
+  };
 
   window.bloquearDiaTodo = async ()=>{
     const horarios = horariosDoMes(emp, diaSelecionado.slice(0,7));
@@ -1102,14 +1131,10 @@ function renderGestao(emp){
     emp.nome               = document.getElementById('pNome').value.trim() || emp.nome;
     emp.descricao          = document.getElementById('pDescricao').value.trim();
     emp.textoDestaque      = document.getElementById('pTextoDestaque').value.trim();
-    emp.logo               = document.getElementById('pLogo').value.trim();
-    emp.fotoUrl            = document.getElementById('pFotoUrl').value.trim();
     emp.corPrincipal       = document.getElementById('pCor').value;
     const { error } = await supabaseClient.from('empresas').update({
       nome:                  emp.nome,
       descricao:             emp.descricao             || null,
-      logo:                  emp.logo                  || null,
-      foto_url:              emp.fotoUrl               || null,
       cor_principal:         emp.corPrincipal,
       texto_destaque:        emp.textoDestaque         || null,
     }).eq('id', emp.id);
@@ -1241,7 +1266,16 @@ function renderMasterPanel(){
       <div class="card" style="margin-bottom:24px;">
         <h3 class="display">Editar empresa</h3>
         <div class="field"><label>Nome</label><input value="${escapeAttr(editing.nome)}" onchange="masterUpd('nome',this.value)"/></div>
-        <div class="field"><label>Foto de fundo (URL)</label><input value="${escapeAttr(editing.fotoUrl)}" onchange="masterUpd('fotoUrl',this.value)"/></div>
+        <div class="field">
+          <label>Logo</label>
+          ${editing.logo ? `<img src="${escapeAttr(editing.logo)}" style="width:72px;height:72px;object-fit:cover;border-radius:50%;display:block;margin-bottom:8px;border:2px solid var(--line);"/>` : `<div style="width:72px;height:72px;border-radius:50%;background:#f0eaf6;display:flex;align-items:center;justify-content:center;margin-bottom:8px;color:#b0a0b8;font-size:12px;text-align:center;">Sem logo</div>`}
+          <button class="btn ghost" style="width:100%;" onclick="masterSelecionarImagem('logo','${editing.slug}')">Enviar logo</button>
+        </div>
+        <div class="field">
+          <label>Imagem de fundo</label>
+          ${editing.fotoUrl ? `<img src="${escapeAttr(editing.fotoUrl)}" style="width:100%;height:90px;object-fit:cover;border-radius:10px;display:block;margin-bottom:8px;border:1.5px solid var(--line);"/>` : `<div style="width:100%;height:90px;border-radius:10px;background:#f0eaf6;display:flex;align-items:center;justify-content:center;margin-bottom:8px;color:#b0a0b8;font-size:13px;">Sem imagem de fundo</div>`}
+          <button class="btn ghost" style="width:100%;" onclick="masterSelecionarImagem('background','${editing.slug}')">Enviar imagem de fundo</button>
+        </div>
         <div class="field"><label>WhatsApp</label><input value="${escapeAttr(editing.whatsapp)}" onchange="masterUpd('whatsapp',this.value)"/></div>
         <div class="field"><label>Senha de gestão da empresa</label><input value="${escapeAttr(editing.senhaGestao)}" onchange="masterUpd('senhaGestao',this.value)"/></div>
         <div class="field"><label>Link público (quando publicado)</label>
@@ -1261,7 +1295,6 @@ function renderMasterPanel(){
       <div class="card" style="margin-bottom:24px;">
         <h3 class="display">Nova empresa</h3>
         <div class="field"><label>Nome</label><input id="novoNome" placeholder="Ex: Studio Bella"/></div>
-        <div class="field"><label>Foto de fundo (URL)</label><input id="novaFoto" placeholder="https://..."/></div>
         <div class="field"><label>WhatsApp (com DDD)</label><input id="novoWhats" placeholder="11912345678"/></div>
         <div class="field"><label>Senha de gestão da empresa</label><input id="novaSenha" placeholder="Ex: minha123"/></div>
         <button class="btn" onclick="masterCriar()">Criar empresa</button>
@@ -1306,12 +1339,18 @@ function renderMasterPanel(){
     while(empresas.some(e=>e.slug===s2)){ s2 = slug+"-"+(++n); }
     const nova = defaultEmpresa();
     nova.slug = s2; nova.nome = nome;
-    nova.fotoUrl = document.getElementById('novaFoto').value.trim();
     nova.whatsapp = document.getElementById('novoWhats').value.trim();
     nova.senhaGestao = senha;
     empresas.push(nova);
     await saveEmpresas();
     goto({empresa: s2});
+  };
+  window.masterSelecionarImagem = (tipo, slug)=>{
+    abrirCrop(tipo, slug, async (url)=>{
+      const e = empresas.find(x=>x.slug===slug);
+      if(tipo==='logo'){ e.logo = url; } else { e.fotoUrl = url; }
+      draw();
+    });
   };
   window.masterUpd = async (field,val)=>{
     const e = empresas.find(x=>x.slug===editingSlug);
@@ -1331,11 +1370,87 @@ function renderMasterPanel(){
     empresas = empresas.filter(x=>x.slug!==slug);
     agendamentos = agendamentos.filter(a=>a.slug!==slug);
     await saveAgendamentos();
+    await excluirImagensEmpresa(slug);
     editingSlug = null;
     draw();
   };
   draw();
 }
+
+// ── UPLOAD DE IMAGENS ────────────────────────────────────────
+let _cropInstance = null;
+let _cropCallback = null;
+let _cropTipo = null;
+let _cropSlug = null;
+
+function validarArquivo(file){
+  const tipos = ['image/jpeg','image/png','image/webp'];
+  if(!tipos.includes(file.type)) return 'Formato inválido. Use JPG, PNG ou WEBP.';
+  if(file.size > 5 * 1024 * 1024) return 'Arquivo muito grande. Máximo 5 MB.';
+  return null;
+}
+
+function abrirCrop(tipo, slug, callback){
+  _cropTipo = tipo; _cropSlug = slug; _cropCallback = callback;
+  const input = document.createElement('input');
+  input.type = 'file'; input.accept = 'image/jpeg,image/png,image/webp';
+  input.onchange = (ev)=>{
+    const file = ev.target.files[0]; if(!file) return;
+    const err = validarArquivo(file); if(err){ alert(err); return; }
+    const reader = new FileReader();
+    reader.onload = (e)=>{
+      const modal = document.getElementById('cropModal');
+      const img   = document.getElementById('cropImg');
+      img.src = e.target.result;
+      modal.style.display = 'flex';
+      if(_cropInstance){ _cropInstance.destroy(); _cropInstance = null; }
+      const ratio = tipo==='logo' ? 1 : 16/9;
+      _cropInstance = new Cropper(img, { aspectRatio: ratio, viewMode: 1, autoCropArea: 0.9, movable: true, zoomable: true, rotatable: false, scalable: false });
+    };
+    reader.readAsDataURL(file);
+  };
+  input.click();
+}
+
+async function confirmarCrop(){
+  if(!_cropInstance) return;
+  const btn = document.getElementById('btnConfirmarCrop');
+  btn.disabled = true; btn.textContent = 'Enviando...';
+  const isLogo = _cropTipo === 'logo';
+  const w = isLogo ? 540 : 1280, h = isLogo ? 540 : 720;
+  const canvas = _cropInstance.getCroppedCanvas({ width: w, height: h, imageSmoothingQuality: 'high' });
+  canvas.toBlob(async (blob)=>{
+    const bucket = isLogo ? 'logos' : 'backgrounds';
+    const path   = `${_cropSlug}/${isLogo ? 'logo' : 'background'}.jpg`;
+    const { error: upErr } = await supabaseClient.storage.from(bucket).upload(path, blob, { contentType: 'image/jpeg', upsert: true });
+    if(upErr){ alert('Erro ao enviar imagem: ' + upErr.message); btn.disabled=false; btn.textContent='Confirmar recorte'; return; }
+    const { data } = supabaseClient.storage.from(bucket).getPublicUrl(path);
+    const url = data.publicUrl + '?t=' + Date.now();
+    const col = isLogo ? 'logo' : 'foto_url';
+    const emp = empresas.find(x=>x.slug===_cropSlug);
+    if(emp && emp.id){
+      await supabaseClient.from('empresas').update({ [col]: url }).eq('id', emp.id);
+    }
+    fecharCrop();
+    if(_cropCallback) _cropCallback(url);
+  }, 'image/jpeg', 0.92);
+}
+
+function cancelarCrop(){ fecharCrop(); }
+
+function fecharCrop(){
+  document.getElementById('cropModal').style.display = 'none';
+  if(_cropInstance){ _cropInstance.destroy(); _cropInstance = null; }
+  const btn = document.getElementById('btnConfirmarCrop');
+  btn.disabled = false; btn.textContent = 'Confirmar recorte';
+  _cropCallback = null; _cropTipo = null; _cropSlug = null;
+}
+
+async function excluirImagensEmpresa(slug){
+  await supabaseClient.storage.from('logos').remove([`${slug}/logo.jpg`]);
+  await supabaseClient.storage.from('backgrounds').remove([`${slug}/background.jpg`]);
+}
+// ─────────────────────────────────────────────────────────────
 
 function escapeHtml(s){ return String(s||"").replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function escapeAttr(s){ return escapeHtml(s); }
