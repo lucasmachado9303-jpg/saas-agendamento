@@ -133,7 +133,7 @@
       padding: 20px 16px calc(80px + env(safe-area-inset-bottom, 0px));
     }
     .container.wide {
-      padding: 20px 16px calc(80px + env(safe-area-inset-bottom, 0px));
+      padding: 24px 16px calc(80px + env(safe-area-inset-bottom, 0px));
       max-width: 100%;
     }
 
@@ -157,7 +157,7 @@
     .hero-content h1 { font-size:clamp(28px,8vw,42px); }
 
     /* Rows empilham no mobile */
-    .row { flex-direction:column; gap:0; }
+    .row { flex-direction:column; gap:10px; }
 
     /* List-item com wrap para ações */
     .list-item { padding:14px 0; align-items:flex-start; flex-wrap:wrap; gap:8px; }
@@ -175,8 +175,8 @@
     /* Eyebrow menor */
     .eyebrow { font-size:11px; }
 
-    /* Field sem margin extra quando dentro de row */
-    .row .field { margin-bottom:18px; }
+    /* Field sem margin extra quando dentro de row — gap cuida do espaço */
+    .row .field { margin-bottom:0; }
 
     /* Botão de dias de agendamento */
     .dias-scroll {
@@ -956,12 +956,10 @@ function renderGestao(empInicial){
             <div style="font-weight:700;font-size:15px;">${h} — ${escapeHtml(ag.nome)}</div>
             <div class="muted" style="font-size:13px;margin-top:2px;">${escapeHtml(ag.servicoNome)}</div>
           </div>
-          <div style="display:flex;gap:6px;flex-wrap:wrap;">
-            <button class="btn ghost" style="padding:6px 12px;font-size:12px;" onclick="editarAgendamento('${ag.id}')">Editar</button>
-            <button class="btn danger" style="padding:6px 12px;font-size:12px;" onclick="cancelarAgendamento('${ag.id}')">Cancelar</button>
-            <a href="${waLink}" target="_blank" rel="noopener noreferrer" style="text-decoration:none;">
-              <button class="btn" style="padding:6px 12px;font-size:12px;background:#25d366;border:none;">WhatsApp</button>
-            </a>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+            <button class="btn ghost" style="font-size:13px;" onclick="editarAgendamento('${ag.id}')">Editar</button>
+            <button class="btn danger" style="font-size:13px;" onclick="cancelarAgendamento('${ag.id}')">Cancelar</button>
+            <button class="btn" style="font-size:13px;background:#25d366;border:none;color:#fff;" onclick="window.open('${waLink}','_blank','noopener,noreferrer')">WhatsApp</button>
           </div>
         </div>`;
       }
@@ -1144,10 +1142,12 @@ function renderGestao(empInicial){
       <div style="position:sticky;top:0;z-index:100;background:var(--paper);">
         ${barraVoltarMaster()}
         <div class="topbar" style="background:#1a1a1a;color:#fff;"><div class="brand">${escapeHtml(emp.nome)} · Gestão</div>${currentProfile?.role==='master'?`<button class="icon-btn" style="color:#fff;" onclick="goto({empresa:'${emp.slug}'})">← Voltar</button>`:`<button class="icon-btn" style="color:#fff;" onclick="gestaoLogout('${emp.slug}')">Sair</button>`}</div>
-        <div class="tabs" style="padding:8px 16px 0;border-bottom:1.5px solid var(--line);margin:0;gap:0;background:var(--paper);">
-          <div class="tab ${!corner?'active':''}" style="flex:1;text-align:center;padding:10px 6px;font-size:14px;${!corner?'background:#1a1a1a;color:#fff;border-color:#1a1a1a;':''}" onclick="setCorner(null)">Agendamentos</div>
-          <div class="tab ${corner==='configurar'?'active':''}" style="flex:1;text-align:center;padding:10px 6px;font-size:14px;${corner==='configurar'?'background:#1a1a1a;color:#fff;border-color:#1a1a1a;':''}" onclick="setCorner('configurar')">Configurar</div>
-          <div class="tab ${corner==='personalizar'?'active':''}" style="flex:1;text-align:center;padding:10px 6px;font-size:14px;${corner==='personalizar'?'background:#1a1a1a;color:#fff;border-color:#1a1a1a;':''}" onclick="setCorner('personalizar')">Personalizar</div>
+        <div style="padding:8px 16px 0;background:var(--paper);">
+          <div class="tabs" style="margin:0;gap:0;border-bottom:1.5px solid var(--line);padding-bottom:0;">
+            <div class="tab ${!corner?'active':''}" style="flex:1;text-align:center;padding:10px 6px;font-size:14px;border-radius:8px 8px 0 0;${!corner?'background:#1a1a1a;color:#fff;border-color:#1a1a1a;border-bottom:none;':''}" onclick="setCorner(null)">Agendamentos</div>
+            <div class="tab ${corner==='configurar'?'active':''}" style="flex:1;text-align:center;padding:10px 6px;font-size:14px;border-radius:8px 8px 0 0;${corner==='configurar'?'background:#1a1a1a;color:#fff;border-color:#1a1a1a;border-bottom:none;':''}" onclick="setCorner('configurar')">Configurar</div>
+            <div class="tab ${corner==='personalizar'?'active':''}" style="flex:1;text-align:center;padding:10px 6px;font-size:14px;border-radius:8px 8px 0 0;${corner==='personalizar'?'background:#1a1a1a;color:#fff;border-color:#1a1a1a;border-bottom:none;':''}" onclick="setCorner('personalizar')">Personalizar</div>
+          </div>
         </div>
       </div>
       <div class="container wide">
