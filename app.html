@@ -944,7 +944,8 @@ function renderGestao(empInicial){
   let emp = empInicial;
   applyAccent('#1a1a1a');
   dispensarPWA();
-  let corner = null; // null = agendamentos | 'servicos' | 'horarios' | 'personalizar'
+  let corner = 'dashboard'; // 'dashboard' | null=agendamentos | 'configurar' | 'personalizar'
+  let gestaoNavAberta = false;
   let diaSelecionado = null;
   let editandoId = null;
   let mesHorario = mesKey(new Date());
@@ -1171,29 +1172,171 @@ function renderGestao(empInicial){
     `;
   }
 
-  function draw(){
-    const body = corner==='configurar'   ? configurarBody()
-               : corner==='personalizar' ? personalizarBody()
-               : agendamentosBody();
-    render(`
-      <div style="position:sticky;top:0;z-index:100;background:var(--paper);">
-        ${barraVoltarMaster()}
-        <div class="topbar" style="background:#1a1a1a;color:#fff;"><div class="brand">${escapeHtml(emp.nome)} · Gestão</div>${currentProfile?.role==='master'?`<button class="icon-btn" style="color:#fff;" onclick="goto({empresa:'${emp.slug}'})">← Voltar</button>`:`<button class="icon-btn" style="color:#fff;" onclick="gestaoLogout('${emp.slug}')">Sair</button>`}</div>
-        <div style="padding:8px 0 0;background:var(--paper);overflow-x:auto;-webkit-overflow-scrolling:touch;">
-          <div class="tabs" style="margin:0;gap:0;border-bottom:1.5px solid var(--line);padding-bottom:0;padding-left:16px;padding-right:16px;flex-wrap:nowrap;min-width:max-content;width:100%;">
-            <div class="tab ${!corner?'active':''}" style="flex:0 0 auto;text-align:center;padding:10px 16px;font-size:14px;border-radius:8px 8px 0 0;white-space:nowrap;${!corner?'background:#1a1a1a;color:#fff;border-color:#1a1a1a;border-bottom:none;':''}" onclick="setCorner(null)">Agendamentos</div>
-            <div class="tab ${corner==='configurar'?'active':''}" style="flex:0 0 auto;text-align:center;padding:10px 16px;font-size:14px;border-radius:8px 8px 0 0;white-space:nowrap;${corner==='configurar'?'background:#1a1a1a;color:#fff;border-color:#1a1a1a;border-bottom:none;':''}" onclick="setCorner('configurar')">Configurar</div>
-            <div class="tab ${corner==='personalizar'?'active':''}" style="flex:0 0 auto;text-align:center;padding:10px 16px;font-size:14px;border-radius:8px 8px 0 0;white-space:nowrap;${corner==='personalizar'?'background:#1a1a1a;color:#fff;border-color:#1a1a1a;border-bottom:none;':''}" onclick="setCorner('personalizar')">Personalizar</div>
-          </div>
+  const G_ICO = {
+    dashboard:    `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:100%;height:100%;"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>`,
+    agendamentos: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:100%;height:100%;"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
+    configurar:   `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:100%;height:100%;"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>`,
+    personalizar: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:100%;height:100%;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`,
+    sair:         `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:100%;height:100%;"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>`,
+    voltar:       `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:100%;height:100%;"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>`,
+  };
+
+  const GESTAO_NAV = [
+    { id: 'dashboard',    label: 'Dashboard',     ico: G_ICO.dashboard },
+    { id: null,           label: 'Agendamentos',  ico: G_ICO.agendamentos },
+    { id: 'configurar',   label: 'Configurar',    ico: G_ICO.configurar },
+    { id: 'personalizar', label: 'Personalizar',  ico: G_ICO.personalizar },
+  ];
+
+  const GESTAO_CSS = `<style>
+    .g-layout { display:flex; min-height:calc(100vh - 56px); }
+    .g-sidebar {
+      width:200px; min-width:200px; background:#111; color:#fff;
+      display:flex; flex-direction:column; padding:16px 0;
+      position:sticky; top:56px; height:calc(100vh - 56px); overflow-y:auto;
+    }
+    .g-nav-item {
+      display:flex; align-items:center; gap:10px; padding:12px 20px;
+      cursor:pointer; font-size:14px; font-weight:500; color:rgba(255,255,255,0.65);
+      border:none; background:none; width:100%; text-align:left; transition:all .15s;
+    }
+    .g-nav-item:hover { color:#fff; background:rgba(255,255,255,0.07); }
+    .g-nav-item.active { color:#fff; background:rgba(255,255,255,0.12); border-left:3px solid #fff; }
+    .g-nav-item.danger { color:#ef9a9a; margin-top:auto; }
+    .g-nav-item.danger:hover { color:#fff; background:rgba(198,40,40,0.3); }
+    .g-nav-ico { width:18px; height:18px; flex-shrink:0; }
+    .g-content { flex:1; min-width:0; }
+    .g-mobile-nav { background:#111; }
+    .g-mobile-bar { display:flex; align-items:stretch; }
+    .g-mobile-icon-btn {
+      flex:1; display:flex; align-items:center; justify-content:center;
+      padding:12px 4px; border:none; background:none;
+      color:rgba(255,255,255,0.45); cursor:pointer; transition:color .15s;
+    }
+    .g-mobile-icon-btn.active { color:#fff; }
+    .g-mobile-icon-btn span { width:22px; height:22px; display:block; }
+    .g-mobile-toggle {
+      width:44px; display:flex; align-items:center; justify-content:center;
+      border:none; background:none; color:rgba(255,255,255,0.45); cursor:pointer;
+      font-size:18px; border-left:1px solid rgba(255,255,255,0.08); flex-shrink:0;
+    }
+    .g-mobile-dropdown { border-top:1px solid rgba(255,255,255,0.08); }
+    .g-mobile-dd-item {
+      display:flex; align-items:center; gap:12px; padding:14px 20px;
+      border:none; background:none; color:rgba(255,255,255,0.7);
+      width:100%; text-align:left; font-size:14px; font-weight:500;
+      cursor:pointer; border-bottom:1px solid rgba(255,255,255,0.05);
+    }
+    .g-mobile-dd-item:hover { color:#fff; background:rgba(255,255,255,0.06); }
+    .g-mobile-dd-item.active { color:#fff; background:rgba(255,255,255,0.10); }
+    .g-mobile-dd-item span { width:18px; height:18px; display:block; flex-shrink:0; }
+    .g-mobile-dd-item.danger { color:#ef9a9a; }
+    .g-dash-cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:14px; }
+    .g-dash-card { background:var(--paper); border:1.5px solid var(--line); border-radius:12px; padding:18px 16px; }
+    .g-dash-val { font-size:32px; font-weight:800; color:var(--ink); line-height:1; }
+    .g-dash-label { font-size:12px; color:var(--ink-soft); margin-top:6px; }
+    @media(min-width:768px){ .g-mobile-nav { display:none; } }
+    @media(max-width:767px){ .g-sidebar { display:none; } }
+  </style>`;
+
+  function dashboardBody(){
+    const hoje = isoData(new Date());
+    const mesStr = hoje.slice(0,7);
+    const ags = agendamentos.filter(a => a.slug === emp.slug);
+    const agHoje    = ags.filter(a => a.data === hoje).length;
+    const agMes     = ags.filter(a => a.data.startsWith(mesStr)).length;
+    const agPassados = ags.filter(a => a.data.startsWith(mesStr) && a.data < hoje).length;
+    const mesFmt = new Date().toLocaleString('pt-BR',{month:'long',year:'numeric'}).replace(' De ',' de ');
+    return `
+      <h2 class="display" style="margin:0 0 4px;">Visão geral</h2>
+      <div style="font-size:13px;color:var(--ink-soft);margin-bottom:24px;text-transform:capitalize;">${mesFmt}</div>
+      <div class="g-dash-cards">
+        <div class="g-dash-card">
+          <div class="g-dash-val">${agHoje}</div>
+          <div class="g-dash-label">Agendamentos hoje</div>
+        </div>
+        <div class="g-dash-card">
+          <div class="g-dash-val">${agPassados}</div>
+          <div class="g-dash-label">Atendidos no mês</div>
+        </div>
+        <div class="g-dash-card">
+          <div class="g-dash-val">${agMes}</div>
+          <div class="g-dash-label">Total do mês</div>
         </div>
       </div>
-      <div class="container wide">
-        <div class="card" style="${corner==='configurar'?'background:none;box-shadow:none;padding:0;':''}">${body}</div>
+    `;
+  }
+
+  function draw(){
+    const isMaster = currentProfile?.role === 'master';
+    const exitAction = isMaster
+      ? `goto({empresa:'${emp.slug}'})`
+      : `gestaoLogout('${emp.slug}')`;
+    const exitLabel = isMaster ? 'Voltar' : 'Sair';
+    const exitIco   = isMaster ? G_ICO.voltar : G_ICO.sair;
+
+    const sidebarItems = GESTAO_NAV.map(n => `
+      <button class="g-nav-item ${corner===n.id?'active':''}" onclick="setCorner(${n.id===null?'null':`'${n.id}'`})">
+        <span class="g-nav-ico">${n.ico}</span>${n.label}
+      </button>`).join('');
+
+    const mobileIconBtns = GESTAO_NAV.map(n => `
+      <button class="g-mobile-icon-btn ${corner===n.id?'active':''}" onclick="setCorner(${n.id===null?'null':`'${n.id}'`})">
+        <span>${n.ico}</span>
+      </button>`).join('');
+
+    const mobileDropdown = gestaoNavAberta ? `
+      <div class="g-mobile-dropdown">
+        ${GESTAO_NAV.map(n=>`
+          <button class="g-mobile-dd-item ${corner===n.id?'active':''}" onclick="setCorner(${n.id===null?'null':`'${n.id}'`})">
+            <span>${n.ico}</span>${n.label}
+          </button>`).join('')}
+        <button class="g-mobile-dd-item danger" onclick="${exitAction}">
+          <span>${exitIco}</span>${exitLabel}
+        </button>
+      </div>` : '';
+
+    const body = corner==='dashboard'    ? dashboardBody()
+               : corner==='configurar'   ? configurarBody()
+               : corner==='personalizar' ? personalizarBody()
+               : agendamentosBody();
+
+    const cardStyle = corner==='configurar' ? 'background:none;box-shadow:none;padding:0;' : '';
+
+    render(`
+      ${GESTAO_CSS}
+      <div style="position:sticky;top:0;z-index:100;">
+        ${barraVoltarMaster()}
+        <div class="topbar" style="background:#1a1a1a;color:#fff;">
+          <div class="brand">${escapeHtml(emp.nome)} · Gestão</div>
+          <button class="icon-btn" style="color:#fff;" onclick="${exitAction}">${exitLabel}</button>
+        </div>
+        <div class="g-mobile-nav">
+          <div class="g-mobile-bar">
+            ${mobileIconBtns}
+            <button class="g-mobile-toggle" onclick="gestaoToggleNav()" aria-label="Menu">${gestaoNavAberta?'▴':'▾'}</button>
+          </div>
+          ${mobileDropdown}
+        </div>
+      </div>
+      <div class="g-layout">
+        <nav class="g-sidebar">
+          ${sidebarItems}
+          <button class="g-nav-item danger" onclick="${exitAction}">
+            <span class="g-nav-ico">${exitIco}</span>${exitLabel}
+          </button>
+        </nav>
+        <div class="g-content">
+          <div class="container wide">
+            <div class="card" style="${cardStyle}">${body}</div>
+          </div>
+        </div>
       </div>
     `);
   }
 
-  window.setCorner = (c)=>{ corner=c; editandoId=null; draw(); };
+  window.setCorner = (c)=>{ corner=c; editandoId=null; gestaoNavAberta=false; draw(); };
+  window.gestaoToggleNav = ()=>{ gestaoNavAberta=!gestaoNavAberta; draw(); };
   window.selecionarDiaGestao = (iso)=>{
     if(!iso || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return;
     diaSelecionado=iso; editandoId=null; draw();
@@ -1440,7 +1583,7 @@ function renderGestao(empInicial){
     // Reaponta para o objeto novo criado pelo loadData()
     const atual = empresas.find(e => e.slug === emp.slug);
     if(atual) emp = atual;
-    if(corner===null) draw();
+    if(corner===null || corner==='dashboard') draw();
   });
 }
 
