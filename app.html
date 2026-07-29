@@ -308,7 +308,13 @@ async function loadData(){
         : Promise.resolve({ data: null })
     ];
 
-    const [rServicos, rHorarios, rBloqueios, rBotoes, rAg, rProfiles] = await Promise.all(queries);
+    let [rServicos, rHorarios, rBloqueios, rBotoes, rAg, rProfiles];
+    try{
+      [rServicos, rHorarios, rBloqueios, rBotoes, rAg, rProfiles] = await Promise.all(queries);
+    }catch(e){
+      console.error('Erro ao carregar dados:', e);
+      agendamentos = []; loaded = true; return;
+    }
 
     (rServicos.data || []).forEach(s => {
       const emp = empresas.find(e => e.id === s.empresa_id);
@@ -801,6 +807,7 @@ async function confirmarAgendamento(slug){
   });
   if(error){
     if(error.code === '23505'){ alert("Esse horário acabou de ser reservado. Escolha outro."); renderAgendar(emp); return; }
+    if(btnAg) btnAg.disabled = false;
     alert("Erro ao realizar agendamento. Tente novamente."); return;
   }
   const novo = {
