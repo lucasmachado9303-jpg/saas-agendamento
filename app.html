@@ -292,86 +292,77 @@ async function loadData(){
 
   if(empresas.length > 0){
     const ids = empresas.map(e => e.id);
-
-    try{
-      const { data } = await supabaseClient.from('servicos').select('*').in('empresa_id', ids);
-      (data || []).forEach(s => {
-        const emp = empresas.find(e => e.id === s.empresa_id);
-        if(emp) emp.servicos.push({ id: s.id, nome: s.nome, duracao: s.duracao, preco: Number(s.preco) });
-      });
-    }catch(e){ console.error('Erro ao carregar serviços:', e); }
-
-    try{
-      const { data } = await supabaseClient.from('horarios_disponiveis').select('*').in('empresa_id', ids);
-      (data || []).forEach(h => {
-        const emp = empresas.find(e => e.id === h.empresa_id);
-        if(!emp) return;
-        emp.horariosPorMes[h.mes] = emp.horariosPorMes[h.mes] || [];
-        if(!emp.horariosPorMes[h.mes].includes(h.hora)) emp.horariosPorMes[h.mes].push(h.hora);
-      });
-    }catch(e){ console.error('Erro ao carregar horários:', e); }
-
-    try{
-      const { data } = await supabaseClient.from('bloqueios').select('*').in('empresa_id', ids);
-      (data || []).forEach(b => {
-        const emp = empresas.find(e => e.id === b.empresa_id);
-        if(emp) emp.bloqueios.push({ id: b.id, data: b.data, hora: b.hora });
-      });
-    }catch(e){ console.error('Erro ao carregar bloqueios:', e); }
-
-    try{
-      const { data } = await supabaseClient.from('botoes_empresa').select('*').in('empresa_id', ids);
-      (data || []).forEach(b => {
-        const emp = empresas.find(e => e.id === b.empresa_id);
-        if(emp) emp.botoes.push({
-          id: b.id, nome: b.nome, tipo: b.tipo, link: b.link,
-          icone: b.icone || '', ordem: b.ordem, ativo: b.ativo,
-          abrirNovaAba: b.abrir_nova_aba
-        });
-      });
-      empresas.forEach(e => e.botoes.sort((a, b) => a.ordem - b.ordem));
-    }catch(e){ console.error('Erro ao carregar botões:', e); }
-
-    // Visitante comum lê apenas a view "horarios_ocupados" (sem nome/telefone).
-    // Só master e dono da empresa carregam os dados completos do cliente.
     const podeVerDadosPessoais = currentProfile?.role === 'master'
                               || currentProfile?.role === 'owner_empresa';
-    try{
-      if(podeVerDadosPessoais){
-        const { data } = await supabaseClient.from('agendamentos').select('*').in('empresa_id', ids);
-        agendamentos = (data || []).map(a => {
-          const emp = empresas.find(e => e.id === a.empresa_id);
-          return {
-            id:          a.id,
-            slug:        emp ? emp.slug : '',
-            servicoId:   a.servico_id,
-            servicoNome: a.servico_nome,
-            data:        a.data,
-            hora:        a.hora,
-            nome:        a.nome_cliente,
-            telefone:    a.telefone,
-            criadoEm:    a.criado_em
-          };
-        });
-      } else {
-        const { data } = await supabaseClient.from('horarios_ocupados').select('*').in('empresa_id', ids);
-        agendamentos = (data || []).map(a => {
-          const emp = empresas.find(e => e.id === a.empresa_id);
-          return { slug: emp ? emp.slug : '', data: a.data, hora: a.hora };
-        });
-      }
-    }catch(e){ console.error('Erro ao carregar agendamentos:', e); agendamentos = []; }
 
-    // Carrega e-mail dos gestores (apenas para master)
-    if(currentProfile?.role === 'master'){
-      try{
-        const { data } = await supabaseClient.from('profiles').select('empresa_id, email, status').eq('role','owner_empresa');
-        (data || []).forEach(p => {
-          const emp = empresas.find(e => e.id === p.empresa_id);
-          if(emp){ emp.gestorEmail = p.email; emp.gestorStatus = p.status; }
-        });
-      }catch(e){ console.error('Erro ao carregar perfis:', e); }
+    const queries = [
+      supabaseClient.from('servicos').select('*').in('empresa_id', ids),
+      supabaseClient.from('horarios_disponiveis').select('*').in('empresa_id', ids),
+      supabaseClient.from('bloqueios').select('*').in('empresa_id', ids),
+      supabaseClient.from('botoes_empresa').select('*').in('empresa_id', ids),
+      podeVerDadosPessoais
+        ? supabaseClient.from('agendamentos').select('*').in('empresa_id', ids)
+        : supabaseClient.from('horarios_ocupados').select('*').in('empresa_id', ids),
+      currentProfile?.role === 'master'
+        ? supabaseClient.from('profiles').select('empresa_id, email, status').eq('role','owner_empresa')
+        : Promise.resolve({ data: null })
+    ];
+
+    const [rServicos, rHorarios, rBloqueios, rBotoes, rAg, rProfiles] = await Promise.all(queries);
+
+    (rServicos.data || []).forEach(s => {
+      const emp = empresas.find(e => e.id === s.empresa_id);
+      if(emp) emp.servicos.push({ id: s.id, nome: s.nome, duracao: s.duracao, preco: Number(s.preco) });
+    });
+
+    (rHorarios.data || []).forEach(h => {
+      const emp = empresas.find(e => e.id === h.empresa_id);
+      if(!emp) return;
+      emp.horariosPorMes[h.mes] = emp.horariosPorMes[h.mes] || [];
+      if(!emp.horariosPorMes[h.mes].includes(h.hora)) emp.horariosPorMes[h.mes].push(h.hora);
+    });
+
+    (rBloqueios.data || []).forEach(b => {
+      const emp = empresas.find(e => e.id === b.empresa_id);
+      if(emp) emp.bloqueios.push({ id: b.id, data: b.data, hora: b.hora });
+    });
+
+    (rBotoes.data || []).forEach(b => {
+      const emp = empresas.find(e => e.id === b.empresa_id);
+      if(emp) emp.botoes.push({
+        id: b.id, nome: b.nome, tipo: b.tipo, link: b.link,
+        icone: b.icone || '', ordem: b.ordem, ativo: b.ativo,
+        abrirNovaAba: b.abrir_nova_aba
+      });
+    });
+    empresas.forEach(e => e.botoes.sort((a, b) => a.ordem - b.ordem));
+
+    if(podeVerDadosPessoais){
+      agendamentos = (rAg.data || []).map(a => {
+        const emp = empresas.find(e => e.id === a.empresa_id);
+        return {
+          id:          a.id,
+          slug:        emp ? emp.slug : '',
+          servicoId:   a.servico_id,
+          servicoNome: a.servico_nome,
+          data:        a.data,
+          hora:        a.hora,
+          nome:        a.nome_cliente,
+          telefone:    a.telefone,
+          criadoEm:    a.criado_em
+        };
+      });
+    } else {
+      agendamentos = (rAg.data || []).map(a => {
+        const emp = empresas.find(e => e.id === a.empresa_id);
+        return { slug: emp ? emp.slug : '', data: a.data, hora: a.hora };
+      });
     }
+
+    (rProfiles.data || []).forEach(p => {
+      const emp = empresas.find(e => e.id === p.empresa_id);
+      if(emp){ emp.gestorEmail = p.email; emp.gestorStatus = p.status; }
+    });
   } else {
     agendamentos = [];
   }
@@ -426,8 +417,15 @@ function getParams(){
 function goto(params){
   pararPolling();
   currentRoute = { master:null, empresa:null, page:"", ...params };
+  const qs = params.master ? '?master=1'
+    : params.empresa ? ('?' + new URLSearchParams({ empresa: params.empresa, ...(params.page ? { page: params.page } : {}) }).toString())
+    : '';
+  history.pushState(currentRoute, '', qs || location.pathname);
   route();
 }
+window.addEventListener('popstate', e => {
+  if(e.state){ pararPolling(); currentRoute = e.state; route(); }
+});
 
 function defaultEmpresa(){
   return {
@@ -460,6 +458,7 @@ function iniciarPolling(fn){
   pararPolling();
   _pollFn = fn;
   _pollInterval = setInterval(async ()=>{
+    if(document.hidden) return;
     await loadData();
     if(_pollFn) _pollFn();
   }, 30000);
@@ -528,8 +527,11 @@ function route(){
       const isOwner  = currentProfile?.role === 'owner_empresa'
                     && currentProfile?.empresa_id === emp.id
                     && currentProfile?.status === 'ativo';
-      if(isMaster || isOwner){ renderGestao(emp); }
-      else { renderGestaoLogin(emp); }
+      if(isMaster || isOwner){
+        if(emp.bloqueada && !isMaster){
+          render(`${barraVoltarMaster()}<div class="container"><div class="empty"><h2 class="display">Empresa bloqueada</h2><p>Esta empresa está bloqueada pelo administrador. Entre em contato para mais informações.</p></div></div>`);
+        } else { renderGestao(emp); }
+      } else { renderGestaoLogin(emp); }
     }
     else renderHome(emp);
   } else {
@@ -548,9 +550,27 @@ function renderNotFound(){
   render(`<div class="container"><div class="empty"><h2 class="display">Empresa não encontrada</h2><p>Verifique o link e tente novamente.</p></div></div>`);
 }
 
+function setPageMeta(title, description, imageUrl){
+  document.title = title;
+  const setMeta = (sel, attr, val) => {
+    let el = document.querySelector(sel);
+    if(!el){ el = document.createElement('meta'); document.head.appendChild(el); }
+    el.setAttribute(attr, val);
+  };
+  setMeta('meta[name="description"]', 'content', description || '');
+  setMeta('meta[property="og:title"]', 'content', title);
+  setMeta('meta[property="og:description"]', 'content', description || '');
+  if(imageUrl) setMeta('meta[property="og:image"]', 'content', imageUrl);
+}
+
 // ---------- HOME DA EMPRESA ----------
 function renderHome(emp){
   applyAccent(emp.corPrincipal);
+  setPageMeta(
+    emp.nome + ' — Agendamento online',
+    emp.descricao || ('Agende online com ' + emp.nome),
+    emp.fotoUrl || emp.logo || ''
+  );
   if(emp.bloqueada){
     render(`${barraVoltarMaster()}<div class="container"><div class="empty"><h2 class="display">Agendamentos temporariamente indisponíveis</h2><p>Entre em contato diretamente com ${escapeHtml(emp.nome)}.</p></div></div>`);
     return;
@@ -567,8 +587,8 @@ function renderHome(emp){
   const botoesHtml = botoesAtivos.map(b => {
     const target = b.abrirNovaAba ? 'target="_blank" rel="noopener noreferrer"' : '';
     return `<a href="${escapeAttr(linkSeguro(b.link))}" ${target} style="text-decoration:none;display:block;width:100%;max-width:360px;margin:0 auto 10px;">
-      <div style="background:#fff;border:1.5px solid var(--line);border-radius:14px;padding:14px 20px;font-size:15px;font-weight:600;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,0.06);color:var(--ink);">
-        ${escapeHtml(b.nome)}
+      <div style="background:#fff;border:1.5px solid var(--line);border-radius:14px;padding:14px 20px;font-size:15px;font-weight:600;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,0.06);color:var(--ink);display:flex;align-items:center;justify-content:center;gap:8px;">
+        ${b.icone ? `<span style="font-size:18px;">${escapeHtml(b.icone)}</span>` : ''}${escapeHtml(b.nome)}
       </div>
     </a>`;
   }).join('');
@@ -731,6 +751,8 @@ function renderAgendar(emp){
   window.selectHora = (h)=>{ bookingState.hora = h; draw(); };
   window.formatarTelefone = (input)=>{
     let v = input.value.replace(/\D/g,'');
+    // Remove DDI 55 colado do WhatsApp e prefixo 0 duplo
+    if(v.startsWith('55') && v.length > 11) v = v.slice(2);
     if(v.length > 0 && v[0] !== '0') v = '0' + v;
     v = v.slice(0, 12);
     input.value = v;
@@ -747,6 +769,9 @@ function renderAgendar(emp){
 }
 
 async function confirmarAgendamento(slug){
+  const btnAg = document.getElementById('btnAgendar');
+  if(btnAg && btnAg.disabled) return;
+  if(btnAg) btnAg.disabled = true;
   const emp = empresas.find(e=>e.slug===slug);
   const nomeInp = document.getElementById('inpNome');
   const telInp = document.getElementById('inpTel');
@@ -754,7 +779,9 @@ async function confirmarAgendamento(slug){
   bookingState.telefone = telInp ? telInp.value : bookingState.telefone;
   const _digits = bookingState.telefone.replace(/\D/g,'');
   const _telOk = _digits.length === 12 && _digits[0] === '0' && _digits[3] === '9';
-  if(!bookingState.servico || !bookingState.data || !bookingState.hora || !bookingState.nome.trim() || !_telOk) return;
+  if(!bookingState.servico || !bookingState.data || !bookingState.hora || !bookingState.nome.trim() || !_telOk){
+    if(btnAg) btnAg.disabled = false; return;
+  }
 
   const jaOcupado = agendamentos.some(a=>a.slug===slug && a.data===bookingState.data && a.hora===bookingState.hora)
     || (emp.bloqueios||[]).some(b=>b.data===bookingState.data && b.hora===bookingState.hora);
@@ -802,7 +829,7 @@ function renderConfirmacao(emp){
   }
   const dataFmt = new Date(b.data+"T00:00:00").toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'});
   const msg = `Olá! Gostaria de confirmar meu agendamento em ${emp.nome}: ${b.servicoNome}, dia ${dataFmt} às ${b.hora}. Nome: ${b.nome}.`;
-  const numero = (emp.whatsapp||"").replace(/\D/g,"");
+  const numero = '55' + (emp.whatsapp||"").replace(/\D/g,"").replace(/^0/,"");
   const link = `https://wa.me/${numero}?text=${encodeURIComponent(msg)}`;
   render(`
     <div class="topbar top-plum" style="display:grid;grid-template-columns:44px 1fr 44px;align-items:center;">
@@ -821,7 +848,7 @@ function renderConfirmacao(emp){
           <div><strong>Hora:</strong> ${b.hora}</div>
           <div><strong>Nome:</strong> ${escapeHtml(b.nome)}</div>
         </div>
-        <a href="${link}" target="_blank"><button class="btn" style="width:100%;background:#25d366;">Confirmar no WhatsApp</button></a>
+        <a href="${link}" target="_blank" rel="noopener noreferrer"><button class="btn" style="width:100%;background:#25d366;">Confirmar no WhatsApp</button></a>
         <div style="margin-top:14px;"><button class="icon-btn" onclick="goto({empresa:'${emp.slug}'})">Voltar ao início</button></div>
       </div>
     </div>
@@ -886,7 +913,9 @@ async function tentarLoginGestao(slug){
 
   currentUser    = data.user;
   currentProfile = profile;
-  renderGestao(emp);
+  await loadData();
+  const empAtualizado = empresas.find(e=>e.slug===slug);
+  renderGestao(empAtualizado || emp);
 }
 window.recuperarSenha = async (slug)=>{
   const email = prompt("Digite seu e-mail para receber o link de redefinição de senha:");
@@ -956,7 +985,7 @@ function renderGestao(empInicial){
             <div style="font-weight:700;font-size:15px;">${h} — ${escapeHtml(ag.nome)}</div>
             <div class="muted" style="font-size:13px;margin-top:4px;">${escapeHtml(ag.servicoNome)}</div>
           </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+          <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;">
             <button class="btn ghost" style="font-size:13px;" onclick="editarAgendamento('${ag.id}')">Editar</button>
             <button class="btn danger" style="font-size:13px;" onclick="cancelarAgendamento('${ag.id}')">Cancelar</button>
             <button class="btn" style="font-size:13px;background:#25d366;border:none;color:#fff;" onclick="window.open('${waLink}','_blank','noopener,noreferrer')">WhatsApp</button>
@@ -1142,11 +1171,11 @@ function renderGestao(empInicial){
       <div style="position:sticky;top:0;z-index:100;background:var(--paper);">
         ${barraVoltarMaster()}
         <div class="topbar" style="background:#1a1a1a;color:#fff;"><div class="brand">${escapeHtml(emp.nome)} · Gestão</div>${currentProfile?.role==='master'?`<button class="icon-btn" style="color:#fff;" onclick="goto({empresa:'${emp.slug}'})">← Voltar</button>`:`<button class="icon-btn" style="color:#fff;" onclick="gestaoLogout('${emp.slug}')">Sair</button>`}</div>
-        <div style="padding:8px 16px 0;background:var(--paper);">
-          <div class="tabs" style="margin:0;gap:0;border-bottom:1.5px solid var(--line);padding-bottom:0;">
-            <div class="tab ${!corner?'active':''}" style="flex:1;text-align:center;padding:10px 6px;font-size:14px;border-radius:8px 8px 0 0;${!corner?'background:#1a1a1a;color:#fff;border-color:#1a1a1a;border-bottom:none;':''}" onclick="setCorner(null)">Agendamentos</div>
-            <div class="tab ${corner==='configurar'?'active':''}" style="flex:1;text-align:center;padding:10px 6px;font-size:14px;border-radius:8px 8px 0 0;${corner==='configurar'?'background:#1a1a1a;color:#fff;border-color:#1a1a1a;border-bottom:none;':''}" onclick="setCorner('configurar')">Configurar</div>
-            <div class="tab ${corner==='personalizar'?'active':''}" style="flex:1;text-align:center;padding:10px 6px;font-size:14px;border-radius:8px 8px 0 0;${corner==='personalizar'?'background:#1a1a1a;color:#fff;border-color:#1a1a1a;border-bottom:none;':''}" onclick="setCorner('personalizar')">Personalizar</div>
+        <div style="padding:8px 0 0;background:var(--paper);overflow-x:auto;-webkit-overflow-scrolling:touch;">
+          <div class="tabs" style="margin:0;gap:0;border-bottom:1.5px solid var(--line);padding-bottom:0;padding-left:16px;padding-right:16px;flex-wrap:nowrap;min-width:max-content;width:100%;">
+            <div class="tab ${!corner?'active':''}" style="flex:0 0 auto;text-align:center;padding:10px 16px;font-size:14px;border-radius:8px 8px 0 0;white-space:nowrap;${!corner?'background:#1a1a1a;color:#fff;border-color:#1a1a1a;border-bottom:none;':''}" onclick="setCorner(null)">Agendamentos</div>
+            <div class="tab ${corner==='configurar'?'active':''}" style="flex:0 0 auto;text-align:center;padding:10px 16px;font-size:14px;border-radius:8px 8px 0 0;white-space:nowrap;${corner==='configurar'?'background:#1a1a1a;color:#fff;border-color:#1a1a1a;border-bottom:none;':''}" onclick="setCorner('configurar')">Configurar</div>
+            <div class="tab ${corner==='personalizar'?'active':''}" style="flex:0 0 auto;text-align:center;padding:10px 16px;font-size:14px;border-radius:8px 8px 0 0;white-space:nowrap;${corner==='personalizar'?'background:#1a1a1a;color:#fff;border-color:#1a1a1a;border-bottom:none;':''}" onclick="setCorner('personalizar')">Personalizar</div>
           </div>
         </div>
       </div>
@@ -1157,7 +1186,10 @@ function renderGestao(empInicial){
   }
 
   window.setCorner = (c)=>{ corner=c; editandoId=null; draw(); };
-  window.selecionarDiaGestao = (iso)=>{ diaSelecionado=iso; editandoId=null; draw(); };
+  window.selecionarDiaGestao = (iso)=>{
+    if(!iso || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return;
+    diaSelecionado=iso; editandoId=null; draw();
+  };
 
   window.selecionarImagem = (tipo)=>{
     abrirCrop(tipo, emp.slug, async (url)=>{
@@ -1169,7 +1201,10 @@ function renderGestao(empInicial){
   window.bloquearDiaTodo = async ()=>{
     const horarios = horariosDoMes(emp, diaSelecionado.slice(0,7));
     if(!horarios.length){ alert("Nenhum horário configurado para este dia."); return; }
-    const livres = horarios.filter(h => !((emp.bloqueios||[]).some(b=>b.data===diaSelecionado && b.hora===h)));
+    const livres = horarios.filter(h =>
+      !((emp.bloqueios||[]).some(b=>b.data===diaSelecionado && b.hora===h)) &&
+      !agendamentos.some(a=>a.slug===emp.slug && a.data===diaSelecionado && a.hora===h)
+    );
     if(!livres.length){ alert("Todos os horários deste dia já estão bloqueados."); return; }
     const dataFmtConf = new Date(diaSelecionado+"T00:00:00").toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'});
     if(!confirm(`Bloquear todos os ${livres.length} horários de ${dataFmtConf}?`)) return;
@@ -1189,6 +1224,8 @@ function renderGestao(empInicial){
     const servicoId = document.getElementById('editServico').value;
     const hora = document.getElementById('editHora').value;
     if(!nome || !tel){ alert("Preencha nome e telefone."); return; }
+    const telDigitos = tel.replace(/\D/g,'').replace(/^(55|0)/,'');
+    if(telDigitos.length < 10 || telDigitos.length > 11){ alert("Telefone inválido. Use apenas celular com DDD (ex: 11912345678)."); return; }
     if(hora !== ag.hora){
       const ocupado = agendamentos.some(a=>a.id!==ag.id && a.slug===emp.slug && a.data===ag.data && a.hora===hora);
       if(ocupado){ alert("Esse horário já está ocupado."); return; }
@@ -1259,7 +1296,8 @@ function renderGestao(empInicial){
   window.mudarMesHorario = (val)=>{ mesHorario = val; draw(); };
   window.adicionarHorario = async ()=>{
     const val = document.getElementById('novoHorarioInput').value;
-    if(!val){ return; }
+    if(!val){ alert("Selecione um horário."); return; }
+    if(!mesHorario || !/^\d{4}-\d{2}$/.test(mesHorario)){ alert("Mês inválido. Selecione um mês válido."); return; }
     emp.horariosPorMes = emp.horariosPorMes || {};
     const lista = emp.horariosPorMes[mesHorario] || [];
     if(lista.includes(val)){ return; }
@@ -1307,6 +1345,7 @@ function renderGestao(empInicial){
     const link    = document.getElementById('ebLink').value.trim();
     if(!nome){ alert('Preencha o nome do botão.'); return; }
     if(!link){ alert('Preencha o link do botão.'); return; }
+    if(!/^(https?:|tel:|mailto:)/i.test(link)){ alert('O link deve começar com https://, http://, tel: ou mailto:'); return; }
     const { error } = await supabaseClient.from('botoes_empresa').update({
       nome, tipo, link, icone: ICONE_POR_TIPO[tipo] || '🔗', abrir_nova_aba: true
     }).eq('id', id);
@@ -1323,6 +1362,7 @@ function renderGestao(empInicial){
     const link    = document.getElementById('bLink').value.trim();
     if(!nome){ alert('Preencha o nome do botão.'); return; }
     if(!link){ alert('Preencha o link do botão.'); return; }
+    if(!/^(https?:|tel:|mailto:)/i.test(link)){ alert('O link deve começar com https://, http://, tel: ou mailto:'); return; }
     const ordemMax = emp.botoes.length > 0 ? Math.max(...emp.botoes.map(b=>b.ordem)) + 1 : 0;
     const { data: row, error } = await supabaseClient.from('botoes_empresa').insert({
       empresa_id:    emp.id,
@@ -1509,7 +1549,7 @@ function renderMasterPanel(){
           <input readonly value="${escapeAttr(editing.gestorEmail||'Não cadastrado')}" style="background:#f5f5f5;color:var(--ink-soft);" onclick="this.select()"/>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px;">
-          <button class="btn ghost" onclick="editingSlug=null; drawMaster();">Salvar</button>
+          <button class="btn ghost" onclick="masterSalvarEdicao()">Salvar</button>
           <button class="btn ghost" onclick="masterToggleBloqueio()">${editing.bloqueada?'Desbloquear':'Bloquear'}</button>
           <button class="btn ghost" onclick="masterRedefinirSenha()">Redefinir senha</button>
           <button class="btn danger" onclick="masterExcluir('${editing.slug}')">Excluir empresa</button>
@@ -1585,7 +1625,9 @@ function renderMasterPanel(){
     if(senha.length < 6){ alert("A senha deve ter pelo menos 6 caracteres."); return; }
 
     // 1. Cria a empresa no banco
+    const SLUGS_RESERVADOS = ['api','app','admin','master','login','logout','static','assets','sw','manifest','index','null','undefined','favicon'];
     let slug = slugify(nome);
+    if(SLUGS_RESERVADOS.includes(slug)){ alert(`O nome "${nome}" gera um slug reservado pelo sistema. Use um nome diferente.`); return; }
     let s2 = slug, n=1;
     while(empresas.some(e=>e.slug===s2)){ s2 = slug+"-"+(++n); }
     const nova = defaultEmpresa();
@@ -1628,9 +1670,12 @@ function renderMasterPanel(){
 
     masterShowForm = false;
     if(apiOk){
-      alert(`Empresa "${nome}" criada com sucesso!\n\nCredenciais do gestor:\nE-mail: ${email}\nSenha: ${senha}\n\nGuarde essas informações e compartilhe com o gestor.`);
+      alert(`Empresa "${nome}" criada com sucesso!\n\nE-mail do gestor: ${email}\n\nA senha temporária foi definida conforme digitado. Compartilhe-a com o gestor por um canal seguro.`);
     }
     draw();
+  };
+  window.masterSalvarEdicao = ()=>{
+    editingSlug = null; draw();
   };
   window.masterUpd = async (field,val)=>{
     const e = empresas.find(x=>x.slug===editingSlug);
@@ -1756,7 +1801,7 @@ async function excluirImagensEmpresa(slug){
 }
 // ─────────────────────────────────────────────────────────────
 
-function escapeHtml(s){ return String(s||"").replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function escapeHtml(s){ return String(s==null?"":s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function escapeAttr(s){ return escapeHtml(s); }
 
 // Bloqueia links do tipo "javascript:" salvos nos botões da empresa,
