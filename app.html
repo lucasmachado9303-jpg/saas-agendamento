@@ -215,25 +215,12 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
 
 <script>
-/*
- * NOTA DE SEGURANÇA — ler antes de publicar em produção
- * -------------------------------------------------------
- * O sistema atualmente chama o Supabase diretamente do frontend
- * usando a anon key exposta no arquivo supabase.js.
- *
- * A senha de gestão de cada empresa é validada apenas no cliente
- * e NÃO deve ser considerada uma proteção definitiva contra acesso
- * não autorizado ao banco de dados.
- *
- * Autenticação real (Supabase Auth ou API Routes no Vercel com
- * service_role key) será implementada em versão futura.
- * -------------------------------------------------------
- */
-
 const STORE_KEY  = "empresas";
 const BOOK_KEY   = "agendamentos";
-const MASTER_PASS = "admin2026";
 const DIAS = ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
+
+let currentUser    = null;
+let currentProfile = null;
 
 // Ícones padrão por tipo de botão
 const ICONE_POR_TIPO = {
@@ -291,7 +278,7 @@ async function loadData(){
       nome:                 e.nome,
       fotoUrl:              e.foto_url              || '',
       whatsapp:             e.whatsapp              || '',
-      senhaGestao:          e.senha_gestao,
+
       bloqueada:            e.bloqueada,
       // Campos de personalização (Fase 2)
       descricao:            e.descricao             || '',
@@ -378,7 +365,7 @@ async function saveEmpresas(){
     nome:                  e.nome,
     foto_url:              e.fotoUrl              || null,
     whatsapp:              e.whatsapp              || null,
-    senha_gestao:          e.senhaGestao,
+
     bloqueada:             e.bloqueada,
     // Campos de personalização (Fase 2)
     descricao:             e.descricao             || null,
@@ -429,7 +416,7 @@ function goto(params){
 
 function defaultEmpresa(){
   return {
-    slug:"", nome:"", fotoUrl:"", whatsapp:"", senhaGestao:"1234", bloqueada:false,
+    slug:"", nome:"", fotoUrl:"", whatsapp:"", bloqueada:false,
     descricao:"", logo:"", corPrincipal:"#3d1f3a", textoDestaque:"",
     servicos:[], horariosPorMes:{}, bloqueios:[], botoes:[]
   };
@@ -477,6 +464,31 @@ function pararPolling(){
 // ---------- INIT ----------
 async function init(){
   render(`<div class="loading">Carregando…</div>`);
+
+  // Escuta mudanças de auth (inclui PASSWORD_RECOVERY vindo do e-mail)
+  supabaseClient.auth.onAuthStateChange(async (event, session) => {
+    if (event === 'PASSWORD_RECOVERY') {
+      currentUser = session?.user || null;
+      renderRedefinirSenha();
+      return;
+    }
+    currentUser = session?.user || null;
+    if (currentUser) {
+      const { data } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
+      currentProfile = data || null;
+    } else {
+      currentProfile = null;
+    }
+  });
+
+  // Sessão existente (ex: ao recarregar a página)
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  currentUser = session?.user || null;
+  if (currentUser) {
+    const { data } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
+    currentProfile = data || null;
+  }
+
   await loadData();
   const params = new URLSearchParams(location.search);
   if(params.get('empresa')) currentRoute.empresa = params.get('empresa');
@@ -493,7 +505,14 @@ function route(){
     if(!emp){ renderNotFound(); return; }
     if(page==="agendar") renderAgendar(emp);
     else if(page==="confirmacao") renderConfirmacao(emp);
-    else if(page==="gestao") renderGestaoLogin(emp);
+    else if(page==="gestao"){
+      const isMaster = currentProfile?.role === 'master';
+      const isOwner  = currentProfile?.role === 'owner_empresa'
+                    && currentProfile?.empresa_id === emp.id
+                    && currentProfile?.status === 'ativo';
+      if(isMaster || isOwner){ renderGestao(emp); }
+      else { renderGestaoLogin(emp); }
+    }
     else renderHome(emp);
   } else {
     renderMaster();
@@ -501,7 +520,7 @@ function route(){
 }
 
 function barraVoltarMaster(){
-  if(!masterAuthed) return "";
+  if(currentProfile?.role !== 'master') return "";
   return `<div style="background:#f0f0f0;color:#1a1a1a;padding:10px 20px;text-align:center;font-size:13px;font-weight:700;">
     Modo visualização (via painel master) — <span style="text-decoration:underline;cursor:pointer;" onclick="goto({master:1})">Voltar ao painel master</span>
   </div>`;
@@ -799,21 +818,59 @@ function renderGestaoLogin(emp){
         <div class="eyebrow" style="color:#1a1a1a;">Área restrita</div>
         <h2 class="display">Gestão — ${escapeHtml(emp.nome)}</h2>
         <div class="field">
+          <label>E-mail</label>
+          <input type="email" id="gestaoEmail" placeholder="seu@email.com"
+            onkeyup="if(event.key==='Enter') document.getElementById('gestaoSenha').focus()"/>
+        </div>
+        <div class="field">
           <label>Senha</label>
-          <input type="password" id="senhaGestao" placeholder="Digite a senha" onkeyup="checkCapsLock(event,'cL1'); if(event.key==='Enter') tentarLoginGestao('${emp.slug}')"/>
+          <input type="password" id="gestaoSenha" placeholder="Sua senha"
+            onkeyup="checkCapsLock(event,'cL1'); if(event.key==='Enter') tentarLoginGestao('${emp.slug}')"/>
           <div id="cL1" style="display:none;align-items:center;gap:5px;color:var(--danger);font-size:12px;margin-top:6px;"><strong>!</strong> Caps Lock ativado</div>
         </div>
         <button class="btn" style="width:100%;background:#1a1a1a;" onclick="tentarLoginGestao('${emp.slug}')">Entrar</button>
+        <div style="text-align:center;margin-top:14px;">
+          <button class="icon-btn" onclick="recuperarSenha('${emp.slug}')">Esqueci minha senha</button>
+        </div>
       </div>
     </div>
   `);
 }
-function tentarLoginGestao(slug){
+async function tentarLoginGestao(slug){
+  const email = (document.getElementById('gestaoEmail').value || '').trim();
+  const senha = document.getElementById('gestaoSenha').value;
+  if(!email || !senha){ alert("Preencha e-mail e senha."); return; }
+
+  const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password: senha });
+  if(error){ alert("E-mail ou senha incorretos."); return; }
+
+  const { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', data.user.id).single();
+
+  if(!profile || profile.status !== 'ativo'){
+    await supabaseClient.auth.signOut();
+    alert("Conta bloqueada ou sem acesso. Entre em contato com o administrador.");
+    return;
+  }
+
   const emp = empresas.find(e=>e.slug===slug);
-  const val = document.getElementById('senhaGestao').value;
-  if(val === emp.senhaGestao){ renderGestao(emp); }
-  else{ alert("Senha incorreta."); }
+  if(profile.role !== 'owner_empresa' || profile.empresa_id !== emp?.id){
+    await supabaseClient.auth.signOut();
+    alert("Suas credenciais não têm acesso à gestão desta empresa.");
+    return;
+  }
+
+  currentUser    = data.user;
+  currentProfile = profile;
+  renderGestao(emp);
 }
+window.recuperarSenha = async (slug)=>{
+  const email = prompt("Digite seu e-mail para receber o link de redefinição de senha:");
+  if(!email) return;
+  const redirectTo = window.location.origin + '/app.html' + (slug ? `?empresa=${slug}&page=gestao` : '?master=1');
+  const { error } = await supabaseClient.auth.resetPasswordForEmail(email, { redirectTo });
+  if(error){ alert("Erro: " + error.message); return; }
+  alert("Se o e-mail estiver cadastrado, você receberá um link para redefinir a senha.");
+};
 
 // ---------- GESTÃO (PAINEL) ----------
 function renderGestao(emp){
@@ -1045,7 +1102,7 @@ function renderGestao(emp){
     render(`
       <div style="position:sticky;top:0;z-index:100;background:var(--paper);">
         ${barraVoltarMaster()}
-        <div class="topbar" style="background:#1a1a1a;color:#fff;"><div class="brand">${escapeHtml(emp.nome)} · Gestão</div><button class="icon-btn" style="color:#fff;" onclick="goto({empresa:'${emp.slug}'})">Sair</button></div>
+        <div class="topbar" style="background:#1a1a1a;color:#fff;"><div class="brand">${escapeHtml(emp.nome)} · Gestão</div>${currentProfile?.role==='master'?`<button class="icon-btn" style="color:#fff;" onclick="goto({empresa:'${emp.slug}'})">← Voltar</button>`:`<button class="icon-btn" style="color:#fff;" onclick="gestaoLogout('${emp.slug}')">Sair</button>`}</div>
         <div class="tabs" style="padding:8px 16px 0;border-bottom:1.5px solid var(--line);margin:0;gap:0;background:var(--paper);">
           <div class="tab ${!corner?'active':''}\" style="flex:1;text-align:center;padding:10px 6px;font-size:14px;${!corner?'background:#1a1a1a;color:#fff;border-color:#1a1a1a;':''}" onclick="setCorner(null)">Agendamentos</div>
           <div class="tab ${corner==='configurar'?'active':''}" style="flex:1;text-align:center;padding:10px 6px;font-size:14px;${corner==='configurar'?'background:#1a1a1a;color:#fff;border-color:#1a1a1a;':''}" onclick="setCorner('configurar')">Configurar</div>
@@ -1295,13 +1352,9 @@ function renderGestao(emp){
 
 // ---------- PAINEL MASTER ----------
 function renderMaster(){
-  const authed = sessionStorage_getMaster();
-  if(!authed){ renderMasterLogin(); return; }
+  if(currentProfile?.role !== 'master'){ renderMasterLogin(); return; }
   renderMasterPanel();
 }
-// (usamos variável em memória em vez de sessionStorage do navegador, que não é permitido)
-let masterAuthed = false;
-function sessionStorage_getMaster(){ return masterAuthed; }
 
 function renderMasterLogin(){
   applyAccent('#1a1a1a');
@@ -1313,19 +1366,79 @@ function renderMasterLogin(){
         <div class="eyebrow" style="color:#1a1a1a;">Painel master</div>
         <h2 class="display">Entrar</h2>
         <div class="field">
+          <label>E-mail</label>
+          <input type="email" id="masterEmail" placeholder="seu@email.com"
+            onkeyup="if(event.key==='Enter') document.getElementById('masterPass').focus()"/>
+        </div>
+        <div class="field">
           <label>Senha</label>
-          <input type="password" id="masterPass" placeholder="Senha master" onkeyup="checkCapsLock(event,'cL2'); if(event.key==='Enter') tentarLoginMaster()"/>
+          <input type="password" id="masterPass" placeholder="Sua senha"
+            onkeyup="checkCapsLock(event,'cL2'); if(event.key==='Enter') tentarLoginMaster()"/>
           <div id="cL2" style="display:none;align-items:center;gap:5px;color:var(--danger);font-size:12px;margin-top:6px;"><strong>!</strong> Caps Lock ativado</div>
         </div>
         <button class="btn" style="width:100%;background:#1a1a1a;" onclick="tentarLoginMaster()">Entrar</button>
+        <div style="text-align:center;margin-top:14px;">
+          <button class="icon-btn" onclick="recuperarSenha(null)">Esqueci minha senha</button>
+        </div>
       </div>
     </div>
   `);
 }
-window.tentarLoginMaster = ()=>{
-  const val = document.getElementById('masterPass').value;
-  if(val === MASTER_PASS){ masterAuthed = true; renderMasterPanel(); }
-  else alert("Senha incorreta.");
+window.tentarLoginMaster = async ()=>{
+  const email = (document.getElementById('masterEmail').value || '').trim();
+  const senha = document.getElementById('masterPass').value;
+  if(!email || !senha){ alert("Preencha e-mail e senha."); return; }
+
+  const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password: senha });
+  if(error){ alert("E-mail ou senha incorretos."); return; }
+
+  const { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', data.user.id).single();
+  if(!profile || profile.role !== 'master'){
+    await supabaseClient.auth.signOut();
+    alert("Essa conta não tem acesso ao painel master.");
+    return;
+  }
+
+  currentUser    = data.user;
+  currentProfile = profile;
+  renderMasterPanel();
+};
+
+// ---------- TELA: REDEFINIR SENHA ----------
+function renderRedefinirSenha(){
+  applyAccent('#1a1a1a');
+  render(`
+    <div class="topbar" style="background:#1a1a1a;color:#fff;"><div class="brand" style="text-align:center;width:100%;">Agenda+</div></div>
+    <div class="container">
+      <div class="card">
+        <div class="eyebrow" style="color:#1a1a1a;">Redefinição de senha</div>
+        <h2 class="display">Nova senha</h2>
+        <div class="field">
+          <label>Nova senha</label>
+          <input type="password" id="novaSenhaReset" placeholder="Mínimo 6 caracteres"
+            onkeyup="if(event.key==='Enter') document.getElementById('confirmarSenhaReset').focus()"/>
+        </div>
+        <div class="field">
+          <label>Confirmar nova senha</label>
+          <input type="password" id="confirmarSenhaReset" placeholder="Repita a senha"
+            onkeyup="if(event.key==='Enter') confirmarRedefinicaoSenha()"/>
+        </div>
+        <button class="btn" style="width:100%;background:#1a1a1a;" onclick="confirmarRedefinicaoSenha()">Salvar nova senha</button>
+      </div>
+    </div>
+  `);
+}
+window.confirmarRedefinicaoSenha = async ()=>{
+  const nova = document.getElementById('novaSenhaReset').value;
+  const conf = document.getElementById('confirmarSenhaReset').value;
+  if(nova.length < 6){ alert("A senha deve ter pelo menos 6 caracteres."); return; }
+  if(nova !== conf){ alert("As senhas não coincidem."); return; }
+  const { error } = await supabaseClient.auth.updateUser({ password: nova });
+  if(error){ alert("Erro ao redefinir senha: " + error.message); return; }
+  alert("Senha redefinida com sucesso! Você já pode fazer login.");
+  currentUser = null; currentProfile = null;
+  await supabaseClient.auth.signOut();
+  goto({master:1});
 };
 
 let editingSlug = null;
@@ -1351,15 +1464,16 @@ function renderMasterPanel(){
           <button class="btn ghost" style="width:100%;" onclick="masterSelecionarImagem('background','${editing.slug}')">Enviar imagem de fundo</button>
         </div>
         <div class="field"><label>WhatsApp</label><input value="${escapeAttr(editing.whatsapp)}" onchange="masterUpd('whatsapp',this.value)"/></div>
-        <div class="field"><label>Senha de gestão da empresa</label><input value="${escapeAttr(editing.senhaGestao)}" onchange="masterUpd('senhaGestao',this.value)"/></div>
-        <div class="field"><label>Link público (quando publicado)</label>
+        <div class="field">
+          <label>Link público</label>
           <input readonly value="${escapeAttr(location.origin+'/app.html?empresa='+editing.slug)}" onclick="this.select()"/>
         </div>
         <div class="row" style="margin-top:8px;">
-          <button class="btn ghost" onclick="editingSlug=null; drawMaster();">Salvar</button>
+          <button class="btn ghost" onclick="editingSlug=null; drawMaster();">Fechar</button>
           <button class="btn ghost" onclick="masterToggleBloqueio()">${editing.bloqueada?'Desbloquear':'Bloquear'}</button>
         </div>
-        <button class="btn danger" style="width:100%;margin-top:12px;" onclick="masterExcluir('${editing.slug}')">Excluir empresa</button>
+        <button class="btn ghost" style="width:100%;margin-top:10px;" onclick="masterRedefinirSenha()">Redefinir senha do gestor</button>
+        <button class="btn danger" style="width:100%;margin-top:10px;" onclick="masterExcluir('${editing.slug}')">Excluir empresa</button>
       </div>
     ` : masterShowForm ? `
       <div class="card" style="margin-bottom:24px;">
@@ -1367,9 +1481,10 @@ function renderMasterPanel(){
           <h3 class="display" style="margin:0;">Nova empresa</h3>
           <button class="icon-btn" style="font-size:22px;color:var(--ink-soft);" onclick="masterShowForm=false; drawMaster();">×</button>
         </div>
-        <div class="field"><label>Nome</label><input id="novoNome" placeholder="Ex: Studio Bella"/></div>
+        <div class="field"><label>Nome da empresa</label><input id="novoNome" placeholder="Ex: Studio Bella"/></div>
         <div class="field"><label>WhatsApp (com DDD)</label><input id="novoWhats" placeholder="11912345678"/></div>
-        <div class="field"><label>Senha de gestão da empresa</label><input id="novaSenha" placeholder="Ex: minha123"/></div>
+        <div class="field"><label>E-mail do gestor</label><input type="email" id="novoEmail" placeholder="gestor@email.com"/></div>
+        <div class="field"><label>Senha temporária</label><input type="password" id="novaSenha" placeholder="Mínimo 6 caracteres"/></div>
         <button class="btn" style="width:100%;" onclick="masterCriar()">Criar empresa</button>
       </div>
     ` : '';
@@ -1399,7 +1514,7 @@ function renderMasterPanel(){
     }).join('')}</div>` : `<p class="muted">${masterSearch ? 'Nenhuma empresa encontrada.' : 'Nenhuma empresa cadastrada ainda.'}</p>`;
 
     render(`
-      <div class="topbar" style="background:#1a1a1a;color:#fff;"><div class="brand">Agenda+ · Master</div><button class="icon-btn" style="color:#fff;" onclick="masterAuthed=false; renderMaster();">Sair</button></div>
+      <div class="topbar" style="background:#1a1a1a;color:#fff;"><div class="brand">Agenda+ · Master</div><button class="icon-btn" style="color:#fff;" onclick="masterLogout()">Sair</button></div>
       <div class="container wide">
         ${form}
         <div class="card">
@@ -1422,21 +1537,57 @@ function renderMasterPanel(){
   }
   window.drawMaster = draw;
   window.masterCriar = async ()=>{
-    const nome = document.getElementById('novoNome').value.trim();
+    const nome  = document.getElementById('novoNome').value.trim();
+    const email = document.getElementById('novoEmail').value.trim();
+    const senha = document.getElementById('novaSenha').value;
     if(!nome){ alert("Digite o nome da empresa."); return; }
-    const senha = document.getElementById('novaSenha').value.trim();
-    if(!senha){ alert("Defina uma senha de gestão para a empresa."); return; }
+    if(!email){ alert("Digite o e-mail do gestor."); return; }
+    if(senha.length < 6){ alert("A senha deve ter pelo menos 6 caracteres."); return; }
+
+    // 1. Cria a empresa no banco
     let slug = slugify(nome);
     let s2 = slug, n=1;
     while(empresas.some(e=>e.slug===s2)){ s2 = slug+"-"+(++n); }
     const nova = defaultEmpresa();
     nova.slug = s2; nova.nome = nome;
     nova.whatsapp = document.getElementById('novoWhats').value.trim();
-    nova.senhaGestao = senha;
     empresas.push(nova);
-    masterShowForm = false;
     await saveEmpresas();
-    goto({empresa: s2});
+
+    const empCriada = empresas.find(e=>e.slug===s2);
+    if(!empCriada?.id){
+      alert("Empresa criada mas ID não retornado. Verifique o banco de dados.");
+      masterShowForm = false; draw(); return;
+    }
+
+    // 2. Cria o usuário gestor via API segura
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    let apiOk = false;
+    try {
+      const resp = await fetch('/api/create-user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + session.access_token
+        },
+        body: JSON.stringify({ email, password: senha, nome, empresa_id: empCriada.id })
+      });
+      if(!resp.ok){
+        const err = await resp.json();
+        alert("Empresa criada, mas erro ao criar usuário: " + (err.error || 'Erro desconhecido') +
+              "\n\nVocê pode criar o usuário manualmente no Supabase.");
+      } else {
+        apiOk = true;
+      }
+    } catch(e) {
+      alert("Empresa criada, mas não foi possível contatar a API de criação de usuário.\n\nCrie o usuário manualmente no Supabase.");
+    }
+
+    masterShowForm = false;
+    if(apiOk){
+      alert(`Empresa "${nome}" criada com sucesso!\n\nCredenciais do gestor:\nE-mail: ${email}\nSenha: ${senha}\n\nGuarde essas informações e compartilhe com o gestor.`);
+    }
+    draw();
   };
   window.masterSelecionarImagem = (tipo, slug)=>{
     abrirCrop(tipo, slug, async (url)=>{
@@ -1470,6 +1621,26 @@ function renderMasterPanel(){
   draw();
   iniciarPolling(()=>{ if(!editingSlug) draw(); });
 }
+
+window.masterLogout = async ()=>{
+  pararPolling();
+  await supabaseClient.auth.signOut();
+  currentUser = null; currentProfile = null;
+  renderMasterLogin();
+};
+window.gestaoLogout = async (slug)=>{
+  pararPolling();
+  await supabaseClient.auth.signOut();
+  currentUser = null; currentProfile = null;
+  goto({empresa: slug});
+};
+window.masterRedefinirSenha = async ()=>{
+  const email = prompt("Digite o e-mail do gestor para enviar a redefinição de senha:");
+  if(!email) return;
+  const { error } = await supabaseClient.auth.resetPasswordForEmail(email);
+  if(error){ alert("Erro: " + error.message); return; }
+  alert("E-mail de redefinição de senha enviado para " + email);
+};
 
 // ── UPLOAD DE IMAGENS ────────────────────────────────────────
 let _cropInstance = null;
