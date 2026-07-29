@@ -762,7 +762,7 @@ function renderConfirmacao(emp){
           <div><strong>Hora:</strong> ${b.hora}</div>
           <div><strong>Nome:</strong> ${escapeHtml(b.nome)}</div>
         </div>
-        <a href="${link}" target="_blank"><button class="btn" style="width:100%;">Confirmar no WhatsApp</button></a>
+        <a href="${link}" target="_blank"><button class="btn" style="width:100%;background:#25d366;">Confirmar no WhatsApp</button></a>
         <div style="margin-top:14px;"><button class="icon-btn" onclick="goto({empresa:'${emp.slug}'})">Voltar ao início</button></div>
       </div>
     </div>
@@ -889,7 +889,7 @@ function renderGestao(emp){
     const lista = horariosDoMes(emp, mesHorario);
     return `
       <div class="card" style="margin-bottom:16px;">
-        <div class="eyebrow" style="margin-bottom:12px;color:#1a1a1a;">Serviços</div>
+        <div class="eyebrow" style="margin-bottom:12px;color:#1a1a1a;">Serviços disponíveis</div>
         ${emp.servicos.map((s,i)=>`
           <div class="list-item">
             <input value="${escapeAttr(s.nome)}" onchange="updServico(${i},'nome',this.value)"/>
@@ -903,7 +903,7 @@ function renderGestao(emp){
       </div>
 
       <div class="card">
-        <div class="eyebrow" style="margin-bottom:12px;color:#1a1a1a;">Horários</div>
+        <div class="eyebrow" style="margin-bottom:12px;color:#1a1a1a;">Horários de atendimento</div>
         <div class="field"><label>Mês</label><input type="month" value="${mesHorario}" onchange="mudarMesHorario(this.value)"/></div>
         ${lista.length ? `<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;">${lista.map(h=>`
           <div style="display:inline-flex;align-items:center;gap:8px;background:#f4f4f4;border:1.5px solid #e0e0e0;border-radius:10px;padding:8px 12px;">
