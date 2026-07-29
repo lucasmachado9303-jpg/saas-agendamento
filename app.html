@@ -422,6 +422,7 @@ function getParams(){
   return currentRoute;
 }
 function goto(params){
+  pararPolling();
   currentRoute = { master:null, empresa:null, page:"", ...params };
   route();
 }
@@ -458,6 +459,20 @@ function isoData(d){ return d.toISOString().slice(0,10); }
 
 const root = document.getElementById('root');
 function render(html){ root.innerHTML = html; }
+
+let _pollInterval = null;
+let _pollFn = null;
+function iniciarPolling(fn){
+  pararPolling();
+  _pollFn = fn;
+  _pollInterval = setInterval(async ()=>{
+    await loadData();
+    if(_pollFn) _pollFn();
+  }, 30000);
+}
+function pararPolling(){
+  if(_pollInterval){ clearInterval(_pollInterval); _pollInterval = null; _pollFn = null; }
+}
 
 // ---------- INIT ----------
 async function init(){
@@ -1275,6 +1290,7 @@ function renderGestao(emp){
   };
 
   draw();
+  iniciarPolling(()=>{ if(corner===null) draw(); });
 }
 
 // ---------- PAINEL MASTER ----------
@@ -1452,6 +1468,7 @@ function renderMasterPanel(){
     draw();
   };
   draw();
+  iniciarPolling(()=>{ if(!editingSlug) draw(); });
 }
 
 // ── UPLOAD DE IMAGENS ────────────────────────────────────────
