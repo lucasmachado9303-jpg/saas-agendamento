@@ -2,7 +2,7 @@
   "name": "Agenda+",
   "short_name": "Agenda+",
   "description": "Plataforma de agendamentos",
-  "start_url": "/",
+  "start_url": "/app.html",
   "display": "standalone",
   "background_color": "#f7f5f8",
   "theme_color": "#1a1a1a",

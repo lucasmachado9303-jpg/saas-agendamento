@@ -1,0 +1,1548 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Agenda+</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#1a1a1a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Agenda+">
+<style>
+  :root{
+    --ink:#1b1620;
+    --ink-soft:#4a4350;
+    --paper:#f7f5f8;
+    --card:#ffffff;
+    --line:#e6e1ea;
+    --plum:#3d1f3a;
+    --plum-deep:#2a1428;
+    --accent:#3d1f3a;
+    --gold:#b8935f;
+    --gold-soft:#e9dcc7;
+    --danger:#a3423a;
+    --ok:#3f6b4f;
+    --radius:14px;
+    --shadow:0 10px 30px -12px rgba(43,20,40,0.25);
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:'Inter',sans-serif;background:var(--paper);color:var(--ink);}
+  h1,h2,h3,.display{font-family:'Fraunces',serif;font-weight:600;letter-spacing:-0.01em;}
+  a{color:inherit;}
+  button{font-family:inherit;cursor:pointer;}
+  .btn{
+    background:var(--accent);color:#fff;border:none;padding:14px 26px;border-radius:999px;
+    font-size:15px;font-weight:600;letter-spacing:.02em;transition:transform .15s ease, filter .15s ease;
+  }
+  .btn:hover{filter:brightness(0.88);transform:translateY(-1px);}
+  .btn:active{transform:translateY(0);}
+  .btn.gold{background:var(--gold);color:var(--plum-deep);filter:none;}
+  .btn.gold:hover{background:#a67e4c;filter:none;}
+  .btn.ghost{background:transparent;color:var(--accent);border:1.5px solid var(--line);filter:none;}
+  .btn.ghost:hover{border-color:var(--accent);filter:none;}
+  .btn.danger{background:var(--danger);}
+  .btn:disabled{opacity:.45;cursor:not-allowed;transform:none;}
+  input,select,textarea{
+    font-family:'Inter',sans-serif;padding:12px 14px;border-radius:10px;border:1.5px solid var(--line);
+    background:#fff;font-size:15px;width:100%;color:var(--ink);
+  }
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--gold);}
+  label{font-size:13px;font-weight:600;color:var(--ink-soft);display:block;margin-bottom:6px;letter-spacing:.02em;text-transform:uppercase;}
+  .field{margin-bottom:18px;}
+  .card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:28px;}
+  .container{max-width:520px;margin:0 auto;padding:32px 20px 80px;}
+  .container.wide{max-width:960px;}
+  .eyebrow{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);font-weight:700;margin-bottom:8px;}
+  .top-plum{background:var(--accent);color:#fff;}
+  .top-plum .eyebrow{color:var(--gold-soft);}
+  .muted{color:var(--ink-soft);}
+  .row{display:flex;gap:12px;}
+  .row > *{flex:1;}
+  .chip{
+    display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;font-size:12px;font-weight:700;
+  }
+  .chip.ok{background:#e3ede6;color:var(--ok);}
+  .chip.blocked{background:#f3e2e0;color:var(--danger);}
+  .service-opt{
+    border:1.5px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:10px;cursor:pointer;
+    display:flex;justify-content:space-between;align-items:center;transition:.15s;
+  }
+  .service-opt:hover{border-color:var(--gold);}
+  .service-opt.selected{border-color:var(--accent);background:#faf7fb;box-shadow:inset 0 0 0 1px var(--accent);}
+  .slot{
+    padding:10px 6px;text-align:center;border-radius:10px;border:1.5px solid var(--line);font-size:14px;font-weight:600;
+  }
+  .slot.free{cursor:pointer;}
+  .slot.free:hover{border-color:var(--gold);}
+  .slot.selected{background:var(--accent);color:#fff;border-color:var(--accent);}
+  .slot.taken{opacity:.35;text-decoration:line-through;cursor:not-allowed;}
+  .slots-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:8px;}
+  .hero{
+    position:relative;min-height:100vh;display:flex;align-items:flex-end;background-size:cover;background-position:center;
+  }
+  .hero::before{
+    content:"";position:absolute;inset:0;background:linear-gradient(180deg, rgba(20,10,20,0.15) 0%, rgba(20,10,20,0.75) 90%);
+  }
+  .hero-content{position:relative;z-index:1;padding:48px 28px 64px;color:#fff;width:100%;max-width:640px;margin:0 auto;text-align:center;}
+  .hero-content h1{font-size:clamp(32px,7vw,52px);margin:0 0 10px;}
+  .hero-content p{font-size:16px;opacity:.9;margin:0 0 28px;}
+  .topbar{display:flex;justify-content:space-between;align-items:center;padding:20px 24px;}
+  .topbar .brand{font-family:'Fraunces',serif;font-weight:600;font-size:20px;}
+  .empty{text-align:center;padding:60px 20px;color:var(--ink-soft);}
+  .list-item{
+    display:flex;justify-content:space-between;align-items:center;padding:16px 0;border-bottom:1px solid var(--line);
+  }
+  .list-item:last-child{border-bottom:none;}
+  .tabs{display:flex;gap:8px;margin-bottom:24px;flex-wrap:wrap;}
+  .tab{padding:10px 18px;border-radius:999px;border:1.5px solid var(--line);font-weight:600;font-size:14px;background:#fff;}
+  .tab.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+  .day-toggle{
+    padding:10px;border-radius:10px;border:1.5px solid var(--line);text-align:center;font-weight:700;font-size:13px;cursor:pointer;background:#fff;
+  }
+  .day-toggle.on{background:var(--accent);color:#fff;border-color:var(--accent);}
+  .days-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:10px;}
+  .footer-note{text-align:center;font-size:12px;color:var(--ink-soft);margin-top:24px;}
+  .icon-btn{background:none;border:none;color:var(--ink-soft);font-size:13px;font-weight:600;text-decoration:underline;padding:0;}
+  .loading{display:flex;align-items:center;justify-content:center;min-height:60vh;color:var(--ink-soft);}
+
+  /* ── MOBILE FOUNDATION ─────────────────────────────────── */
+  html { -webkit-text-size-adjust:100%; }
+  body { -webkit-font-smoothing:antialiased; }
+
+  /* Inputs com 16px evitam zoom automático no iOS */
+  input,select,textarea { font-size:16px !important; min-height:48px; }
+
+  /* Botões com área de toque mínima */
+  .btn { min-height:48px; display:inline-flex; align-items:center; justify-content:center; }
+  .icon-btn { min-height:44px; min-width:44px; display:inline-flex; align-items:center; justify-content:center; }
+
+  /* Slots maiores para toque */
+  .slot { min-height:52px; display:flex; align-items:center; justify-content:center; }
+
+  /* Serviço com área maior */
+  .service-opt { min-height:56px; }
+
+  /* Tabs com scroll horizontal sem barra */
+  .tabs { overflow-x:auto; flex-wrap:nowrap; padding-bottom:6px;
+          scrollbar-width:none; -ms-overflow-style:none; }
+  .tabs::-webkit-scrollbar { display:none; }
+  .tab { white-space:nowrap; flex-shrink:0; min-height:40px;
+         display:inline-flex; align-items:center; justify-content:center; }
+
+  @media (max-width:600px){
+    /* Containers com safe-area para notch e barra do iOS */
+    .container {
+      padding: 20px 16px calc(80px + env(safe-area-inset-bottom, 0px));
+    }
+    .container.wide {
+      padding: 20px 16px calc(80px + env(safe-area-inset-bottom, 0px));
+      max-width: 100%;
+    }
+
+    /* Cards com menos padding lateral */
+    .card { padding:20px 16px; border-radius:12px; }
+
+    /* Topbar compacta */
+    .topbar { padding:12px 16px; }
+    .topbar .brand { font-size:17px; }
+
+    /* Botões menores lateralmente mas mantendo altura */
+    .btn { padding:12px 18px; font-size:14px; }
+
+    /* Slots grid com colunas menores */
+    .slots-grid { grid-template-columns:repeat(auto-fill,minmax(62px,1fr)); gap:6px; }
+
+    /* Hero com safe-area no fundo */
+    .hero-content {
+      padding: 32px 20px calc(56px + env(safe-area-inset-bottom, 0px));
+    }
+    .hero-content h1 { font-size:clamp(28px,8vw,42px); }
+
+    /* Rows empilham no mobile */
+    .row { flex-direction:column; gap:0; }
+
+    /* List-item com wrap para ações */
+    .list-item { padding:14px 0; align-items:flex-start; flex-wrap:wrap; gap:8px; }
+    .list-item > div:first-child { flex:1 1 100%; }
+
+    /* Chip menor */
+    .chip { font-size:11px; padding:4px 10px; }
+
+    /* Topbar top-plum com safe-area no topo */
+    .top-plum { padding-top:env(safe-area-inset-top, 0px); }
+
+    /* Barra de aviso master */
+    div[style*="gold-soft"] { padding:10px 16px; font-size:12px; }
+
+    /* Eyebrow menor */
+    .eyebrow { font-size:11px; }
+
+    /* Field sem margin extra quando dentro de row */
+    .row .field { margin-bottom:18px; }
+
+    /* Botão de dias de agendamento */
+    .dias-scroll {
+      display:flex; gap:6px; overflow-x:auto; padding-bottom:6px;
+      scrollbar-width:none; -ms-overflow-style:none;
+      -webkit-overflow-scrolling:touch;
+    }
+    .dias-scroll::-webkit-scrollbar { display:none; }
+    .dias-scroll .btn { flex-shrink:0; min-width:56px; padding:10px 8px; font-size:13px; }
+  }
+
+  @media (min-width:601px){
+    .dias-scroll { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px; }
+    .dias-scroll .btn { flex:1; padding:10px 8px; font-size:13px; min-width:0; }
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<!-- Modal de recorte de imagem (fora do #root para não ser destruído na navegação) -->
+<div id="cropModal" style="position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.88);display:none;flex-direction:column;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:#fff;border-radius:16px;overflow:hidden;max-width:480px;width:100%;display:flex;flex-direction:column;max-height:90vh;">
+    <div style="padding:14px 20px;border-bottom:1px solid #e6e1ea;font-weight:700;font-size:16px;flex-shrink:0;">Ajuste a imagem</div>
+    <div style="background:#111;overflow:hidden;flex:1;min-height:260px;"><img id="cropImg" src="" style="display:block;max-width:100%;"/></div>
+    <div style="padding:14px 16px;display:flex;gap:12px;flex-shrink:0;">
+      <button onclick="cancelarCrop()" style="flex:1;background:transparent;color:#3d1f3a;border:1.5px solid #e6e1ea;padding:12px;border-radius:999px;font-size:15px;font-weight:600;cursor:pointer;">Cancelar</button>
+      <button id="btnConfirmarCrop" onclick="confirmarCrop()" style="flex:1;background:#1a1a1a;color:#fff;border:none;padding:12px;border-radius:999px;font-size:15px;font-weight:600;cursor:pointer;">Confirmar recorte</button>
+    </div>
+  </div>
+</div>
+
+<!-- Supabase SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
+
+<script>
+/*
+ * NOTA DE SEGURANÇA — ler antes de publicar em produção
+ * -------------------------------------------------------
+ * O sistema atualmente chama o Supabase diretamente do frontend
+ * usando a anon key exposta no arquivo supabase.js.
+ *
+ * A senha de gestão de cada empresa é validada apenas no cliente
+ * e NÃO deve ser considerada uma proteção definitiva contra acesso
+ * não autorizado ao banco de dados.
+ *
+ * Autenticação real (Supabase Auth ou API Routes no Vercel com
+ * service_role key) será implementada em versão futura.
+ * -------------------------------------------------------
+ */
+
+const STORE_KEY  = "empresas";
+const BOOK_KEY   = "agendamentos";
+const MASTER_PASS = "admin2026";
+const DIAS = ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
+
+// Ícones padrão por tipo de botão
+const ICONE_POR_TIPO = {
+  whatsapp: '💬', instagram: '📸', telefone: '📞',
+  maps: '📍', site: '🌐', link: '🔗'
+};
+
+let empresas = [];
+let agendamentos = [];
+let loaded = false;
+
+// ── PWA ──────────────────────────────────────────────────────
+let _pwaPrompt = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  _pwaPrompt = e;
+});
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('/sw.js').catch(()=>{});
+}
+function mostrarBannerPWA(){
+  if(document.getElementById('pwa-banner')) return;
+  if(!_pwaPrompt || sessionStorage.getItem('pwa-banner-dismissed')) return;
+  const banner = document.createElement('div');
+  banner.id = 'pwa-banner';
+  banner.style.cssText = 'position:fixed;bottom:0;left:0;right:0;z-index:9998;background:#1a1a1a;color:#fff;padding:14px 20px;display:flex;align-items:center;gap:12px;box-shadow:0 -4px 20px rgba(0,0,0,0.2);';
+  banner.innerHTML = `
+    <div style="flex:1;font-size:14px;font-weight:600;line-height:1.3;">Instale o Agenda+ no seu aparelho para acesso rápido</div>
+    <button onclick="instalarPWA()" style="background:#fff;color:#1a1a1a;border:none;border-radius:999px;padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;">Instalar</button>
+    <button onclick="dispensarPWA()" style="background:none;border:none;color:#aaa;font-size:20px;cursor:pointer;padding:0 4px;line-height:1;">×</button>
+  `;
+  document.body.appendChild(banner);
+}
+window.instalarPWA = async ()=>{
+  if(!_pwaPrompt) return;
+  _pwaPrompt.prompt();
+  const { outcome } = await _pwaPrompt.userChoice;
+  if(outcome === 'accepted') _pwaPrompt = null;
+  dispensarPWA();
+};
+window.dispensarPWA = ()=>{
+  sessionStorage.setItem('pwa-banner-dismissed','1');
+  const b = document.getElementById('pwa-banner');
+  if(b) b.remove();
+};
+// ─────────────────────────────────────────────────────────────
+
+async function loadData(){
+  try{
+    const { data, error } = await supabaseClient.from('empresas').select('*');
+    if(error) throw error;
+    empresas = (data || []).map(e => ({
+      id:                   e.id,
+      slug:                 e.slug,
+      nome:                 e.nome,
+      fotoUrl:              e.foto_url              || '',
+      whatsapp:             e.whatsapp              || '',
+      senhaGestao:          e.senha_gestao,
+      bloqueada:            e.bloqueada,
+      // Campos de personalização (Fase 2)
+      descricao:            e.descricao             || '',
+      logo:                 e.logo                  || '',
+      corPrincipal:         e.cor_principal         || '#3d1f3a',
+      textoDestaque:        e.texto_destaque        || '',
+      // Relações
+      servicos:             [],
+      horariosPorMes:       {},
+      bloqueios:            [],
+      botoes:               []
+    }));
+  }catch(e){ console.error('Erro ao carregar empresas:', e); empresas = []; }
+
+  if(empresas.length > 0){
+    const ids = empresas.map(e => e.id);
+
+    try{
+      const { data } = await supabaseClient.from('servicos').select('*').in('empresa_id', ids);
+      (data || []).forEach(s => {
+        const emp = empresas.find(e => e.id === s.empresa_id);
+        if(emp) emp.servicos.push({ id: s.id, nome: s.nome, duracao: s.duracao, preco: Number(s.preco) });
+      });
+    }catch(e){ console.error('Erro ao carregar serviços:', e); }
+
+    try{
+      const { data } = await supabaseClient.from('horarios_disponiveis').select('*').in('empresa_id', ids);
+      (data || []).forEach(h => {
+        const emp = empresas.find(e => e.id === h.empresa_id);
+        if(!emp) return;
+        emp.horariosPorMes[h.mes] = emp.horariosPorMes[h.mes] || [];
+        if(!emp.horariosPorMes[h.mes].includes(h.hora)) emp.horariosPorMes[h.mes].push(h.hora);
+      });
+    }catch(e){ console.error('Erro ao carregar horários:', e); }
+
+    try{
+      const { data } = await supabaseClient.from('bloqueios').select('*').in('empresa_id', ids);
+      (data || []).forEach(b => {
+        const emp = empresas.find(e => e.id === b.empresa_id);
+        if(emp) emp.bloqueios.push({ id: b.id, data: b.data, hora: b.hora });
+      });
+    }catch(e){ console.error('Erro ao carregar bloqueios:', e); }
+
+    try{
+      const { data } = await supabaseClient.from('botoes_empresa').select('*').in('empresa_id', ids);
+      (data || []).forEach(b => {
+        const emp = empresas.find(e => e.id === b.empresa_id);
+        if(emp) emp.botoes.push({
+          id: b.id, nome: b.nome, tipo: b.tipo, link: b.link,
+          icone: b.icone || '', ordem: b.ordem, ativo: b.ativo,
+          abrirNovaAba: b.abrir_nova_aba
+        });
+      });
+      empresas.forEach(e => e.botoes.sort((a, b) => a.ordem - b.ordem));
+    }catch(e){ console.error('Erro ao carregar botões:', e); }
+
+    try{
+      const { data } = await supabaseClient.from('agendamentos').select('*').in('empresa_id', ids);
+      agendamentos = (data || []).map(a => {
+        const emp = empresas.find(e => e.id === a.empresa_id);
+        return {
+          id:          a.id,
+          slug:        emp ? emp.slug : '',
+          servicoId:   a.servico_id,
+          servicoNome: a.servico_nome,
+          data:        a.data,
+          hora:        a.hora,
+          nome:        a.nome_cliente,
+          telefone:    a.telefone,
+          criadoEm:    a.criado_em
+        };
+      });
+    }catch(e){ console.error('Erro ao carregar agendamentos:', e); agendamentos = []; }
+  } else {
+    agendamentos = [];
+  }
+
+  loaded = true;
+}
+
+async function saveEmpresas(){
+  const toRow = e => ({
+    slug:                  e.slug,
+    nome:                  e.nome,
+    foto_url:              e.fotoUrl              || null,
+    whatsapp:              e.whatsapp              || null,
+    senha_gestao:          e.senhaGestao,
+    bloqueada:             e.bloqueada,
+    // Campos de personalização (Fase 2)
+    descricao:             e.descricao             || null,
+    logo:                  e.logo                  || null,
+    cor_principal:         e.corPrincipal          || '#3d1f3a',
+    texto_destaque:        e.textoDestaque         || null,
+  });
+
+  const novas     = empresas.filter(e => !e.id);
+  const existentes = empresas.filter(e =>  e.id);
+
+  if(novas.length > 0){
+    const { data, error } = await supabaseClient
+      .from('empresas').insert(novas.map(toRow)).select();
+    if(error){ console.error('Erro ao criar empresa:', error); return; }
+    (data || []).forEach(row => {
+      const emp = empresas.find(e => e.slug === row.slug);
+      if(emp) emp.id = row.id;
+    });
+  }
+
+  if(existentes.length > 0){
+    const { error } = await supabaseClient
+      .from('empresas')
+      .upsert(existentes.map(e => ({ id: e.id, ...toRow(e) })), { onConflict: 'id' });
+    if(error) console.error('Erro ao atualizar empresa:', error);
+  }
+}
+async function saveAgendamentos(){
+  // Agendamentos salvos diretamente no Supabase por operação
+}
+
+function slugify(s){
+  return s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/(^-|-$)/g,"");
+}
+function uid(){ return Math.random().toString(36).slice(2,9); }
+
+let currentRoute = { master:null, empresa:null, page:"" };
+
+function getParams(){
+  return currentRoute;
+}
+function goto(params){
+  currentRoute = { master:null, empresa:null, page:"", ...params };
+  route();
+}
+
+function defaultEmpresa(){
+  return {
+    slug:"", nome:"", fotoUrl:"", whatsapp:"", senhaGestao:"1234", bloqueada:false,
+    descricao:"", logo:"", corPrincipal:"#3d1f3a", textoDestaque:"",
+    servicos:[], horariosPorMes:{}, bloqueios:[], botoes:[]
+  };
+}
+
+function mesKey(d){ return d.toISOString().slice(0,7); }
+function horariosDoMes(emp, key){
+  const lista = (emp.horariosPorMes && emp.horariosPorMes[key]) || [];
+  return [...lista].sort();
+}
+function proximosDiasComHorario(emp, qtd=21){
+  const out = [];
+  const hoje = new Date();
+  for(let i=0;i<120 && out.length<qtd;i++){
+    const d = new Date(hoje);
+    d.setDate(hoje.getDate()+i);
+    if(horariosDoMes(emp, mesKey(d)).length>0){
+      out.push(d);
+    }
+  }
+  return out;
+}
+function fmtData(d){
+  return d.toLocaleDateString('pt-BR',{weekday:'short', day:'2-digit', month:'2-digit'});
+}
+function isoData(d){ return d.toISOString().slice(0,10); }
+
+const root = document.getElementById('root');
+function render(html){ root.innerHTML = html; }
+
+// ---------- INIT ----------
+async function init(){
+  render(`<div class="loading">Carregando…</div>`);
+  await loadData();
+  const params = new URLSearchParams(location.search);
+  if(params.get('empresa')) currentRoute.empresa = params.get('empresa');
+  else if(params.get('master')) currentRoute.master = 1;
+  route();
+}
+
+function route(){
+  const {master, empresa, page} = getParams();
+  if(master){
+    renderMaster();
+  } else if(empresa){
+    const emp = empresas.find(e=>e.slug===empresa);
+    if(!emp){ renderNotFound(); return; }
+    if(page==="agendar") renderAgendar(emp);
+    else if(page==="confirmacao") renderConfirmacao(emp);
+    else if(page==="gestao") renderGestaoLogin(emp);
+    else renderHome(emp);
+  } else {
+    renderLanding();
+  }
+}
+
+function barraVoltarMaster(){
+  if(!masterAuthed) return "";
+  return `<div style="background:var(--gold-soft);padding:10px 20px;text-align:center;font-size:13px;font-weight:700;">
+    Modo visualização (via painel master) — <span style="text-decoration:underline;cursor:pointer;" onclick="goto({master:1})">Voltar ao painel master</span>
+  </div>`;
+}
+
+function renderNotFound(){
+  render(`<div class="container"><div class="empty"><h2 class="display">Empresa não encontrada</h2><p>Verifique o link e tente novamente.</p></div></div>`);
+}
+
+function renderLanding(){
+  render(`
+    <div class="topbar"><div class="brand">Agenda+</div></div>
+    <div class="container">
+      <div class="card" style="text-align:center;">
+        <div class="eyebrow">Plataforma de agendamentos</div>
+        <h1 class="display">Bem-vindo ao Agenda+</h1>
+        <p class="muted">Este é o link raiz da plataforma. Acesse o painel master para cadastrar empresas, ou use o link individual de uma empresa (?empresa=slug) para agendar.</p>
+        <button class="btn" onclick="goto({master:1})">Entrar no painel master</button>
+      </div>
+    </div>
+  `);
+}
+
+// ---------- HOME DA EMPRESA ----------
+function renderHome(emp){
+  applyAccent(emp.corPrincipal);
+  if(emp.bloqueada){
+    render(`${barraVoltarMaster()}<div class="container"><div class="empty"><h2 class="display">Agendamentos temporariamente indisponíveis</h2><p>Entre em contato diretamente com ${escapeHtml(emp.nome)}.</p></div></div>`);
+    return;
+  }
+
+  const bg  = emp.fotoUrl || null;
+  const cor = emp.corPrincipal || '#3d1f3a';
+  const botoesAtivos = (emp.botoes || []).filter(b => b.ativo).sort((a,b) => a.ordem - b.ordem);
+
+  const logoHtml = emp.logo
+    ? `<img src="${escapeAttr(emp.logo)}" alt="Logo" style="width:180px;height:180px;border-radius:50%;border:4px solid #fff;object-fit:cover;box-shadow:0 4px 24px rgba(0,0,0,0.22);">`
+    : `<div style="width:180px;height:180px;border-radius:50%;border:4px solid #fff;background:${cor};display:flex;align-items:center;justify-content:center;font-size:72px;font-family:'Fraunces',serif;font-weight:600;color:#fff;box-shadow:0 4px 24px rgba(0,0,0,0.22);">${escapeHtml(emp.nome.charAt(0).toUpperCase())}</div>`;
+
+  const botoesHtml = botoesAtivos.map(b => {
+    const target = b.abrirNovaAba ? 'target="_blank" rel="noopener noreferrer"' : '';
+    return `<a href="${escapeAttr(b.link)}" ${target} style="text-decoration:none;display:block;width:100%;max-width:360px;margin:0 auto 10px;">
+      <div style="background:#fff;border:1.5px solid var(--line);border-radius:14px;padding:14px 20px;font-size:15px;font-weight:600;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,0.06);color:var(--ink);">
+        ${escapeHtml(b.nome)}
+      </div>
+    </a>`;
+  }).join('');
+
+  render(`
+    ${barraVoltarMaster()}
+    <div style="min-height:100vh;background:var(--paper);display:flex;flex-direction:column;">
+
+      <!-- Imagem de fundo -->
+      <div style="position:relative;height:220px;${bg ? `background-image:url('${escapeAttr(bg)}');background-size:cover;background-position:center;` : `background:linear-gradient(135deg,${cor} 0%,#1a0a1a 100%);`}">
+        <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(20,10,20,0.1) 0%,rgba(20,10,20,0.55) 100%);"></div>
+      </div>
+
+      <!-- Perfil -->
+      <div style="flex:1;display:flex;flex-direction:column;align-items:center;padding:0 20px;margin-top:-90px;position:relative;">
+
+        ${logoHtml}
+
+        <h1 style="font-family:'Fraunces',serif;font-size:26px;font-weight:600;margin:14px 0 4px;text-align:center;color:var(--ink);">${escapeHtml(emp.nome)}</h1>
+
+        ${emp.descricao    ? `<p style="color:var(--ink-soft);font-size:14px;text-align:center;margin:0 0 6px;max-width:300px;line-height:1.5;">${escapeHtml(emp.descricao)}</p>` : ''}
+        ${emp.textoDestaque ? `<p style="color:${cor};font-size:13px;font-weight:700;text-align:center;margin:0 0 4px;letter-spacing:.02em;">${escapeHtml(emp.textoDestaque)}</p>` : ''}
+
+        <div style="height:24px;"></div>
+
+        <!-- Botão principal de agendamento -->
+        <div style="width:100%;max-width:360px;margin:0 auto 12px;">
+          <button onclick="goto({empresa:'${emp.slug}', page:'agendar'})"
+            style="width:100%;background:${cor};color:#fff;border:none;border-radius:14px;padding:16px 20px;font-size:16px;font-weight:700;font-family:'Inter',sans-serif;cursor:pointer;text-align:center;box-shadow:0 4px 16px rgba(0,0,0,0.15);">
+            Agendar horário
+          </button>
+        </div>
+
+        <!-- Botões personalizados -->
+        ${botoesHtml}
+
+      </div>
+
+      <!-- Rodapé -->
+      <div style="text-align:center;padding:16px 20px calc(16px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--line);margin-top:24px;">
+        <button class="icon-btn" onclick="goto({empresa:'${emp.slug}', page:'gestao'})"
+          style="font-size:11px;color:var(--ink-soft);opacity:0.4;letter-spacing:.05em;">
+          Área da empresa
+        </button>
+      </div>
+
+    </div>
+  `);
+}
+
+// ---------- AGENDAMENTO ----------
+let bookingState = {};
+function renderAgendar(emp){
+  applyAccent(emp.corPrincipal);
+  bookingState = { servico:null, data:null, hora:null, nome:"", telefone:"" };
+
+  function primeiros7Dias(emp){
+    const out = [];
+    const hoje = new Date();
+    for(let i=0;i<120 && out.length<7;i++){
+      const d = new Date(hoje);
+      d.setDate(hoje.getDate()+i);
+      const key = mesKey(d);
+      const h = horariosDoMes(emp, key);
+      if(h.length>0) out.push(d);
+    }
+    return out;
+  }
+
+  function draw(){
+    const dias7 = primeiros7Dias(emp);
+
+    const diasHtml = dias7.length ? dias7.map(d=>{
+      const iso = isoData(d);
+      const sel = bookingState.data===iso;
+      const label = d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
+      return `<button class="btn ${sel?'':'ghost'}" onclick="selectDia('${iso}')">${label}</button>`;
+    }).join("") : `<p class="muted">Nenhuma data disponível.</p>`;
+
+    // verifica se data selecionada não está nos 7 (veio do calendário)
+    const dataForaDos7 = bookingState.data && !dias7.some(d=>isoData(d)===bookingState.data);
+    const dataFmtOutra = bookingState.data && dataForaDos7
+      ? new Date(bookingState.data+"T00:00:00").toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'})
+      : null;
+
+    const slots = bookingState.data ? horariosDoMes(emp, bookingState.data.slice(0,7)) : [];
+    const _agora = new Date();
+    const _hojeIso = isoData(_agora);
+    const slotsHtml = bookingState.data ? (slots.length ? slots.map(h=>{
+      const taken = agendamentos.some(a=>a.slug===emp.slug && a.data===bookingState.data && a.hora===h);
+      const bloqueado = (emp.bloqueios||[]).some(b=>b.data===bookingState.data && b.hora===h);
+      const passado = bookingState.data === _hojeIso && (()=>{const [hh,mm]=h.split(':').map(Number); return hh*60+mm <= _agora.getHours()*60+_agora.getMinutes();})();
+      const sel = bookingState.hora===h;
+      if(taken || bloqueado || passado) return `<div class="slot taken">${h}</div>`;
+      return `<div class="slot free ${sel?'selected':''}" onclick="selectHora('${h}')">${h}</div>`;
+    }).join("") : `<p class="muted">Nenhum horário disponível nesta data.</p>`) : `<p class="muted">Escolha um dia primeiro.</p>`;
+
+    const servicosHtml = emp.servicos.map(s=>{
+      const sel = bookingState.servico===s.id;
+      return `<div class="service-opt ${sel?'selected':''}" onclick="selectServico('${s.id}')">
+        <strong>${escapeHtml(s.nome)}</strong>
+      </div>`;
+    }).join("");
+
+    const telDigits = bookingState.telefone.replace(/\D/g,'');
+    const telValido = telDigits.length === 12 && telDigits[0] === '0' && telDigits[3] === '9';
+    const telErro   = telDigits.length > 0 && !telValido;
+    const canSubmit = bookingState.servico && bookingState.data && bookingState.hora && bookingState.nome.trim() && telValido;
+
+    render(`
+      ${barraVoltarMaster()}
+      <div class="topbar top-plum" style="display:grid;grid-template-columns:44px 1fr 44px;align-items:center;">
+        <button class="icon-btn" style="color:#e9dcc7;font-size:22px;line-height:1;" onclick="goto({empresa:'${emp.slug}'})">←</button>
+        <div class="brand" style="text-align:center;font-size:17px;">${escapeHtml(emp.nome)}</div>
+        <div></div>
+      </div>
+      <div class="container">
+        <div class="card">
+          <div class="eyebrow">Passo 1</div>
+          <h3 class="display">Escolha o serviço</h3>
+          ${servicosHtml}
+
+          <div class="eyebrow" style="margin-top:24px;">Passo 2</div>
+          <h3 class="display">Escolha o dia</h3>
+          <div class="dias-scroll">
+            ${diasHtml}
+            <button class="btn ${dataFmtOutra?'':'ghost'}" style="position:relative;flex-shrink:0;min-width:72px;" onclick="document.getElementById('calPicker').showPicker ? document.getElementById('calPicker').showPicker() : document.getElementById('calPicker').click()">
+              ${dataFmtOutra ? dataFmtOutra : 'Outra data'}
+              <input type="date" id="calPicker" value="${bookingState.data||''}" style="position:absolute;opacity:0;width:1px;height:1px;top:0;left:0;" onchange="selectDiaOutra(this.value)"/>
+            </button>
+          </div>
+
+          <div class="eyebrow" style="margin-top:24px;">Passo 3</div>
+          <h3 class="display">Escolha o horário</h3>
+          <div class="slots-grid">${slotsHtml}</div>
+
+          <div class="eyebrow" style="margin-top:24px;">Passo 4</div>
+          <h3 class="display">Seus dados</h3>
+          <div class="field"><label>Nome</label><input id="inpNome" value="${escapeAttr(bookingState.nome)}" oninput="bookingState.nome=this.value.toUpperCase();this.value=this.value.toUpperCase()" placeholder="SEU NOME" style="text-transform:uppercase;"/></div>
+          <div class="field">
+            <label>Telefone (WhatsApp)</label>
+            <input id="inpTel" type="tel" inputmode="numeric" maxlength="12"
+              value="${escapeAttr(bookingState.telefone)}"
+              oninput="formatarTelefone(this)"
+              placeholder="011912345678"/>
+            <div id="telError" style="display:${telErro?'flex':'none'};align-items:flex-start;gap:6px;margin-top:8px;color:var(--danger);font-size:13px;line-height:1.4;">
+              <span style="font-weight:700;font-size:15px;flex-shrink:0;">ⓘ</span>
+              <span>Formato: 0 + DDD (2 dígitos) + 9 + número (8 dígitos). Ex: <strong>011912345678</strong></span>
+            </div>
+          </div>
+
+          <button id="btnAgendar" class="btn" style="width:100%;margin-top:8px;" ${canSubmit?'':'disabled'} onclick="confirmarAgendamento('${emp.slug}')">Agendar</button>
+        </div>
+      </div>
+    `);
+  }
+  window.selectServico = (id)=>{ bookingState.servico = id; draw(); };
+  window.selectDia = (iso)=>{ bookingState.data = iso; bookingState.hora=null; draw(); };
+  window.selectDiaOutra = (iso)=>{ if(iso){ bookingState.data = iso; bookingState.hora=null; draw(); } };
+  window.selectHora = (h)=>{ bookingState.hora = h; draw(); };
+  window.formatarTelefone = (input)=>{
+    let v = input.value.replace(/\D/g,'');
+    if(v.length > 0 && v[0] !== '0') v = '0' + v;
+    v = v.slice(0, 12);
+    input.value = v;
+    bookingState.telefone = v;
+    const digits = v;
+    const valido = digits.length === 12 && digits[0] === '0' && digits[3] === '9';
+    const erro = digits.length > 0 && !valido;
+    const errEl = document.getElementById('telError');
+    if(errEl) errEl.style.display = erro ? 'flex' : 'none';
+    const btn = document.getElementById('btnAgendar');
+    if(btn) btn.disabled = !(bookingState.servico && bookingState.data && bookingState.hora && bookingState.nome.trim() && valido);
+  };
+  draw();
+}
+
+async function confirmarAgendamento(slug){
+  const emp = empresas.find(e=>e.slug===slug);
+  const nomeInp = document.getElementById('inpNome');
+  const telInp = document.getElementById('inpTel');
+  bookingState.nome = nomeInp ? nomeInp.value : bookingState.nome;
+  bookingState.telefone = telInp ? telInp.value : bookingState.telefone;
+  const _digits = bookingState.telefone.replace(/\D/g,'');
+  const _telOk = _digits.length === 12 && _digits[0] === '0' && _digits[3] === '9';
+  if(!bookingState.servico || !bookingState.data || !bookingState.hora || !bookingState.nome.trim() || !_telOk) return;
+
+  const jaOcupado = agendamentos.some(a=>a.slug===slug && a.data===bookingState.data && a.hora===bookingState.hora)
+    || (emp.bloqueios||[]).some(b=>b.data===bookingState.data && b.hora===bookingState.hora);
+  if(jaOcupado){ alert("Esse horário acabou de ser reservado ou bloqueado. Escolha outro."); renderAgendar(emp); return; }
+
+  const servico = emp.servicos.find(s=>s.id===bookingState.servico);
+  const { data: row, error } = await supabaseClient.from('agendamentos').insert({
+    empresa_id:   emp.id,
+    servico_id:   servico ? servico.id : null,
+    servico_nome: servico ? servico.nome : '',
+    data:         bookingState.data,
+    hora:         bookingState.hora,
+    nome_cliente: bookingState.nome.trim(),
+    telefone:     bookingState.telefone.trim()
+  }).select().single();
+  if(error){
+    if(error.code === '23505'){ alert("Esse horário acabou de ser reservado. Escolha outro."); renderAgendar(emp); return; }
+    alert("Erro ao realizar agendamento. Tente novamente."); return;
+  }
+  const novo = {
+    id: row.id, slug, servicoId: row.servico_id, servicoNome: row.servico_nome,
+    data: row.data, hora: row.hora, nome: row.nome_cliente, telefone: row.telefone, criadoEm: row.criado_em
+  };
+  agendamentos.push(novo);
+  lastBooking = novo;
+  goto({empresa:slug, page:'confirmacao'});
+}
+
+let lastBooking = null;
+
+// ---------- CONFIRMAÇÃO ----------
+function renderConfirmacao(emp){
+  applyAccent(emp.corPrincipal);
+  const b = lastBooking;
+  if(!b){
+    render(`<div class="container"><div class="empty"><h2 class="display">Nenhum agendamento recente</h2><button class="btn" onclick="goto({empresa:'${emp.slug}'})">Voltar</button></div></div>`);
+    return;
+  }
+  const dataFmt = new Date(b.data+"T00:00:00").toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'});
+  const msg = `Olá! Gostaria de confirmar meu agendamento em ${emp.nome}: ${b.servicoNome}, dia ${dataFmt} às ${b.hora}. Nome: ${b.nome}.`;
+  const numero = (emp.whatsapp||"").replace(/\D/g,"");
+  const link = `https://wa.me/${numero}?text=${encodeURIComponent(msg)}`;
+  render(`
+    <div class="topbar top-plum" style="display:grid;grid-template-columns:44px 1fr 44px;align-items:center;">
+      <button class="icon-btn" style="color:#e9dcc7;font-size:22px;line-height:1;" onclick="goto({empresa:'${emp.slug}'})">←</button>
+      <div class="brand" style="text-align:center;font-size:17px;">${escapeHtml(emp.nome)}</div>
+      <div></div>
+    </div>
+    <div class="container">
+      <div class="card" style="text-align:center;">
+        <div class="eyebrow" style="color:var(--ok);">Agendamento reservado</div>
+        <h1 class="display">Falta pouco!</h1>
+        <p class="muted">Confirme seu horário direto pelo WhatsApp de ${escapeHtml(emp.nome)}.</p>
+        <div style="text-align:left;background:var(--paper);border-radius:10px;padding:16px;margin:20px 0;">
+          <div><strong>Serviço:</strong> ${escapeHtml(b.servicoNome)}</div>
+          <div><strong>Dia:</strong> ${dataFmt}</div>
+          <div><strong>Hora:</strong> ${b.hora}</div>
+          <div><strong>Nome:</strong> ${escapeHtml(b.nome)}</div>
+        </div>
+        <a href="${link}" target="_blank"><button class="btn gold" style="width:100%;">Confirmar no WhatsApp</button></a>
+        <div style="margin-top:14px;"><button class="icon-btn" onclick="goto({empresa:'${emp.slug}'})">Voltar ao início</button></div>
+      </div>
+    </div>
+  `);
+}
+
+// ---------- GESTÃO (LOGIN) ----------
+function renderGestaoLogin(emp){
+  applyAccent('#1a1a1a');
+  render(`
+    ${barraVoltarMaster()}
+    <div class="topbar" style="background:#1a1a1a;color:#fff;display:grid;grid-template-columns:44px 1fr 44px;align-items:center;">
+      <button class="icon-btn" style="color:#fff;font-size:22px;line-height:1;" onclick="goto({empresa:'${emp.slug}'})">←</button>
+      <div class="brand" style="text-align:center;font-size:17px;">${escapeHtml(emp.nome)}</div>
+      <div></div>
+    </div>
+    <div class="container">
+      <div class="card">
+        <div class="eyebrow" style="color:#1a1a1a;">Área restrita</div>
+        <h2 class="display">Gestão — ${escapeHtml(emp.nome)}</h2>
+        <div class="field">
+          <label>Senha</label>
+          <input type="password" id="senhaGestao" placeholder="Digite a senha" onkeyup="checkCapsLock(event,'cL1')"/>
+          <div id="cL1" style="display:none;align-items:center;gap:5px;color:var(--danger);font-size:12px;margin-top:6px;"><strong>!</strong> Caps Lock ativado</div>
+        </div>
+        <button class="btn" style="width:100%;background:#1a1a1a;" onclick="tentarLoginGestao('${emp.slug}')">Entrar</button>
+      </div>
+    </div>
+  `);
+}
+function tentarLoginGestao(slug){
+  const emp = empresas.find(e=>e.slug===slug);
+  const val = document.getElementById('senhaGestao').value;
+  if(val === emp.senhaGestao){ renderGestao(emp); }
+  else{ alert("Senha incorreta."); }
+}
+
+// ---------- GESTÃO (PAINEL) ----------
+function renderGestao(emp){
+  applyAccent('#1a1a1a');
+  dispensarPWA();
+  let corner = null; // null = agendamentos | 'servicos' | 'horarios' | 'personalizar'
+  let diaSelecionado = null;
+  let editandoId = null;
+  let mesHorario = new Date().toISOString().slice(0,7);
+  let novoBotaoState = null;
+  let editandoBotaoId = null;
+
+  function agendamentosBody(){
+    if(diaSelecionado===null){
+      // começa no dia de hoje independente de ter horário ou não
+      diaSelecionado = isoData(new Date());
+    }
+    const dataObj = new Date(diaSelecionado+"T00:00:00");
+    const dataFmt = dataObj.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'});
+
+    function isoAddDias(iso, n){
+      const d = new Date(iso+"T00:00:00");
+      d.setDate(d.getDate()+n);
+      return isoData(d);
+    }
+
+    const horarios = horariosDoMes(emp, diaSelecionado.slice(0,7));
+    const linhas = horarios.length ? horarios.map(h=>{
+      const ag = agendamentos.find(a=>a.slug===emp.slug && a.data===diaSelecionado && a.hora===h);
+      const bloqueado = (emp.bloqueios||[]).some(b=>b.data===diaSelecionado && b.hora===h);
+      if(ag && editandoId===ag.id){
+        const servicoOpts = emp.servicos.map(s=>`<option value="${s.id}" ${ (ag.servicoId===s.id) ?'selected':''}>${escapeHtml(s.nome)}</option>`).join("");
+        const horariosOpts = horarios.map(hh=>`<option value="${hh}" ${hh===ag.hora?'selected':''}>${hh}</option>`).join("");
+        return `<div class="list-item" style="flex-direction:column;align-items:stretch;">
+          <div class="field"><label>Nome</label><input id="editNome" value="${escapeAttr(ag.nome)}"/></div>
+          <div class="field"><label>Telefone</label><input id="editTel" value="${escapeAttr(ag.telefone)}"/></div>
+          <div class="row">
+            <div class="field"><label>Serviço</label><select id="editServico">${servicoOpts}</select></div>
+            <div class="field"><label>Horário</label><select id="editHora">${horariosOpts}</select></div>
+          </div>
+          <div class="row">
+            <button class="btn ghost" onclick="cancelarEdicaoAgendamento()">Cancelar</button>
+            <button class="btn" onclick="salvarEdicaoAgendamento('${ag.id}')">Salvar</button>
+          </div>
+        </div>`;
+      }
+      if(ag){
+        return `<div class="list-item">
+          <div><strong>${h}</strong> — ${escapeHtml(ag.nome)} · ${escapeHtml(ag.servicoNome)}<br/><span class="muted" style="font-size:13px;">${escapeHtml(ag.telefone)}</span></div>
+          <div style="display:flex;gap:8px;flex:0 0 auto;">
+            <button class="btn ghost" onclick="editarAgendamento('${ag.id}')">Editar</button>
+            <button class="icon-btn" style="color:var(--danger);" onclick="cancelarAgendamento('${ag.id}')">Cancelar</button>
+          </div>
+        </div>`;
+      }
+      if(bloqueado){
+        return `<div class="list-item" style="opacity:.55;">
+          <div><strong>${h}</strong> — <span class="muted">Bloqueado</span></div>
+          <button class="btn ghost" onclick="desbloquearHorario('${diaSelecionado}','${h}')">Desbloquear</button>
+        </div>`;
+      }
+      return `<div class="list-item" style="opacity:.55;">
+        <div><strong>${h}</strong> — <span class="muted">Livre</span></div>
+        <button class="btn ghost" onclick="bloquearHorario('${diaSelecionado}','${h}')">Bloquear</button>
+      </div>`;
+    }).join("") : `<p class="muted" style="text-align:center;padding:20px 0;">Nenhum horário configurado para este dia.</p>`;
+
+    const diaNome = dataObj.toLocaleDateString('pt-BR',{weekday:'long'});
+    return `
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <button class="btn ghost" style="padding:10px 16px;font-size:18px;line-height:1;" onclick="selecionarDiaGestao('${isoAddDias(diaSelecionado,-1)}')">&#8592;</button>
+        <div style="position:relative;text-align:center;cursor:pointer;" onclick="document.getElementById('calGestao').showPicker ? document.getElementById('calGestao').showPicker() : document.getElementById('calGestao').click()">
+          <div style="font-family:'Fraunces',serif;font-size:18px;font-weight:600;">${dataFmt}</div>
+          <div style="font-size:13px;font-weight:600;color:var(--ink-soft);text-transform:capitalize;margin:2px 0;">${diaNome}</div>
+          <div class="muted" style="font-size:11px;">toque para escolher</div>
+          <input type="date" id="calGestao" value="${diaSelecionado}" style="position:absolute;opacity:0;width:1px;height:1px;top:0;left:50%;" onchange="selecionarDiaGestao(this.value)"/>
+        </div>
+        <button class="btn ghost" style="padding:10px 16px;font-size:18px;line-height:1;" onclick="selecionarDiaGestao('${isoAddDias(diaSelecionado,1)}')">&#8594;</button>
+      </div>
+      <div style="text-align:center;margin-bottom:20px;">
+        <button class="icon-btn" style="font-size:12px;color:var(--danger);" onclick="bloquearDiaTodo()">Bloquear dia todo</button>
+      </div>
+      ${linhas}
+    `;
+  }
+
+  function configurarBody(){
+    const lista = horariosDoMes(emp, mesHorario);
+    return `
+      <div class="card" style="margin-bottom:16px;">
+        <div class="eyebrow" style="margin-bottom:12px;color:#1a1a1a;">Serviços</div>
+        ${emp.servicos.map((s,i)=>`
+          <div class="list-item">
+            <input value="${escapeAttr(s.nome)}" onchange="updServico(${i},'nome',this.value)"/>
+            <button class="icon-btn" style="color:var(--danger);margin-left:12px;white-space:nowrap;" onclick="removeServico(${i})">Remover</button>
+          </div>
+        `).join("")}
+        <div class="row" style="margin-top:14px;">
+          <input type="text" id="novoServicoInput" placeholder="Nome do serviço"/>
+          <button class="btn ghost" style="flex:0 0 auto;" onclick="adicionarServico()">+ Adicionar</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="eyebrow" style="margin-bottom:12px;color:#1a1a1a;">Horários</div>
+        <div class="field"><label>Mês</label><input type="month" value="${mesHorario}" onchange="mudarMesHorario(this.value)"/></div>
+        ${lista.length ? `<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;">${lista.map(h=>`
+          <div style="display:inline-flex;align-items:center;gap:8px;background:#f4f4f4;border:1.5px solid #e0e0e0;border-radius:10px;padding:8px 12px;">
+            <span style="font-size:14px;font-weight:600;color:#1a1a1a;">${h}</span>
+            <button onclick="removerHorario('${h}')" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:18px;line-height:1;padding:0;min-height:0;">×</button>
+          </div>
+        `).join('')}</div>` : `<p class="muted" style="margin-bottom:14px;">Nenhum horário adicionado para este mês ainda.</p>`}
+        <div class="row" style="margin-top:4px;">
+          <input type="time" id="novoHorarioInput"/>
+          <button class="btn ghost" style="flex:0 0 auto;" onclick="adicionarHorario()">+ Adicionar horário</button>
+        </div>
+      </div>
+    `;
+  }
+
+  function personalizarBody(){
+    const cor = emp.corPrincipal || '#3d1f3a';
+    const botoesSorted = [...(emp.botoes || [])].sort((a,b) => a.ordem - b.ordem);
+
+    const botoesHtml = botoesSorted.length ? botoesSorted.map((b,i) => `
+      <div class="list-item" style="flex-direction:column;align-items:stretch;gap:10px;padding:16px 0;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="flex:1;min-width:0;">
+            <div style="font-weight:700;font-size:14px;">${escapeHtml(b.nome)}</div>
+            <div class="muted" style="font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(b.link)}</div>
+          </div>
+          <div style="display:flex;gap:4px;">
+            <button class="btn ghost" style="padding:6px 10px;font-size:13px;" onclick="subirBotao('${b.id}')" ${i===0?'disabled style="opacity:.3;"':''}>↑</button>
+            <button class="btn ghost" style="padding:6px 10px;font-size:13px;" onclick="descerBotao('${b.id}')" ${i===botoesSorted.length-1?'disabled style="opacity:.3;"':''}>↓</button>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <button class="btn ghost" style="padding:6px 14px;font-size:12px;flex:1;" onclick="editarBotao('${b.id}')">Editar</button>
+          <button class="btn ghost" style="padding:6px 14px;font-size:12px;color:var(--danger);border-color:var(--danger);flex:1;" onclick="removerBotao('${b.id}')">Excluir</button>
+        </div>
+      </div>
+    `).join('') : `<p class="muted" style="text-align:center;padding:16px 0;">Nenhum botão cadastrado ainda.</p>`;
+
+    const formNovoBotao = novoBotaoState !== null ? `
+      <div style="background:var(--paper);border-radius:12px;padding:20px 16px;margin-top:12px;border:1.5px solid var(--line);">
+        <div class="eyebrow" style="margin-bottom:14px;color:#1a1a1a;">Novo botão</div>
+        <div class="field"><label>Nome exibido</label><input id="bNome" placeholder="Ex: WhatsApp"/></div>
+        <div class="field"><label>Tipo</label>
+          <select id="bTipo">
+            <option value="whatsapp">WhatsApp</option>
+            <option value="instagram">Instagram</option>
+            <option value="telefone">Telefone</option>
+            <option value="maps">Google Maps</option>
+            <option value="site">Site</option>
+            <option value="link">Link personalizado</option>
+          </select>
+        </div>
+        <div class="field"><label>Link</label><input id="bLink" placeholder="https://wa.me/5511999999999"/></div>
+        <div class="field"><label>Ícone (deixe vazio para padrão)</label><input id="bIcone" placeholder=""/></div>
+        <div class="field" style="display:flex;align-items:center;gap:10px;margin-bottom:18px;">
+          <input type="checkbox" id="bNovaAba" checked style="width:20px;min-height:20px;margin:0;"/>
+          <label style="margin:0;text-transform:none;font-size:14px;font-weight:500;letter-spacing:0;">Abrir em nova aba</label>
+        </div>
+        <div class="row">
+          <button class="btn ghost" onclick="cancelarNovoBotao()">Cancelar</button>
+          <button class="btn" onclick="salvarNovoBotao()">Adicionar</button>
+        </div>
+      </div>
+    ` : editandoBotaoId !== null ? (()=>{ const eb = emp.botoes.find(x=>x.id===editandoBotaoId)||{}; return `
+      <div style="background:var(--paper);border-radius:12px;padding:20px 16px;margin-top:12px;border:1.5px solid var(--line);">
+        <div class="eyebrow" style="margin-bottom:14px;color:#1a1a1a;">Editar botão</div>
+        <div class="field"><label>Nome exibido</label><input id="ebNome" value="${escapeAttr(eb.nome||'')}"/></div>
+        <div class="field"><label>Tipo</label>
+          <select id="ebTipo">
+            <option value="whatsapp" ${eb.tipo==='whatsapp'?'selected':''}>WhatsApp</option>
+            <option value="instagram" ${eb.tipo==='instagram'?'selected':''}>Instagram</option>
+            <option value="telefone" ${eb.tipo==='telefone'?'selected':''}>Telefone</option>
+            <option value="maps" ${eb.tipo==='maps'?'selected':''}>Google Maps</option>
+            <option value="site" ${eb.tipo==='site'?'selected':''}>Site</option>
+            <option value="link" ${eb.tipo==='link'?'selected':''}>Link personalizado</option>
+          </select>
+        </div>
+        <div class="field"><label>Link</label><input id="ebLink" value="${escapeAttr(eb.link||'')}"/></div>
+        <div class="field"><label>Ícone (deixe vazio para padrão)</label><input id="ebIcone" value="${escapeAttr(eb.icone||'')}"/></div>
+        <div class="field" style="display:flex;align-items:center;gap:10px;margin-bottom:18px;">
+          <input type="checkbox" id="ebNovaAba" ${eb.abrirNovaAba?'checked':''} style="width:20px;min-height:20px;margin:0;"/>
+          <label style="margin:0;text-transform:none;font-size:14px;font-weight:500;letter-spacing:0;">Abrir em nova aba</label>
+        </div>
+        <div class="row">
+          <button class="btn ghost" onclick="cancelarEdicaoBotao()">Cancelar</button>
+          <button class="btn" onclick="salvarEdicaoBotao('${editandoBotaoId}')">Salvar</button>
+        </div>
+      </div>
+    `; })() : `<button class="btn ghost" style="width:100%;margin-top:14px;" onclick="iniciarNovoBotao()">+ Adicionar botão</button>`;
+
+    return `
+      <div class="eyebrow" style="margin-bottom:16px;color:#1a1a1a;">Identidade visual</div>
+
+      <div class="field"><label>Nome da empresa</label><input id="pNome" value="${escapeAttr(emp.nome)}"/></div>
+      <div class="field"><label>Descrição curta</label><textarea id="pDescricao" rows="2" style="resize:vertical;min-height:80px;">${escapeHtml(emp.descricao||'')}</textarea></div>
+      <div class="field"><label>Texto de destaque</label><input id="pTextoDestaque" value="${escapeAttr(emp.textoDestaque||'')}" placeholder="Ex: Atendimento premium"/></div>
+      <div class="field">
+        <label>Logo</label>
+        ${emp.logo ? `<img src="${escapeAttr(emp.logo)}" style="width:90px;height:90px;object-fit:cover;border-radius:50%;display:block;margin-bottom:10px;border:2px solid var(--line);"/>` : `<div style="width:90px;height:90px;border-radius:50%;background:#f0eaf6;display:flex;align-items:center;justify-content:center;margin-bottom:10px;color:#b0a0b8;font-size:13px;text-align:center;">Sem logo</div>`}
+        <button class="btn ghost" style="width:100%;" onclick="selecionarImagem('logo')">Enviar logo</button>
+      </div>
+      <div class="field">
+        <label>Imagem de fundo</label>
+        ${emp.fotoUrl ? `<img src="${escapeAttr(emp.fotoUrl)}" style="width:100%;height:110px;object-fit:cover;border-radius:10px;display:block;margin-bottom:10px;border:1.5px solid var(--line);"/>` : `<div style="width:100%;height:110px;border-radius:10px;background:#f0eaf6;display:flex;align-items:center;justify-content:center;margin-bottom:10px;color:#b0a0b8;font-size:13px;">Sem imagem de fundo</div>`}
+        <button class="btn ghost" style="width:100%;" onclick="selecionarImagem('background')">Enviar imagem de fundo</button>
+      </div>
+      <div class="field">
+        <label>Cor principal</label>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <input type="color" id="pCor" value="${escapeAttr(cor)}" style="padding:4px;height:48px;width:64px;border-radius:10px;cursor:pointer;"/>
+          <span class="muted" style="font-size:13px;">Usada nos botões e destaques da página</span>
+        </div>
+      </div>
+
+      <button class="btn" style="width:100%;" onclick="salvarInfoEmpresa()">Salvar informações</button>
+      <div class="row" style="margin-top:10px;">
+        <button class="btn ghost" style="flex:1;" onclick="goto({empresa:'${emp.slug}'})">Ver página</button>
+        <button class="btn ghost" style="flex:1;" onclick="compartilharLink()">Compartilhar link</button>
+      </div>
+
+      <div class="eyebrow" style="margin-top:36px;margin-bottom:4px;color:#1a1a1a;">Botões da página</div>
+      <p class="muted" style="font-size:13px;margin:0 0 16px;">Aparecem na página pública abaixo do botão de agendamento.</p>
+      ${botoesHtml}
+      ${formNovoBotao}
+    `;
+  }
+
+  function draw(){
+    const body = corner==='configurar'   ? configurarBody()
+               : corner==='personalizar' ? personalizarBody()
+               : agendamentosBody();
+    render(`
+      <div style="position:sticky;top:0;z-index:100;background:var(--paper);">
+        ${barraVoltarMaster()}
+        <div class="topbar" style="background:#1a1a1a;color:#fff;"><div class="brand">${escapeHtml(emp.nome)} · Gestão</div><button class="icon-btn" style="color:#fff;" onclick="goto({empresa:'${emp.slug}'})">Sair</button></div>
+        <div class="tabs" style="padding:8px 16px 0;border-bottom:1.5px solid var(--line);margin:0;gap:0;background:var(--paper);">
+          <div class="tab ${!corner?'active':''}\" style="flex:1;text-align:center;padding:10px 6px;font-size:14px;${!corner?'background:#1a1a1a;color:#fff;border-color:#1a1a1a;':''}" onclick="setCorner(null)">Agendamentos</div>
+          <div class="tab ${corner==='configurar'?'active':''}" style="flex:1;text-align:center;padding:10px 6px;font-size:14px;${corner==='configurar'?'background:#1a1a1a;color:#fff;border-color:#1a1a1a;':''}" onclick="setCorner('configurar')">Configurar</div>
+          <div class="tab ${corner==='personalizar'?'active':''}" style="flex:1;text-align:center;padding:10px 6px;font-size:14px;${corner==='personalizar'?'background:#1a1a1a;color:#fff;border-color:#1a1a1a;':''}" onclick="setCorner('personalizar')">Personalizar</div>
+        </div>
+      </div>
+      <div class="container wide">
+        <div class="card" style="${corner==='configurar'?'background:none;box-shadow:none;padding:0;':''}">${body}</div>
+      </div>
+    `);
+  }
+
+  window.setCorner = (c)=>{ corner=c; editandoId=null; draw(); };
+  window.selecionarDiaGestao = (iso)=>{ diaSelecionado=iso; editandoId=null; draw(); };
+
+  window.selecionarImagem = (tipo)=>{
+    abrirCrop(tipo, emp.slug, async (url)=>{
+      if(tipo==='logo'){ emp.logo = url; } else { emp.fotoUrl = url; }
+      draw();
+    });
+  };
+
+  window.bloquearDiaTodo = async ()=>{
+    const horarios = horariosDoMes(emp, diaSelecionado.slice(0,7));
+    if(!horarios.length){ alert("Nenhum horário configurado para este dia."); return; }
+    const livres = horarios.filter(h => !((emp.bloqueios||[]).some(b=>b.data===diaSelecionado && b.hora===h)));
+    if(!livres.length){ alert("Todos os horários deste dia já estão bloqueados."); return; }
+    const dataFmtConf = new Date(diaSelecionado+"T00:00:00").toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'});
+    if(!confirm(`Bloquear todos os ${livres.length} horários de ${dataFmtConf}?`)) return;
+    const rows = livres.map(h=>({ empresa_id: emp.id, data: diaSelecionado, hora: h }));
+    const { data, error } = await supabaseClient.from('bloqueios').insert(rows).select();
+    if(error){ alert("Erro ao bloquear: " + error.message); return; }
+    if(data) data.forEach(r=>{ (emp.bloqueios=emp.bloqueios||[]).push({id:r.id, data:r.data, hora:r.hora}); });
+    draw();
+  };
+
+  window.editarAgendamento = (id)=>{ editandoId=id; draw(); };
+  window.cancelarEdicaoAgendamento = ()=>{ editandoId=null; draw(); };
+  window.salvarEdicaoAgendamento = async (id)=>{
+    const ag = agendamentos.find(a=>a.id===id);
+    const nome = document.getElementById('editNome').value.trim();
+    const tel = document.getElementById('editTel').value.trim();
+    const servicoId = document.getElementById('editServico').value;
+    const hora = document.getElementById('editHora').value;
+    if(!nome || !tel){ alert("Preencha nome e telefone."); return; }
+    if(hora !== ag.hora){
+      const ocupado = agendamentos.some(a=>a.id!==ag.id && a.slug===emp.slug && a.data===ag.data && a.hora===hora);
+      if(ocupado){ alert("Esse horário já está ocupado."); return; }
+    }
+    const servico = emp.servicos.find(s=>s.id===servicoId);
+    const { error } = await supabaseClient.from('agendamentos').update({
+      nome_cliente: nome,
+      telefone:     tel,
+      servico_id:   servicoId,
+      servico_nome: servico ? servico.nome : ag.servicoNome,
+      hora:         hora
+    }).eq('id', id);
+    if(error){ console.error('Erro ao editar agendamento:', error); return; }
+    ag.nome = nome; ag.telefone = tel; ag.servicoId = servicoId; ag.servicoNome = servico?servico.nome:ag.servicoNome; ag.hora = hora;
+    editandoId = null; draw();
+  };
+  window.cancelarAgendamento = async (id)=>{
+    if(!confirm('Cancelar este agendamento? Essa ação não pode ser desfeita.')) return;
+    const { error } = await supabaseClient.from('agendamentos').delete().eq('id', id);
+    if(error){ console.error('Erro ao cancelar agendamento:', error); return; }
+    agendamentos = agendamentos.filter(a=>a.id!==id);
+    draw();
+  };
+  window.bloquearHorario = async (data,hora)=>{
+    const { data: row, error } = await supabaseClient.from('bloqueios').insert({
+      empresa_id: emp.id, data, hora
+    }).select().single();
+    if(error){ console.error('Erro ao bloquear horário:', error); return; }
+    emp.bloqueios = emp.bloqueios || [];
+    emp.bloqueios.push({ id: row.id, data, hora });
+    draw();
+  };
+  window.desbloquearHorario = async (data,hora)=>{
+    const { error } = await supabaseClient.from('bloqueios')
+      .delete().eq('empresa_id', emp.id).eq('data', data).eq('hora', hora);
+    if(error){ console.error('Erro ao desbloquear horário:', error); return; }
+    emp.bloqueios = (emp.bloqueios||[]).filter(b=>!(b.data===data && b.hora===hora));
+    draw();
+  };
+
+  window.adicionarServico = async ()=>{
+    const inp = document.getElementById('novoServicoInput');
+    const nome = inp ? inp.value.trim() : '';
+    if(!nome){ alert("Digite o nome do serviço."); return; }
+    const { data: row, error } = await supabaseClient.from('servicos').insert({
+      empresa_id: emp.id, nome, duracao: 60, preco: 0
+    }).select().single();
+    if(error){ console.error('Erro ao adicionar serviço:', error); return; }
+    emp.servicos.push({ id: row.id, nome: row.nome, duracao: row.duracao, preco: Number(row.preco) });
+    draw();
+  };
+  window.removeServico = async (i)=>{
+    const s = emp.servicos[i];
+    if(!confirm(`Remover o serviço "${s.nome}"?`)) return;
+    const { error } = await supabaseClient.from('servicos').delete().eq('id', s.id);
+    if(error){ console.error('Erro ao remover serviço:', error); return; }
+    emp.servicos.splice(i,1);
+    draw();
+  };
+  window.updServico = async (i,field,val)=>{
+    const s = emp.servicos[i];
+    const dbVal = (field==='duracao'||field==='preco') ? Number(val) : val;
+    s[field] = dbVal;
+    const { error } = await supabaseClient.from('servicos').update({ [field]: dbVal }).eq('id', s.id);
+    if(error) console.error('Erro ao atualizar serviço:', error);
+  };
+
+  window.mudarMesHorario = (val)=>{ mesHorario = val; draw(); };
+  window.adicionarHorario = async ()=>{
+    const val = document.getElementById('novoHorarioInput').value;
+    if(!val){ return; }
+    emp.horariosPorMes = emp.horariosPorMes || {};
+    const lista = emp.horariosPorMes[mesHorario] || [];
+    if(lista.includes(val)){ return; }
+    const { error } = await supabaseClient.from('horarios_disponiveis').insert({
+      empresa_id: emp.id, mes: mesHorario, hora: val
+    });
+    if(error){ console.error('Erro ao adicionar horário:', error); return; }
+    lista.push(val);
+    emp.horariosPorMes[mesHorario] = lista;
+    draw();
+  };
+  window.removerHorario = async (h)=>{
+    const { error } = await supabaseClient.from('horarios_disponiveis')
+      .delete().eq('empresa_id', emp.id).eq('mes', mesHorario).eq('hora', h);
+    if(error){ console.error('Erro ao remover horário:', error); return; }
+    emp.horariosPorMes[mesHorario] = (emp.horariosPorMes[mesHorario]||[]).filter(x=>x!==h);
+    draw();
+  };
+
+  // ── PERSONALIZAR PÁGINA ──────────────────────────────────
+
+  window.salvarInfoEmpresa = async ()=>{
+    emp.nome               = document.getElementById('pNome').value.trim() || emp.nome;
+    emp.descricao          = document.getElementById('pDescricao').value.trim();
+    emp.textoDestaque      = document.getElementById('pTextoDestaque').value.trim();
+    emp.corPrincipal       = document.getElementById('pCor').value;
+    const { error } = await supabaseClient.from('empresas').update({
+      nome:                  emp.nome,
+      descricao:             emp.descricao             || null,
+      cor_principal:         emp.corPrincipal,
+      texto_destaque:        emp.textoDestaque         || null,
+    }).eq('id', emp.id);
+    if(error){ console.error('Erro ao salvar informações:', error); alert('Erro ao salvar. Verifique o console.'); return; }
+    alert('Informações salvas!');
+    draw();
+  };
+
+  window.iniciarNovoBotao  = ()=>{ novoBotaoState = {}; editandoBotaoId = null; draw(); };
+  window.cancelarNovoBotao = ()=>{ novoBotaoState = null; draw(); };
+  window.editarBotao       = (id)=>{ editandoBotaoId = id; novoBotaoState = null; draw(); };
+  window.cancelarEdicaoBotao = ()=>{ editandoBotaoId = null; draw(); };
+  window.salvarEdicaoBotao = async (id)=>{
+    const nome    = document.getElementById('ebNome').value.trim();
+    const tipo    = document.getElementById('ebTipo').value;
+    const link    = document.getElementById('ebLink').value.trim();
+    const icone   = document.getElementById('ebIcone').value.trim();
+    const novaAba = document.getElementById('ebNovaAba').checked;
+    if(!nome){ alert('Preencha o nome do botão.'); return; }
+    if(!link){ alert('Preencha o link do botão.'); return; }
+    const { error } = await supabaseClient.from('botoes_empresa').update({
+      nome, tipo, link, icone: icone || ICONE_POR_TIPO[tipo] || '🔗', abrir_nova_aba: novaAba
+    }).eq('id', id);
+    if(error){ console.error('Erro ao editar botão:', error); alert('Erro ao salvar.'); return; }
+    const b = emp.botoes.find(x=>x.id===id);
+    Object.assign(b, { nome, tipo, link, icone: icone || ICONE_POR_TIPO[tipo] || '🔗', abrirNovaAba: novaAba });
+    editandoBotaoId = null;
+    draw();
+  };
+
+  window.salvarNovoBotao = async ()=>{
+    const nome    = document.getElementById('bNome').value.trim();
+    const tipo    = document.getElementById('bTipo').value;
+    const link    = document.getElementById('bLink').value.trim();
+    const icone   = document.getElementById('bIcone').value.trim();
+    const novaAba = document.getElementById('bNovaAba').checked;
+    if(!nome){ alert('Preencha o nome do botão.'); return; }
+    if(!link){ alert('Preencha o link do botão.'); return; }
+    const ordemMax = emp.botoes.length > 0 ? Math.max(...emp.botoes.map(b=>b.ordem)) + 1 : 0;
+    const { data: row, error } = await supabaseClient.from('botoes_empresa').insert({
+      empresa_id:    emp.id,
+      nome, tipo, link,
+      icone:         icone || ICONE_POR_TIPO[tipo] || '🔗',
+      ordem:         ordemMax,
+      ativo:         true,
+      abrir_nova_aba: novaAba
+    }).select().single();
+    if(error){ console.error('Erro ao adicionar botão:', error); alert('Erro ao salvar. Verifique o console.'); return; }
+    emp.botoes.push({ id:row.id, nome:row.nome, tipo:row.tipo, link:row.link,
+      icone:row.icone, ordem:row.ordem, ativo:row.ativo, abrirNovaAba:row.abrir_nova_aba });
+    emp.botoes.sort((a,b)=>a.ordem-b.ordem);
+    novoBotaoState = null;
+    draw();
+  };
+
+  window.removerBotao = async (id)=>{
+    if(!confirm('Remover este botão?')) return;
+    const { error } = await supabaseClient.from('botoes_empresa').delete().eq('id', id);
+    if(error){ console.error('Erro ao remover botão:', error); return; }
+    emp.botoes = emp.botoes.filter(b=>b.id!==id);
+    draw();
+  };
+
+  window.subirBotao = async (id)=>{
+    const idx = emp.botoes.findIndex(b=>b.id===id);
+    if(idx <= 0) return;
+    const curr = emp.botoes[idx], prev = emp.botoes[idx-1];
+    [curr.ordem, prev.ordem] = [prev.ordem, curr.ordem];
+    await supabaseClient.from('botoes_empresa').update({ ordem: curr.ordem }).eq('id', curr.id);
+    await supabaseClient.from('botoes_empresa').update({ ordem: prev.ordem }).eq('id', prev.id);
+    emp.botoes.sort((a,b)=>a.ordem-b.ordem);
+    draw();
+  };
+
+  window.descerBotao = async (id)=>{
+    const idx = emp.botoes.findIndex(b=>b.id===id);
+    if(idx >= emp.botoes.length-1) return;
+    const curr = emp.botoes[idx], next = emp.botoes[idx+1];
+    [curr.ordem, next.ordem] = [next.ordem, curr.ordem];
+    await supabaseClient.from('botoes_empresa').update({ ordem: curr.ordem }).eq('id', curr.id);
+    await supabaseClient.from('botoes_empresa').update({ ordem: next.ordem }).eq('id', next.id);
+    emp.botoes.sort((a,b)=>a.ordem-b.ordem);
+    draw();
+  };
+
+  window.compartilharLink = async ()=>{
+    const url = location.origin + '/app.html?empresa=' + emp.slug;
+    if(navigator.share){
+      try{ await navigator.share({ title: emp.nome, url }); } catch(e){}
+    } else {
+      try{ await navigator.clipboard.writeText(url); alert('Link copiado!'); }
+      catch(e){ prompt('Copie o link abaixo:', url); }
+    }
+  };
+
+  draw();
+}
+
+// ---------- PAINEL MASTER ----------
+function renderMaster(){
+  const authed = sessionStorage_getMaster();
+  if(!authed){ renderMasterLogin(); return; }
+  renderMasterPanel();
+}
+// (usamos variável em memória em vez de sessionStorage do navegador, que não é permitido)
+let masterAuthed = false;
+function sessionStorage_getMaster(){ return masterAuthed; }
+
+function renderMasterLogin(){
+  applyAccent('#1a1a1a');
+  mostrarBannerPWA();
+  render(`
+    <div class="topbar" style="background:#1a1a1a;color:#fff;"><div class="brand" style="text-align:center;width:100%;">Agenda+</div></div>
+    <div class="container">
+      <div class="card">
+        <div class="eyebrow" style="color:#1a1a1a;">Painel master</div>
+        <h2 class="display">Entrar</h2>
+        <div class="field">
+          <label>Senha</label>
+          <input type="password" id="masterPass" placeholder="Senha master" onkeyup="checkCapsLock(event,'cL2')"/>
+          <div id="cL2" style="display:none;align-items:center;gap:5px;color:var(--danger);font-size:12px;margin-top:6px;"><strong>!</strong> Caps Lock ativado</div>
+        </div>
+        <button class="btn" style="width:100%;background:#1a1a1a;" onclick="tentarLoginMaster()">Entrar</button>
+      </div>
+    </div>
+  `);
+}
+window.tentarLoginMaster = ()=>{
+  const val = document.getElementById('masterPass').value;
+  if(val === MASTER_PASS){ masterAuthed = true; renderMasterPanel(); }
+  else alert("Senha incorreta.");
+};
+
+let editingSlug = null;
+function renderMasterPanel(){
+  applyAccent('#1a1a1a');
+  mostrarBannerPWA();
+  function draw(){
+    const editing = editingSlug ? empresas.find(e=>e.slug===editingSlug) : null;
+    const form = editing ? `
+      <div class="card" style="margin-bottom:24px;">
+        <h3 class="display">Editar empresa</h3>
+        <div class="field"><label>Nome</label><input value="${escapeAttr(editing.nome)}" onchange="masterUpd('nome',this.value)"/></div>
+        <div class="field">
+          <label>Logo</label>
+          ${editing.logo ? `<img src="${escapeAttr(editing.logo)}" style="width:72px;height:72px;object-fit:cover;border-radius:50%;display:block;margin-bottom:8px;border:2px solid var(--line);"/>` : `<div style="width:72px;height:72px;border-radius:50%;background:#f0eaf6;display:flex;align-items:center;justify-content:center;margin-bottom:8px;color:#b0a0b8;font-size:12px;text-align:center;">Sem logo</div>`}
+          <button class="btn ghost" style="width:100%;" onclick="masterSelecionarImagem('logo','${editing.slug}')">Enviar logo</button>
+        </div>
+        <div class="field">
+          <label>Imagem de fundo</label>
+          ${editing.fotoUrl ? `<img src="${escapeAttr(editing.fotoUrl)}" style="width:100%;height:90px;object-fit:cover;border-radius:10px;display:block;margin-bottom:8px;border:1.5px solid var(--line);"/>` : `<div style="width:100%;height:90px;border-radius:10px;background:#f0eaf6;display:flex;align-items:center;justify-content:center;margin-bottom:8px;color:#b0a0b8;font-size:13px;">Sem imagem de fundo</div>`}
+          <button class="btn ghost" style="width:100%;" onclick="masterSelecionarImagem('background','${editing.slug}')">Enviar imagem de fundo</button>
+        </div>
+        <div class="field"><label>WhatsApp</label><input value="${escapeAttr(editing.whatsapp)}" onchange="masterUpd('whatsapp',this.value)"/></div>
+        <div class="field"><label>Senha de gestão da empresa</label><input value="${escapeAttr(editing.senhaGestao)}" onchange="masterUpd('senhaGestao',this.value)"/></div>
+        <div class="field"><label>Link público (quando publicado)</label>
+          <input readonly value="${escapeAttr(location.origin+'/app.html?empresa='+editing.slug)}" onclick="this.select()"/>
+        </div>
+        <div class="row" style="margin-top:8px;">
+          <button class="btn ghost" onclick="editingSlug=null; drawMaster();">Salvar</button>
+          <button class="btn ghost" onclick="masterToggleBloqueio()">${editing.bloqueada?'Desbloquear':'Bloquear'}</button>
+        </div>
+        <button class="btn danger" style="width:100%;margin-top:12px;" onclick="masterExcluir('${editing.slug}')">Excluir empresa</button>
+      </div>
+    ` : `
+      <div class="card" style="margin-bottom:24px;">
+        <h3 class="display">Nova empresa</h3>
+        <div class="field"><label>Nome</label><input id="novoNome" placeholder="Ex: Studio Bella"/></div>
+        <div class="field"><label>WhatsApp (com DDD)</label><input id="novoWhats" placeholder="11912345678"/></div>
+        <div class="field"><label>Senha de gestão da empresa</label><input id="novaSenha" placeholder="Ex: minha123"/></div>
+        <button class="btn" onclick="masterCriar()">Criar empresa</button>
+      </div>
+    `;
+    const lista = empresas.map(e=>{
+      const link = location.origin + '/app.html?empresa=' + e.slug;      return `
+      <div class="list-item" style="align-items:flex-start;gap:12px;">
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px;">
+            <strong>${escapeHtml(e.nome)}</strong>
+            <span class="chip ${e.bloqueada?'blocked':'ok'}">${e.bloqueada?'Bloqueada':'Ativa'}</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <input readonly value="${escapeAttr(link)}" style="font-size:12px;padding:6px 8px;flex:1;min-width:0;" onclick="this.select()"/>
+          </div>
+          <div class="row" style="margin-top:10px;flex-wrap:wrap;">
+            <button class="btn ghost" style="flex:0 0 auto;" onclick="goto({empresa:'${e.slug}'})">Ver página inicial</button>
+            <button class="btn ghost" style="flex:0 0 auto;" onclick="goto({empresa:'${e.slug}', page:'agendar'})">Ver agendamento</button>
+            <button class="btn ghost" style="flex:0 0 auto;" onclick="goto({empresa:'${e.slug}', page:'gestao'})">Ver gestão</button>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;flex-shrink:0;">
+          <button class="btn ghost" style="padding:6px 14px;font-size:12px;white-space:nowrap;" onclick="navigator.clipboard.writeText('${escapeAttr(link)}').then(()=>alert('Link copiado!'))">Copiar link</button>
+          <button class="btn ghost" style="padding:6px 14px;font-size:12px;" onclick="editingSlug='${e.slug}'; drawMaster();">Editar</button>
+        </div>
+      </div>
+    `;}).join("") || `<p class="muted">Nenhuma empresa cadastrada ainda.</p>`;
+
+    render(`
+      <div class="topbar" style="background:#1a1a1a;color:#fff;"><div class="brand">Agenda+ · Master</div><button class="icon-btn" style="color:#fff;" onclick="masterAuthed=false; renderMaster();">Sair</button></div>
+      <div class="container wide">
+        ${form}
+        <div class="card">
+          <h3 class="display">Empresas cadastradas</h3>
+          ${lista}
+        </div>
+      </div>
+    `);
+  }
+  window.drawMaster = draw;
+  window.masterCriar = async ()=>{
+    const nome = document.getElementById('novoNome').value.trim();
+    if(!nome){ alert("Digite o nome da empresa."); return; }
+    const senha = document.getElementById('novaSenha').value.trim();
+    if(!senha){ alert("Defina uma senha de gestão para a empresa."); return; }
+    let slug = slugify(nome);
+    let s2 = slug, n=1;
+    while(empresas.some(e=>e.slug===s2)){ s2 = slug+"-"+(++n); }
+    const nova = defaultEmpresa();
+    nova.slug = s2; nova.nome = nome;
+    nova.whatsapp = document.getElementById('novoWhats').value.trim();
+    nova.senhaGestao = senha;
+    empresas.push(nova);
+    await saveEmpresas();
+    goto({empresa: s2});
+  };
+  window.masterSelecionarImagem = (tipo, slug)=>{
+    abrirCrop(tipo, slug, async (url)=>{
+      const e = empresas.find(x=>x.slug===slug);
+      if(tipo==='logo'){ e.logo = url; } else { e.fotoUrl = url; }
+      draw();
+    });
+  };
+  window.masterUpd = async (field,val)=>{
+    const e = empresas.find(x=>x.slug===editingSlug);
+    e[field] = val; await saveEmpresas();
+  };
+  window.masterToggleBloqueio = async ()=>{
+    const e = empresas.find(x=>x.slug===editingSlug);
+    e.bloqueada = !e.bloqueada; await saveEmpresas(); draw();
+  };
+  window.masterExcluir = async (slug)=>{
+    const e = empresas.find(x=>x.slug===slug);
+    if(!confirm(`Excluir "${e.nome}" definitivamente? Isso também apaga os agendamentos dela. Essa ação não pode ser desfeita.`)) return;
+    if(e.id){
+      const { error } = await supabaseClient.from('empresas').delete().eq('id', e.id);
+      if(error){ console.error('Erro ao excluir empresa:', error); return; }
+    }
+    empresas = empresas.filter(x=>x.slug!==slug);
+    agendamentos = agendamentos.filter(a=>a.slug!==slug);
+    await saveAgendamentos();
+    await excluirImagensEmpresa(slug);
+    editingSlug = null;
+    draw();
+  };
+  draw();
+}
+
+// ── UPLOAD DE IMAGENS ────────────────────────────────────────
+let _cropInstance = null;
+let _cropCallback = null;
+let _cropTipo = null;
+let _cropSlug = null;
+
+function validarArquivo(file){
+  const tipos = ['image/jpeg','image/png','image/webp'];
+  if(!tipos.includes(file.type)) return 'Formato inválido. Use JPG, PNG ou WEBP.';
+  if(file.size > 5 * 1024 * 1024) return 'Arquivo muito grande. Máximo 5 MB.';
+  return null;
+}
+
+function abrirCrop(tipo, slug, callback){
+  _cropTipo = tipo; _cropSlug = slug; _cropCallback = callback;
+  const input = document.createElement('input');
+  input.type = 'file'; input.accept = 'image/jpeg,image/png,image/webp';
+  input.onchange = (ev)=>{
+    const file = ev.target.files[0]; if(!file) return;
+    const err = validarArquivo(file); if(err){ alert(err); return; }
+    const reader = new FileReader();
+    reader.onload = (e)=>{
+      const modal = document.getElementById('cropModal');
+      const img   = document.getElementById('cropImg');
+      img.src = e.target.result;
+      modal.style.display = 'flex';
+      if(_cropInstance){ _cropInstance.destroy(); _cropInstance = null; }
+      const ratio = tipo==='logo' ? 1 : 16/9;
+      _cropInstance = new Cropper(img, { aspectRatio: ratio, viewMode: 1, autoCropArea: 0.9, movable: true, zoomable: true, rotatable: false, scalable: false });
+    };
+    reader.readAsDataURL(file);
+  };
+  input.click();
+}
+
+async function confirmarCrop(){
+  if(!_cropInstance) return;
+  const btn = document.getElementById('btnConfirmarCrop');
+  btn.disabled = true; btn.textContent = 'Enviando...';
+  const isLogo = _cropTipo === 'logo';
+  const w = isLogo ? 540 : 1280, h = isLogo ? 540 : 720;
+  const canvas = _cropInstance.getCroppedCanvas({ width: w, height: h, imageSmoothingQuality: 'high' });
+  canvas.toBlob(async (blob)=>{
+    const bucket = isLogo ? 'logos' : 'backgrounds';
+    const path   = `${_cropSlug}/${isLogo ? 'logo' : 'background'}.jpg`;
+    const { error: upErr } = await supabaseClient.storage.from(bucket).upload(path, blob, { contentType: 'image/jpeg', upsert: true });
+    if(upErr){ alert('Erro ao enviar imagem: ' + upErr.message); btn.disabled=false; btn.textContent='Confirmar recorte'; return; }
+    const { data } = supabaseClient.storage.from(bucket).getPublicUrl(path);
+    const url = data.publicUrl + '?t=' + Date.now();
+    const col = isLogo ? 'logo' : 'foto_url';
+    const emp = empresas.find(x=>x.slug===_cropSlug);
+    if(emp && emp.id){
+      await supabaseClient.from('empresas').update({ [col]: url }).eq('id', emp.id);
+    }
+    const cb = _cropCallback;
+    fecharCrop();
+    if(cb) cb(url);
+  }, 'image/jpeg', 0.92);
+}
+
+function cancelarCrop(){ fecharCrop(); }
+
+function fecharCrop(){
+  document.getElementById('cropModal').style.display = 'none';
+  if(_cropInstance){ _cropInstance.destroy(); _cropInstance = null; }
+  const btn = document.getElementById('btnConfirmarCrop');
+  btn.disabled = false; btn.textContent = 'Confirmar recorte';
+  _cropCallback = null; _cropTipo = null; _cropSlug = null;
+}
+
+async function excluirImagensEmpresa(slug){
+  await supabaseClient.storage.from('logos').remove([`${slug}/logo.jpg`]);
+  await supabaseClient.storage.from('backgrounds').remove([`${slug}/background.jpg`]);
+}
+// ─────────────────────────────────────────────────────────────
+
+function escapeHtml(s){ return String(s||"").replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function escapeAttr(s){ return escapeHtml(s); }
+function checkCapsLock(e, id){ const el=document.getElementById(id); if(el) el.style.display=e.getModifierState('CapsLock')?'flex':'none'; }
+function applyAccent(cor){ document.documentElement.style.setProperty('--accent', cor || '#3d1f3a'); }
+
+init();
+</script>
+</body>
+</html>
