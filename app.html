@@ -1221,11 +1221,14 @@ function renderGestao(empInicial){
     .g-dash-val { font-size:32px; font-weight:800; color:var(--ink); line-height:1; }
     .g-dash-label { font-size:12px; color:var(--ink-soft); margin-top:6px; }
 
+    .g-topbar { height:52px; display:flex; align-items:center; justify-content:space-between; padding:0 20px; background:#1c1917; color:#fff; }
+    .g-topbar .brand { font-family:'Inter',sans-serif; font-weight:800; font-size:18px; }
+
     /* ── Desktop ── */
     @media(min-width:768px){
       .g-sidebar {
         width:148px; min-width:148px; padding:16px 0;
-        position:sticky; top:56px; height:calc(100vh - 56px); overflow-y:auto;
+        position:sticky; top:52px; height:calc(100vh - 52px); overflow-y:auto;
       }
       .g-nav-item { padding:12px 20px; }
       .g-nav-item.active { border-left:3px solid #fff; }
@@ -1237,7 +1240,7 @@ function renderGestao(empInicial){
     /* ── Mobile ── */
     @media(max-width:767px){
       .g-sidebar {
-        position:fixed; left:0; top:56px; bottom:0;
+        position:fixed; left:0; top:52px; bottom:0;
         width:36px; padding:4px 0;
         transition:width .22s ease;
         box-shadow:2px 0 8px rgba(0,0,0,0.3);
@@ -1304,9 +1307,9 @@ function renderGestao(empInicial){
 
     render(`
       ${GESTAO_CSS}
-      <div style="position:sticky;top:0;z-index:300;background:#1c1917;">
+      <div style="position:sticky;top:0;z-index:300;">
         ${barraVoltarMaster()}
-        <div class="topbar" style="background:#1c1917;color:#fff;">
+        <div class="g-topbar">
           <div class="brand">${escapeHtml(emp.nome)} · Gestão</div>
           <button class="icon-btn" style="color:#fff;" onclick="${exitAction}">${exitLabel}</button>
         </div>
@@ -1769,10 +1772,13 @@ function renderMasterPanel(){
       .dash-card-label { font-size:12px; color:var(--ink-soft); margin-top:6px; }
       .fin-status { display:inline-block; padding:3px 10px; border-radius:20px; font-size:12px; font-weight:600; }
 
+      .master-topbar { height:52px; display:flex; align-items:center; justify-content:space-between; padding:0 20px; background:#1c1917; color:#fff; }
+      .master-topbar .brand { font-family:'Inter',sans-serif; font-weight:800; font-size:18px; }
+
       @media(min-width:768px){
         .master-sidebar {
           width:148px; min-width:148px; padding:16px 0;
-          position:sticky; top:56px; height:calc(100vh - 56px); overflow-y:auto;
+          position:sticky; top:52px; height:calc(100vh - 52px); overflow-y:auto;
         }
         .master-nav-item { padding:12px 20px; }
         .master-nav-item.active { border-left:3px solid #fff; }
@@ -1782,7 +1788,7 @@ function renderMasterPanel(){
 
       @media(max-width:767px){
         .master-sidebar {
-          position:fixed; left:0; top:56px; bottom:0;
+          position:fixed; left:0; top:52px; bottom:0;
           width:36px; padding:4px 0;
           transition:width .22s ease;
           box-shadow:2px 0 8px rgba(0,0,0,0.3);
@@ -1808,8 +1814,8 @@ function renderMasterPanel(){
 
     render(`
       ${SIDEBAR_CSS}
-      <div style="position:sticky;top:0;z-index:300;background:#1c1917;">
-        <div class="topbar" style="background:#1c1917;color:#fff;">
+      <div style="position:sticky;top:0;z-index:300;">
+        <div class="master-topbar">
           <div class="brand">Agenda+ · Master</div>
         </div>
       </div>
