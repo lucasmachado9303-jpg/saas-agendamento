@@ -1538,10 +1538,218 @@ window.confirmarRedefinicaoSenha = async ()=>{
 let editingSlug = null;
 let masterShowForm = false;
 let masterSearch = '';
+let masterAba = 'dashboard'; // 'dashboard' | 'empresas' | 'financeiro'
+let financeiroData = []; // registros da tabela financeiro
+
+async function carregarFinanceiro(){
+  const { data, error } = await supabaseClient.from('financeiro').select('*');
+  if(!error && data) financeiroData = data;
+}
+
+function finStatusInfo(reg){
+  if(!reg) return { label:'Sem dados', cor:'#9e9e9e', bg:'#f5f5f5' };
+  const hoje = new Date();
+  const ano = hoje.getFullYear();
+  const mes = hoje.getMonth(); // 0-based
+  const diaHoje = hoje.getDate();
+  const dia = reg.dia_vencimento;
+  // Verificar se pagou no mês atual
+  if(reg.pago_em){
+    const p = new Date(reg.pago_em);
+    if(p.getFullYear() === ano && p.getMonth() === mes){
+      return { label:'Pago', cor:'#2e7d32', bg:'#e8f5e9' };
+    }
+  }
+  // Vencido: já passou o dia de vencimento este mês e não pagou
+  if(diaHoje > dia){
+    return { label:'Vencido', cor:'#c62828', bg:'#ffebee' };
+  }
+  // A vencer: faltam 7 dias ou menos
+  if(dia - diaHoje <= 7){
+    return { label:`Vence em ${dia - diaHoje === 0 ? 'hoje' : (dia - diaHoje) + ' dia(s)'}`, cor:'#e65100', bg:'#fff3e0' };
+  }
+  return { label:'Em dia', cor:'#2e7d32', bg:'#e8f5e9' };
+}
+
 function renderMasterPanel(){
   applyAccent('#1a1a1a');
   mostrarBannerPWA();
+
+  const SIDEBAR_CSS = `
+    <style>
+      .master-layout { display:flex; min-height:calc(100vh - 56px); }
+      .master-sidebar {
+        width:200px; min-width:200px; background:#111; color:#fff;
+        display:flex; flex-direction:column; padding:16px 0;
+        position:sticky; top:56px; height:calc(100vh - 56px);
+      }
+      .master-nav-item {
+        display:flex; align-items:center; gap:10px; padding:12px 20px;
+        cursor:pointer; font-size:14px; font-weight:500; color:rgba(255,255,255,0.65);
+        border:none; background:none; width:100%; text-align:left; transition:all .15s;
+      }
+      .master-nav-item:hover { color:#fff; background:rgba(255,255,255,0.07); }
+      .master-nav-item.active { color:#fff; background:rgba(255,255,255,0.12); border-left:3px solid #fff; }
+      .master-nav-item.danger { color:#ef9a9a; margin-top:auto; }
+      .master-nav-item.danger:hover { color:#fff; background:rgba(198,40,40,0.3); }
+      .master-content { flex:1; padding:24px; overflow-y:auto; }
+      .dash-cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:14px; margin-bottom:28px; }
+      .dash-card { background:var(--paper); border:1.5px solid var(--line); border-radius:12px; padding:18px 16px; }
+      .dash-card-val { font-size:28px; font-weight:800; color:var(--ink); line-height:1; }
+      .dash-card-label { font-size:12px; color:var(--ink-soft); margin-top:6px; }
+      .fin-status { display:inline-block; padding:3px 10px; border-radius:20px; font-size:12px; font-weight:600; }
+      @media(max-width:600px){
+        .master-sidebar { display:none; }
+        .master-mobile-tabs {
+          display:flex; background:#111; overflow-x:auto;
+        }
+        .master-mobile-tab {
+          flex:1; min-width:80px; padding:12px 8px; text-align:center; color:rgba(255,255,255,0.6);
+          font-size:12px; font-weight:600; cursor:pointer; border:none; background:none;
+          border-bottom:3px solid transparent;
+        }
+        .master-mobile-tab.active { color:#fff; border-bottom-color:#fff; }
+      }
+      @media(min-width:601px){ .master-mobile-tabs { display:none; } }
+    </style>
+  `;
+
+  function drawMasterShell(conteudo){
+    render(`
+      ${SIDEBAR_CSS}
+      <div class="topbar" style="background:#1a1a1a;color:#fff;">
+        <div class="brand">Agenda+ · Master</div>
+      </div>
+      <div class="master-mobile-tabs">
+        <button class="master-mobile-tab ${masterAba==='dashboard'?'active':''}" onclick="masterIrAba('dashboard')">Dashboard</button>
+        <button class="master-mobile-tab ${masterAba==='empresas'?'active':''}" onclick="masterIrAba('empresas')">Empresas</button>
+        <button class="master-mobile-tab ${masterAba==='financeiro'?'active':''}" onclick="masterIrAba('financeiro')">Financeiro</button>
+        <button class="master-mobile-tab danger" onclick="masterLogout()" style="color:#ef9a9a;">Sair</button>
+      </div>
+      <div class="master-layout">
+        <nav class="master-sidebar">
+          <button class="master-nav-item ${masterAba==='dashboard'?'active':''}" onclick="masterIrAba('dashboard')">
+            <span>📊</span> Dashboard
+          </button>
+          <button class="master-nav-item ${masterAba==='empresas'?'active':''}" onclick="masterIrAba('empresas')">
+            <span>🏢</span> Empresas
+          </button>
+          <button class="master-nav-item ${masterAba==='financeiro'?'active':''}" onclick="masterIrAba('financeiro')">
+            <span>💰</span> Financeiro
+          </button>
+          <button class="master-nav-item danger" onclick="masterLogout()">
+            <span>🚪</span> Sair
+          </button>
+        </nav>
+        <div class="master-content">
+          ${conteudo}
+        </div>
+      </div>
+    `);
+  }
+
   function draw(){
+    if(masterAba === 'dashboard') drawDashboard();
+    else if(masterAba === 'empresas') drawEmpresas();
+    else if(masterAba === 'financeiro') drawFinanceiro();
+  }
+
+  function drawDashboard(){
+    const total = empresas.length;
+    const ativas = empresas.filter(e=>!e.bloqueada).length;
+    const bloqueadas = empresas.filter(e=>e.bloqueada).length;
+
+    const hoje = new Date();
+    const ano = hoje.getFullYear();
+    const mes = hoje.getMonth();
+
+    let vencendo = 0, vencidas = 0, pagas = 0;
+    let fatEsperado = 0, fatConfirmado = 0, fatAberto = 0;
+
+    empresas.forEach(e => {
+      const reg = financeiroData.find(f=>f.empresa_id===e.id);
+      if(reg){
+        fatEsperado += parseFloat(reg.valor||0);
+        const info = finStatusInfo(reg);
+        if(info.label === 'Pago'){ pagas++; fatConfirmado += parseFloat(reg.valor||0); }
+        else if(info.label === 'Vencido'){ vencidas++; fatAberto += parseFloat(reg.valor||0); }
+        else if(info.label.startsWith('Vence')){ vencendo++; fatAberto += parseFloat(reg.valor||0); }
+        else { fatAberto += parseFloat(reg.valor||0); }
+      }
+    });
+
+    const fmt = v => v.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+
+    const alertas = [];
+    empresas.forEach(e => {
+      const reg = financeiroData.find(f=>f.empresa_id===e.id);
+      if(!reg) return;
+      const info = finStatusInfo(reg);
+      if(info.label === 'Vencido' || info.label.startsWith('Vence')){
+        alertas.push({ nome: e.nome, info });
+      }
+    });
+
+    const listaAlertas = alertas.length ? alertas.map(a=>`
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line);">
+        <span style="font-size:14px;font-weight:600;">${escapeHtml(a.nome)}</span>
+        <span class="fin-status" style="color:${a.info.cor};background:${a.info.bg};">${a.info.label}</span>
+      </div>
+    `).join('') : `<p class="muted">Nenhum alerta no momento.</p>`;
+
+    drawMasterShell(`
+      <h2 class="display" style="margin:0 0 20px;">Visão geral</h2>
+      <div class="dash-cards">
+        <div class="dash-card">
+          <div class="dash-card-val">${total}</div>
+          <div class="dash-card-label">Total de empresas</div>
+        </div>
+        <div class="dash-card">
+          <div class="dash-card-val" style="color:#2e7d32;">${ativas}</div>
+          <div class="dash-card-label">Ativas</div>
+        </div>
+        <div class="dash-card">
+          <div class="dash-card-val" style="color:#c62828;">${bloqueadas}</div>
+          <div class="dash-card-label">Bloqueadas</div>
+        </div>
+        <div class="dash-card">
+          <div class="dash-card-val" style="color:#2e7d32;">${pagas}</div>
+          <div class="dash-card-label">Pagas este mês</div>
+        </div>
+        <div class="dash-card">
+          <div class="dash-card-val" style="color:#c62828;">${vencidas}</div>
+          <div class="dash-card-label">Inadimplentes</div>
+        </div>
+        <div class="dash-card">
+          <div class="dash-card-val" style="color:#e65100;">${vencendo}</div>
+          <div class="dash-card-label">Vencendo em breve</div>
+        </div>
+      </div>
+      <div class="dash-cards">
+        <div class="dash-card">
+          <div class="dash-card-val">${fmt(fatEsperado)}</div>
+          <div class="dash-card-label">Faturamento esperado</div>
+        </div>
+        <div class="dash-card">
+          <div class="dash-card-val" style="color:#2e7d32;">${fmt(fatConfirmado)}</div>
+          <div class="dash-card-label">Confirmado</div>
+        </div>
+        <div class="dash-card">
+          <div class="dash-card-val" style="color:#c62828;">${fmt(fatAberto)}</div>
+          <div class="dash-card-label">Em aberto</div>
+        </div>
+      </div>
+      ${alertas.length ? `
+        <div class="card">
+          <h3 class="display" style="margin:0 0 4px;">Atenção necessária</h3>
+          <div style="font-size:13px;color:var(--ink-soft);margin-bottom:16px;">${alertas.length} empresa(s) precisam de ação</div>
+          ${listaAlertas}
+        </div>
+      ` : ''}
+    `);
+  }
+
+  function drawEmpresas(){
     const editing = editingSlug ? empresas.find(e=>e.slug===editingSlug) : null;
     const form = editing ? `
       <div class="card" style="margin-bottom:24px;">
@@ -1601,29 +1809,136 @@ function renderMasterPanel(){
       </div>`;
     }).join('')}</div>` : `<p class="muted">${masterSearch ? 'Nenhuma empresa encontrada.' : 'Nenhuma empresa cadastrada ainda.'}</p>`;
 
-    render(`
-      <div class="topbar" style="background:#1a1a1a;color:#fff;"><div class="brand">Agenda+ · Master</div><button class="icon-btn" style="color:#fff;" onclick="masterLogout()">Sair</button></div>
-      <div class="container wide">
-        ${form}
-        <div class="card">
-          ${!editing ? `
-            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:24px;flex-wrap:wrap;">
-              <div>
-                <h3 class="display" style="margin:0;">Empresas cadastradas</h3>
-                <div style="font-size:13px;color:var(--ink-soft);margin-top:2px;">${empresas.length} ${empresas.length === 1 ? 'empresa' : 'empresas'}</div>
-              </div>
-              ${!masterShowForm ? `<button class="btn" style="white-space:nowrap;" onclick="masterShowForm=true; drawMaster();">+ Cadastrar nova empresa</button>` : ''}
+    drawMasterShell(`
+      ${form}
+      <div class="card">
+        ${!editing ? `
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:24px;flex-wrap:wrap;">
+            <div>
+              <h3 class="display" style="margin:0;">Empresas cadastradas</h3>
+              <div style="font-size:13px;color:var(--ink-soft);margin-top:2px;">${empresas.length} ${empresas.length === 1 ? 'empresa' : 'empresas'}</div>
             </div>
-            <div class="field" style="margin-bottom:20px;">
-              <input placeholder="Buscar empresa..." value="${escapeAttr(masterSearch)}" oninput="masterSearch=this.value; drawMaster()" style="background:#f5f5f5;border-color:#e0e0e0;"/>
-            </div>
-            ${lista}
-          ` : lista}
-        </div>
+            ${!masterShowForm ? `<button class="btn" style="white-space:nowrap;" onclick="masterShowForm=true; drawMaster();">+ Cadastrar nova empresa</button>` : ''}
+          </div>
+          <div class="field" style="margin-bottom:20px;">
+            <input placeholder="Buscar empresa..." value="${escapeAttr(masterSearch)}" oninput="masterSearch=this.value; drawMaster()" style="background:#f5f5f5;border-color:#e0e0e0;"/>
+          </div>
+          ${lista}
+        ` : lista}
       </div>
     `);
   }
+
+  function drawFinanceiro(){
+    const hoje = new Date();
+    const mesAtual = hoje.toLocaleString('pt-BR',{month:'long', year:'numeric'});
+
+    const rows = empresas.map(e => {
+      const reg = financeiroData.find(f=>f.empresa_id===e.id);
+      return { e, reg };
+    });
+
+    const filtroFin = window._filtroFin || 'todos';
+    const filtrados = rows.filter(({reg}) => {
+      if(filtroFin === 'todos') return true;
+      if(!reg) return filtroFin === 'sem-dados';
+      const info = finStatusInfo(reg);
+      if(filtroFin === 'pagos') return info.label === 'Pago';
+      if(filtroFin === 'vencidos') return info.label === 'Vencido';
+      if(filtroFin === 'a-vencer') return info.label.startsWith('Vence');
+      return true;
+    });
+
+    const tabBtns = ['todos','pagos','vencidos','a-vencer'].map(f => `
+      <button onclick="window._filtroFin='${f}'; drawMaster();"
+        style="padding:6px 14px;border-radius:20px;border:1.5px solid var(--line);font-size:13px;cursor:pointer;
+        background:${filtroFin===f?'#1a1a1a':'var(--paper)'};color:${filtroFin===f?'#fff':'var(--ink)'};">
+        ${{todos:'Todos',pagos:'Pagos',vencidos:'Vencidos','a-vencer':'A vencer'}[f]}
+      </button>
+    `).join('');
+
+    const listaFin = filtrados.length ? filtrados.map(({e, reg}) => {
+      const info = finStatusInfo(reg);
+      const valor = reg ? parseFloat(reg.valor||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}) : '—';
+      const diaVenc = reg ? `Dia ${reg.dia_vencimento}` : '—';
+      const pagoEm = reg?.pago_em ? new Date(reg.pago_em).toLocaleDateString('pt-BR') : null;
+      const podeMarcar = reg && info.label !== 'Pago';
+      return `
+        <div style="background:var(--paper);border:1.5px solid var(--line);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:10px;">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;">
+            <div>
+              <div style="font-size:15px;font-weight:700;color:var(--ink);">${escapeHtml(e.nome)}</div>
+              <div style="font-size:13px;color:var(--ink-soft);margin-top:2px;">Vencimento: ${diaVenc} · ${valor}/mês</div>
+              ${pagoEm ? `<div style="font-size:12px;color:#2e7d32;margin-top:2px;">Pago em ${pagoEm}</div>` : ''}
+            </div>
+            <span class="fin-status" style="color:${info.cor};background:${info.bg};flex-shrink:0;">${info.label}</span>
+          </div>
+          <div style="display:grid;grid-template-columns:${reg?'1fr 1fr':'1fr'};gap:8px;">
+            ${!reg ? `<button class="btn" style="font-size:13px;height:40px;" onclick="finConfigurar('${e.id}')">Configurar plano</button>` : `
+              ${podeMarcar ? `<button class="btn" style="font-size:13px;height:40px;background:#2e7d32;border-color:#2e7d32;" onclick="finMarcarPago('${reg.id}')">✓ Marcar como pago</button>` : `<button class="btn ghost" style="font-size:13px;height:40px;" disabled>Pago ✓</button>`}
+              <button class="btn ghost" style="font-size:13px;height:40px;" onclick="finEditar('${e.id}','${reg.id}',${reg.valor},${reg.dia_vencimento})">Editar plano</button>
+            `}
+          </div>
+        </div>
+      `;
+    }).join('') : `<p class="muted">Nenhuma empresa nesta categoria.</p>`;
+
+    drawMasterShell(`
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px;">
+        <div>
+          <h2 class="display" style="margin:0;">Financeiro</h2>
+          <div style="font-size:13px;color:var(--ink-soft);margin-top:2px;text-transform:capitalize;">${mesAtual}</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;">${tabBtns}</div>
+      <div style="display:flex;flex-direction:column;gap:10px;">${listaFin}</div>
+    `);
+  }
+
   window.drawMaster = draw;
+  window.masterIrAba = (aba) => { masterAba = aba; draw(); };
+
+  window.finConfigurar = (empresaId) => {
+    const valor = prompt("Valor mensal do plano (ex: 99.90):");
+    if(valor === null) return;
+    const dia = prompt("Dia de vencimento todo mês (1 a 28):");
+    if(dia === null) return;
+    const diaNum = parseInt(dia);
+    if(isNaN(diaNum) || diaNum < 1 || diaNum > 28){ alert("Dia inválido. Use um número entre 1 e 28."); return; }
+    supabaseClient.from('financeiro').insert({ empresa_id: empresaId, valor: parseFloat(valor)||0, dia_vencimento: diaNum })
+      .then(async ({ error }) => {
+        if(error){ alert("Erro ao salvar: " + error.message); return; }
+        await carregarFinanceiro();
+        draw();
+      });
+  };
+
+  window.finEditar = (empresaId, regId, valorAtual, diaAtual) => {
+    const valor = prompt("Novo valor mensal:", valorAtual);
+    if(valor === null) return;
+    const dia = prompt("Novo dia de vencimento (1 a 28):", diaAtual);
+    if(dia === null) return;
+    const diaNum = parseInt(dia);
+    if(isNaN(diaNum) || diaNum < 1 || diaNum > 28){ alert("Dia inválido. Use um número entre 1 e 28."); return; }
+    supabaseClient.from('financeiro').update({ valor: parseFloat(valor)||0, dia_vencimento: diaNum, updated_at: new Date().toISOString() }).eq('id', regId)
+      .then(async ({ error }) => {
+        if(error){ alert("Erro ao salvar: " + error.message); return; }
+        await carregarFinanceiro();
+        draw();
+      });
+  };
+
+  window.finMarcarPago = (regId) => {
+    if(!confirm("Confirmar pagamento recebido?")) return;
+    const hoje = new Date().toISOString().slice(0,10);
+    supabaseClient.from('financeiro').update({ pago_em: hoje, updated_at: new Date().toISOString() }).eq('id', regId)
+      .then(async ({ error }) => {
+        if(error){ alert("Erro ao salvar: " + error.message); return; }
+        await carregarFinanceiro();
+        draw();
+      });
+  };
+
   window.masterCriar = async ()=>{
     const nome  = document.getElementById('novoNome').value.trim();
     const email = document.getElementById('novoEmail').value.trim();
@@ -1646,8 +1961,6 @@ function renderMasterPanel(){
 
     const empCriada = empresas.find(e=>e.slug===s2);
     if(!empCriada?.id){
-      // A gravação falhou: remove a empresa que só existia na tela,
-      // senão ela ficaria aparecendo na lista até recarregar a página.
       empresas = empresas.filter(e=>e.slug!==s2);
       alert("Não foi possível criar a empresa. Verifique sua conexão e tente novamente.");
       masterShowForm = false; draw(); return;
@@ -1706,8 +2019,8 @@ function renderMasterPanel(){
     editingSlug = null;
     draw();
   };
-  draw();
-  iniciarPolling(()=>{ if(!editingSlug) draw(); });
+  carregarFinanceiro().then(draw);
+  iniciarPolling(()=>{ if(!editingSlug) carregarFinanceiro().then(()=>{ if(!editingSlug) draw(); }); });
 }
 
 window.masterLogout = async ()=>{
