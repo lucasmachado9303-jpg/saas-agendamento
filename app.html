@@ -881,7 +881,7 @@ function renderConfirmacao(emp){
     return;
   }
   const dataFmt = new Date(b.data+"T00:00:00").toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'});
-  const msg = `Olá! Gostaria de confirmar meu agendamento em ${emp.nome}: ${b.servicoNome}, dia ${dataFmt} às ${b.hora}. Nome: ${b.nome}.`;
+  const msg = `Olá!\n\nGostaria de confirmar meu agendamento!\n\nData: ${dataFmt}\nHorário: ${b.hora}\nServiço: ${b.servicoNome}\nNome: ${b.nome}`;
   const numero = '55' + (emp.whatsapp||"").replace(/\D/g,"").replace(/^0/,"");
   const link = `https://wa.me/${numero}?text=${encodeURIComponent(msg)}`;
   render(`
