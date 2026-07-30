@@ -238,6 +238,10 @@ const ICONE_POR_TIPO = {
   whatsapp: '', instagram: '', telefone: '',
   maps: '', site: '', link: ''
 };
+const LABEL_POR_TIPO = {
+  whatsapp: 'WhatsApp', instagram: 'Instagram',
+  maps: 'Google Maps', site: 'Site'
+};
 
 let empresas = [];
 let agendamentos = [];
@@ -1326,15 +1330,12 @@ function renderGestao(empInicial){
     const formNovoBotao = novoBotaoState !== null ? `
       <div style="background:var(--paper);border-radius:12px;padding:20px 16px;margin-top:12px;border:1.5px solid var(--line);">
         <div class="eyebrow" style="margin-bottom:14px;color:#1a1a1a;">Novo botão</div>
-        <div class="field"><label>Nome exibido</label><input id="bNome" placeholder="Ex: WhatsApp"/></div>
         <div class="field"><label>Tipo</label>
           <select id="bTipo" onchange="atualizarCampoBotao('bTipo','bLink','bLinkHint')">
             <option value="whatsapp">WhatsApp</option>
             <option value="instagram">Instagram</option>
-            <option value="telefone">Telefone</option>
             <option value="maps">Google Maps</option>
             <option value="site">Site</option>
-            <option value="link">Link personalizado</option>
           </select>
         </div>
         <div class="field"><label>Link / Número</label>
@@ -1349,15 +1350,12 @@ function renderGestao(empInicial){
     ` : editandoBotaoId !== null ? (()=>{ const eb = emp.botoes.find(x=>x.id===editandoBotaoId)||{}; return `
       <div style="background:var(--paper);border-radius:12px;padding:20px 16px;margin-top:12px;border:1.5px solid var(--line);">
         <div class="eyebrow" style="margin-bottom:14px;color:#1a1a1a;">Editar botão</div>
-        <div class="field"><label>Nome exibido</label><input id="ebNome" value="${escapeAttr(eb.nome||'')}"/></div>
         <div class="field"><label>Tipo</label>
           <select id="ebTipo" onchange="atualizarCampoBotao('ebTipo','ebLink','ebLinkHint')">
             <option value="whatsapp" ${eb.tipo==='whatsapp'?'selected':''}>WhatsApp</option>
             <option value="instagram" ${eb.tipo==='instagram'?'selected':''}>Instagram</option>
-            <option value="telefone" ${eb.tipo==='telefone'?'selected':''}>Telefone</option>
             <option value="maps" ${eb.tipo==='maps'?'selected':''}>Google Maps</option>
             <option value="site" ${eb.tipo==='site'?'selected':''}>Site</option>
-            <option value="link" ${eb.tipo==='link'?'selected':''}>Link personalizado</option>
           </select>
         </div>
         <div class="field"><label>Link / Número</label>
@@ -1790,8 +1788,9 @@ function renderGestao(empInicial){
       inp.type = 'tel'; inp.inputMode = 'numeric'; inp.maxLength = 16;
       inp.oninput = ()=>window.maskTel(inp);
     } else {
-      inp.placeholder = 'https://...';
+      inp.placeholder = tipo === 'telefone' ? 'tel:+5511999999999' : 'https://...';
       inp.type = 'text'; inp.inputMode = ''; inp.maxLength = 500;
+      inp.oninput = null; inp.removeAttribute('oninput');
       if(hint) hint.style.display = 'none';
     }
   };
@@ -1800,10 +1799,9 @@ function renderGestao(empInicial){
   window.editarBotao       = (id)=>{ editandoBotaoId = id; novoBotaoState = null; draw(); };
   window.cancelarEdicaoBotao = ()=>{ editandoBotaoId = null; draw(); };
   window.salvarEdicaoBotao = async (id)=>{
-    const nome = document.getElementById('ebNome').value.trim();
     const tipo = document.getElementById('ebTipo').value;
+    const nome = LABEL_POR_TIPO[tipo] || tipo;
     let link   = document.getElementById('ebLink').value.trim();
-    if(!nome){ toast('Preencha o nome do botão.','err'); return; }
     if(!link){ toast('Preencha o link do botão.','err'); return; }
     if(tipo === 'whatsapp'){
       const convertido = validarConverterWhatsapp(link);
@@ -1828,10 +1826,9 @@ function renderGestao(empInicial){
   };
 
   window.salvarNovoBotao = async ()=>{
-    const nome = document.getElementById('bNome').value.trim();
     const tipo = document.getElementById('bTipo').value;
+    const nome = LABEL_POR_TIPO[tipo] || tipo;
     let link   = document.getElementById('bLink').value.trim();
-    if(!nome){ toast('Preencha o nome do botão.','err'); return; }
     if(!link){ toast('Preencha o link do botão.','err'); return; }
     if(tipo === 'whatsapp'){
       const convertido = validarConverterWhatsapp(link);
