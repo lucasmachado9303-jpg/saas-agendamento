@@ -970,7 +970,11 @@ function renderGestao(empInicial){
       return isoData(d);
     }
 
-    const horarios = horariosDoMes(emp, diaSelecionado.slice(0,7));
+    const horariosConfig = horariosDoMes(emp, diaSelecionado.slice(0,7));
+    const horariosAg = agendamentos
+      .filter(a=>a.slug===emp.slug && a.data===diaSelecionado)
+      .map(a=>a.hora);
+    const horarios = [...new Set([...horariosConfig, ...horariosAg])].sort();
     const diasTrabalho = (emp.horariosPorMes && emp.horariosPorMes['_dias_'])
       ? emp.horariosPorMes['_dias_'].map(Number)
       : [0,1,2,3,4,5,6];
