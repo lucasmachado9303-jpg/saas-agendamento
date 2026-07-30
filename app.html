@@ -1120,10 +1120,7 @@ function renderGestao(empInicial){
       </div>`;
     }).join('');
     return `
-      <div style="display:flex;overflow-x:auto;gap:0;padding:8px 0 12px;margin:0 -4px;">
-        ${semanaHtml}
-      </div>
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
         <button class="btn ghost" style="padding:10px 14px;font-size:18px;line-height:1;" onclick="selecionarDiaGestao('${isoAddDias(diaSelecionado,-1)}')">&#8592;</button>
         <div style="position:relative;text-align:center;cursor:pointer;" onclick="document.getElementById('calGestao').showPicker ? document.getElementById('calGestao').showPicker() : document.getElementById('calGestao').click()">
           <div style="font-family:'Nunito',sans-serif;font-size:17px;font-weight:700;">${dataFmt}</div>
@@ -1132,8 +1129,7 @@ function renderGestao(empInicial){
         </div>
         <button class="btn ghost" style="padding:10px 14px;font-size:18px;line-height:1;" onclick="selecionarDiaGestao('${isoAddDias(diaSelecionado,1)}')">&#8594;</button>
       </div>
-      ${!isHoje ? `<div style="text-align:center;margin-bottom:8px;"><button class="icon-btn" style="font-size:12px;" onclick="selecionarDiaGestao('${hoje}')">Ir para hoje</button></div>` : ''}
-      <div style="text-align:center;margin-bottom:16px;">
+      <div style="text-align:center;margin-bottom:8px;">
         ${diaNaoTrabalha
           ? ``
           : diaTodoBloqueado
