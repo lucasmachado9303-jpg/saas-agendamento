@@ -968,6 +968,7 @@ function renderGestao(empInicial){
     }
 
     const horarios = horariosDoMes(emp, diaSelecionado.slice(0,7));
+    const diaTodoBloqueado = horarios.length > 0 && horarios.every(h=>(emp.bloqueios||[]).some(b=>b.data===diaSelecionado && b.hora===h));
     const linhas = horarios.length ? horarios.map(h=>{
       const ag = agendamentos.find(a=>a.slug===emp.slug && a.data===diaSelecionado && a.hora===h);
       const bloqueado = (emp.bloqueios||[]).some(b=>b.data===diaSelecionado && b.hora===h);
@@ -1050,9 +1051,15 @@ function renderGestao(empInicial){
         <button class="btn ghost" style="padding:10px 16px;font-size:18px;line-height:1;" onclick="selecionarDiaGestao('${isoAddDias(diaSelecionado,1)}')">&#8594;</button>
       </div>
       <div style="text-align:center;margin-bottom:20px;">
-        <button class="icon-btn" style="font-size:12px;color:var(--danger);" onclick="bloquearDiaTodo()">Bloquear dia todo</button>
+        ${diaTodoBloqueado
+          ? `<button class="icon-btn" style="font-size:12px;color:#2e7d32;" onclick="desbloquearDiaTodo()">Desbloquear dia todo</button>`
+          : `<button class="icon-btn" style="font-size:12px;color:var(--danger);" onclick="bloquearDiaTodo()">Bloquear dia todo</button>`
+        }
       </div>
-      ${linhas}
+      ${diaTodoBloqueado
+        ? `<p class="muted" style="text-align:center;padding:24px 0;">Dia bloqueado. Nenhum horário disponível.</p>`
+        : linhas
+      }
     `;
   }
 
@@ -1379,17 +1386,25 @@ function renderGestao(empInicial){
   window.bloquearDiaTodo = async ()=>{
     const horarios = horariosDoMes(emp, diaSelecionado.slice(0,7));
     if(!horarios.length){ alert("Nenhum horário configurado para este dia."); return; }
-    const livres = horarios.filter(h =>
-      !((emp.bloqueios||[]).some(b=>b.data===diaSelecionado && b.hora===h)) &&
-      !agendamentos.some(a=>a.slug===emp.slug && a.data===diaSelecionado && a.hora===h)
-    );
-    if(!livres.length){ alert("Todos os horários deste dia já estão bloqueados."); return; }
+    const naoBloquados = horarios.filter(h=>!((emp.bloqueios||[]).some(b=>b.data===diaSelecionado && b.hora===h)));
     const dataFmtConf = new Date(diaSelecionado+"T00:00:00").toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'});
-    if(!confirm(`Bloquear todos os ${livres.length} horários de ${dataFmtConf}?`)) return;
-    const rows = livres.map(h=>({ empresa_id: emp.id, data: diaSelecionado, hora: h }));
-    const { data, error } = await supabaseClient.from('bloqueios').insert(rows).select();
-    if(error){ alert("Erro ao bloquear: " + error.message); return; }
-    if(data) data.forEach(r=>{ (emp.bloqueios=emp.bloqueios||[]).push({id:r.id, data:r.data, hora:r.hora}); });
+    if(!confirm(`Bloquear o dia ${dataFmtConf} inteiro?`)) return;
+    if(naoBloquados.length){
+      const rows = naoBloquados.map(h=>({ empresa_id: emp.id, data: diaSelecionado, hora: h }));
+      const { data, error } = await supabaseClient.from('bloqueios').insert(rows).select();
+      if(error){ alert("Erro ao bloquear: " + error.message); return; }
+      if(data) data.forEach(r=>{ (emp.bloqueios=emp.bloqueios||[]).push({id:r.id, data:r.data, hora:r.hora}); });
+    }
+    draw();
+  };
+  window.desbloquearDiaTodo = async ()=>{
+    const dataFmtConf = new Date(diaSelecionado+"T00:00:00").toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'});
+    if(!confirm(`Desbloquear o dia ${dataFmtConf} inteiro?`)) return;
+    const ids = (emp.bloqueios||[]).filter(b=>b.data===diaSelecionado).map(b=>b.id);
+    if(!ids.length){ draw(); return; }
+    const { error } = await supabaseClient.from('bloqueios').delete().in('id', ids);
+    if(error){ alert("Erro ao desbloquear: " + error.message); return; }
+    emp.bloqueios = (emp.bloqueios||[]).filter(b=>b.data!==diaSelecionado);
     draw();
   };
 
