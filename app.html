@@ -1422,33 +1422,8 @@ function renderGestao(empInicial){
   ];
 
   const GESTAO_CSS = `<style>
-    .g-layout { display:flex; min-height:calc(100vh - 56px); position:relative; }
-    .g-sidebar {
-      background:#1c1917; color:#fff; display:flex; flex-direction:column;
-      overflow:hidden; flex-shrink:0; z-index:200;
-    }
-    .g-sidebar-toggle {
-      display:flex; align-items:center; justify-content:center;
-      border:none; background:none; color:rgba(255,255,255,0.5); cursor:pointer;
-      border-bottom:1px solid rgba(255,255,255,0.08); flex-shrink:0; width:100%;
-    }
-    .g-nav-item {
-      display:flex; align-items:center; gap:10px;
-      cursor:pointer; font-size:14px; font-weight:500; color:rgba(255,255,255,0.65);
-      border:none; background:none; width:100%; text-align:left;
-      transition:background .15s, color .15s; white-space:nowrap; overflow:hidden;
-    }
-    .g-nav-item:hover { color:#fff; background:rgba(255,255,255,0.07); }
-    .g-nav-item.active { color:#fff; background:rgba(255,255,255,0.12); }
-    .g-nav-item.danger { color:#ef9a9a; margin-top:auto; }
-    .g-nav-item.danger:hover { color:#fff; background:rgba(198,40,40,0.3); }
-    .g-nav-ico { flex-shrink:0; }
-    .g-overlay {
-      display:none; position:fixed; inset:0; z-index:199;
-      background:rgba(0,0,0,0.45); cursor:pointer;
-    }
-    .g-overlay.on { display:block; }
-    .g-content { flex:1; min-width:0; }
+    .g-layout { display:flex; flex-direction:column; min-height:calc(100vh - 52px); }
+    .g-content { flex:1; min-width:0; padding-bottom:72px; }
     .g-dash-cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:14px; }
     .g-dash-card { background:var(--paper); border:1.5px solid var(--line); border-radius:12px; padding:18px 16px; }
     .g-dash-val { font-size:32px; font-weight:800; color:var(--ink); line-height:1; }
@@ -1457,36 +1432,40 @@ function renderGestao(empInicial){
     .g-topbar { height:52px; display:flex; align-items:center; justify-content:space-between; padding:0 20px; background:#1c1917; color:#fff; }
     .g-topbar .brand { font-family:'Nunito',sans-serif; font-weight:800; font-size:18px; }
 
-    /* ── Desktop ── */
-    @media(min-width:768px){
-      .g-sidebar {
-        width:148px; min-width:148px; padding:16px 0;
-        position:sticky; top:52px; height:calc(100vh - 52px); overflow-y:auto;
-      }
-      .g-nav-item { padding:12px 20px; }
-      .g-nav-item.active { border-left:3px solid #fff; }
-      .g-nav-ico { width:18px; height:18px; }
-      .g-sidebar-toggle { display:none; }
-      .g-nav-label { /* always visible */ }
+    /* ── Bottom nav bar ── */
+    .g-bottom-nav {
+      position:fixed; bottom:0; left:0; right:0; height:60px; z-index:300;
+      background:#1c1917; border-top:1px solid rgba(255,255,255,0.1);
+      display:flex; align-items:stretch;
     }
+    .g-bn-item {
+      flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+      gap:4px; border:none; background:none; cursor:pointer;
+      color:rgba(255,255,255,0.5); transition:color .15s;
+      font-size:11px; font-weight:600; font-family:'Nunito',sans-serif;
+      padding:0;
+    }
+    .g-bn-item:hover { color:rgba(255,255,255,0.8); }
+    .g-bn-item.active { color:#fff; }
+    .g-bn-item.active .g-bn-ico { opacity:1; }
+    .g-bn-ico { width:22px; height:22px; opacity:0.5; transition:opacity .15s; }
+    .g-bn-item.active .g-bn-ico { opacity:1; }
 
-    /* ── Mobile ── */
-    @media(max-width:767px){
-      .g-sidebar {
-        position:fixed; left:0; top:52px; bottom:0;
-        width:185px; padding:4px 0;
-        transform:translateX(-149px);
-        transition:transform .22s cubic-bezier(.4,0,.2,1);
-        box-shadow:2px 0 8px rgba(0,0,0,0.3);
+    /* ── Desktop: side nav instead of bottom nav ── */
+    @media(min-width:768px){
+      .g-layout { flex-direction:row; }
+      .g-content { padding-bottom:0; }
+      .g-bottom-nav {
+        position:sticky; top:52px; height:calc(100vh - 52px);
+        flex-direction:column; width:140px; border-top:none;
+        border-right:1px solid rgba(255,255,255,0.1);
       }
-      .g-sidebar.open { transform:translateX(0); box-shadow:4px 0 24px rgba(0,0,0,0.5); }
-      .g-sidebar-toggle { padding:13px 0; font-size:20px; }
-      .g-nav-item { padding:13px; justify-content:center; }
-      .g-sidebar.open .g-nav-item { padding:13px 16px; justify-content:flex-start; }
-      .g-nav-ico { width:22px; height:22px; }
-      .g-nav-label { display:none; }
-      .g-sidebar.open .g-nav-label { display:block; }
-      .g-content { margin-left:36px; }
+      .g-bn-item {
+        flex:none; flex-direction:row; justify-content:flex-start;
+        gap:10px; padding:14px 18px; font-size:13px;
+      }
+      .g-bn-item.active { background:rgba(255,255,255,0.1); }
+      .g-bn-ico { width:18px; height:18px; }
     }
   </style>`;
 
@@ -1526,10 +1505,10 @@ function renderGestao(empInicial){
     const exitLabel = isMaster ? 'Voltar' : 'Sair';
     const exitIco   = isMaster ? G_ICO.voltar : G_ICO.sair;
 
-    const sidebarItems = GESTAO_NAV.map(n => `
-      <button class="g-nav-item ${corner===n.id?'active':''}" onclick="setCorner(${n.id===null?'null':`'${n.id}'`})">
-        <span class="g-nav-ico">${n.ico}</span>
-        <span class="g-nav-label">${n.label}</span>
+    const navItems = GESTAO_NAV.map(n => `
+      <button class="g-bn-item ${corner===n.id?'active':''}" onclick="setCorner(${n.id===null?'null':`'${n.id}'`})">
+        <span class="g-bn-ico">${n.ico}</span>
+        <span>${n.label}</span>
       </button>`).join('');
 
     const body = corner==='dashboard'    ? dashboardBody()
@@ -1543,25 +1522,18 @@ function renderGestao(empInicial){
       <div style="position:sticky;top:0;z-index:300;">
         ${barraVoltarMaster()}
         <div class="g-topbar">
-          <div class="brand">${escapeHtml(emp.nome)} · Gestão</div>
+          <div class="brand">${escapeHtml(emp.nome)}</div>
           <button class="icon-btn" style="color:#fff;" onclick="${exitAction}">${exitLabel}</button>
         </div>
       </div>
       <div class="g-layout">
-        <nav class="g-sidebar${gestaoNavAberta?' open':''}">
-          <button class="g-sidebar-toggle" onclick="gestaoToggleNav()" aria-label="Menu">
-            ${gestaoNavAberta
-              ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:20px;height:20px;"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`
-              : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:20px;height:20px;"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>`
-            }
-          </button>
-          ${sidebarItems}
-          <button class="g-nav-item danger" onclick="${exitAction}">
-            <span class="g-nav-ico">${exitIco}</span>
-            <span class="g-nav-label">${exitLabel}</span>
+        <nav class="g-bottom-nav">
+          ${navItems}
+          <button class="g-bn-item" onclick="${exitAction}">
+            <span class="g-bn-ico">${exitIco}</span>
+            <span>${exitLabel}</span>
           </button>
         </nav>
-        <div class="g-overlay${gestaoNavAberta?' on':''}" onclick="gestaoToggleNav()"></div>
         <div class="g-content">
           <div class="container wide">
             <div class="card" style="${cardStyle}">${body}</div>
@@ -1571,8 +1543,7 @@ function renderGestao(empInicial){
     `);
   }
 
-  window.setCorner = (c)=>{ corner=c; editandoId=null; novoAgState=null; configurarSub=null; gestaoNavAberta=false; draw(); };
-  window.gestaoToggleNav = ()=>{ gestaoNavAberta=!gestaoNavAberta; draw(); };
+  window.setCorner = (c)=>{ corner=c; editandoId=null; novoAgState=null; configurarSub=null; draw(); };
   window.selecionarDiaGestao = (iso)=>{
     if(!iso || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return;
     diaSelecionado=iso; editandoId=null; novoAgState=null; draw();
