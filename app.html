@@ -1703,7 +1703,7 @@ function renderGestao(empInicial){
   };
 
   window.configurarIr = (sub)=>{ configurarSub=sub; personalizarDirty=false; draw(); };
-  window.marcarPersonalizarDirty = ()=>{ personalizarDirty=true; draw(); };
+  window.marcarPersonalizarDirty = ()=>{ if(!personalizarDirty){ personalizarDirty=true; draw(); } };
   window.voltarDePersonalizar = ()=>{ if(personalizarDirty){ personalizarDirty=true; draw(); } else { configurarIr(null); } };
   window.descartarPersonalizar = ()=>{ personalizarDirty=false; configurarIr(null); };
   window.adicionarHorario = async ()=>{
