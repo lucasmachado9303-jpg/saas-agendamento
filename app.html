@@ -1023,16 +1023,16 @@ function renderGestao(empInicial){
           </div>
           <div class="row">
             <button class="btn ghost" onclick="cancelarNovoAg()">Cancelar</button>
-            <button class="btn" onclick="salvarNovoAg('${diaSelecionado}')">Salvar</button>
+            <button class="btn" onclick="salvarNovoAg('${diaSelecionado}')">Agendar</button>
           </div>
         </div>`;
       }
       return `<div style="padding:16px;margin-bottom:8px;border-radius:12px;border:1.5px solid #e0e0e0;background:var(--card);display:flex;flex-direction:column;gap:12px;opacity:.45;">
         <div style="font-weight:700;font-size:15px;">${h} — <span class="muted">Livre</span></div>
         <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;">
-          <button class="btn ghost" style="font-size:13px;" onclick="novoAgendamento('${diaSelecionado}','${h}')">Editar</button>
+          <button class="btn ghost" style="font-size:13px;" onclick="novoAgendamento('${diaSelecionado}','${h}')">Agendar Manual</button>
           <button class="btn ghost" style="font-size:13px;" onclick="bloquearHorario('${diaSelecionado}','${h}')">Bloquear</button>
-          <button class="btn" style="font-size:13px;background:#25d366;border:none;color:#fff;" onclick="">WhatsApp</button>
+          <button class="btn ghost" style="font-size:13px;" onclick="">WhatsApp</button>
         </div>
       </div>`;
     }).join("") : `<p class="muted" style="text-align:center;padding:20px 0;">Nenhum horário configurado para este dia.</p>`;
@@ -1404,13 +1404,13 @@ function renderGestao(empInicial){
     const servico = emp.servicos.find(s=>s.id===servicoId);
     const {data:row, error} = await supabaseClient.from('agendamentos').insert({
       empresa_id: emp.id, slug: emp.slug,
-      nome, telefone: tel, servico_id: servicoId, servico_nome: servico?.nome||'',
+      nome_cliente: nome, telefone: tel, servico_id: servicoId, servico_nome: servico?.nome||'',
       data, hora
     }).select().single();
-    if(error){ alert('Erro ao salvar: '+error.message); return; }
+    if(error){ alert('Erro ao agendar: '+error.message); return; }
     agendamentos.push({
-      id:row.id, empresa_id:emp.id, slug:emp.slug,
-      nome:row.nome, telefone:row.telefone,
+      id:row.id, slug:emp.slug,
+      nome:row.nome_cliente, telefone:row.telefone,
       servicoId:row.servico_id, servicoNome:row.servico_nome,
       data:row.data, hora:row.hora
     });
