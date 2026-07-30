@@ -1013,6 +1013,7 @@ function renderGestao(empInicial){
   let mesHorario = mesKey(new Date());
   let novoBotaoState = null;
   let editandoBotaoId = null;
+  let _removendoServicoIdx = null;
 
   function agendamentosBody(){
     if(diaSelecionado===null){
@@ -1228,7 +1229,13 @@ function renderGestao(empInicial){
               <input type="number" min="0" step="1" value="${s.preco||0}" onchange="updServico(${i},'preco',this.value)"
                 style="width:64px;padding:4px 6px;border:1px solid #e0e0e0;border-radius:6px;font-size:13px;text-align:right;background:#fff;"/>
             </div>
-            <button onclick="removeServico(${i})" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:18px;line-height:1;padding:0;min-height:0;">×</button>
+            ${_removendoServicoIdx===i
+              ? `<span style="display:flex;gap:6px;align-items:center;">
+                   <button onclick="_removendoServicoIdx=null;draw()" style="background:none;border:none;color:var(--ink-soft);cursor:pointer;font-size:12px;font-weight:600;padding:0;min-height:0;">Cancelar</button>
+                   <button onclick="removeServico(${i})" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:12px;font-weight:700;padding:0;min-height:0;">Remover</button>
+                 </span>`
+              : `<button onclick="removeServico(${i})" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:18px;line-height:1;padding:0;min-height:0;">×</button>`
+            }
           </div>
         `).join('')}</div>` : `<p class="muted" style="margin-bottom:14px;">Nenhum serviço cadastrado ainda.</p>`}
         <div class="row" style="margin-top:4px;">
@@ -1476,10 +1483,10 @@ function renderGestao(empInicial){
     const agHoje    = ags.filter(a => a.data === hoje).length;
     const agMes     = ags.filter(a => a.data.startsWith(mesStr)).length;
     const agPassados = ags.filter(a => a.data.startsWith(mesStr) && a.data < hoje).length;
-    const mesFmt = new Date().toLocaleString('pt-BR',{month:'long',year:'numeric'}).replace(' De ',' de ');
+    const mesFmt = new Date().toLocaleString('pt-BR',{month:'long',year:'numeric'}).replace(/ de /gi,' de ').replace(/^./, c=>c.toUpperCase());
     return `
       <h2 class="display" style="margin:0 0 4px;">Visão geral</h2>
-      <div style="font-size:13px;color:var(--ink-soft);margin-bottom:24px;text-transform:capitalize;">${mesFmt}</div>
+      <div style="font-size:13px;color:var(--ink-soft);margin-bottom:24px;">${mesFmt}</div>
       <div class="g-dash-cards">
         <div class="g-dash-card">
           <div class="g-dash-val">${agHoje}</div>
@@ -1543,7 +1550,7 @@ function renderGestao(empInicial){
     `);
   }
 
-  window.setCorner = (c)=>{ corner=c; editandoId=null; novoAgState=null; configurarSub=null; draw(); };
+  window.setCorner = (c)=>{ corner=c; editandoId=null; novoAgState=null; configurarSub=null; _removendoServicoIdx=null; draw(); };
   window.selecionarDiaGestao = (iso)=>{
     if(!iso || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return;
     diaSelecionado=iso; editandoId=null; novoAgState=null; draw();
@@ -1674,10 +1681,11 @@ function renderGestao(empInicial){
     draw();
   };
   window.removeServico = async (i)=>{
+    if(_removendoServicoIdx !== i){ _removendoServicoIdx = i; draw(); return; }
+    _removendoServicoIdx = null;
     const s = emp.servicos[i];
-    if(!confirm(`Remover o serviço "${s.nome}"?`)) return;
     const { error } = await supabaseClient.from('servicos').delete().eq('id', s.id);
-    if(error){ console.error('Erro ao remover serviço:', error); return; }
+    if(error){ toast('Erro ao remover serviço. Tente novamente.','err'); return; }
     emp.servicos.splice(i,1);
     draw();
   };
@@ -1689,7 +1697,7 @@ function renderGestao(empInicial){
     if(error) console.error('Erro ao atualizar serviço:', error);
   };
 
-  window.configurarIr = (sub)=>{ configurarSub=sub; personalizarDirty=false; draw(); };
+  window.configurarIr = (sub)=>{ configurarSub=sub; personalizarDirty=false; _removendoServicoIdx=null; draw(); };
   window.marcarPersonalizarDirty = ()=>{
     if(personalizarDirty) return;
     personalizarDirty = true;
