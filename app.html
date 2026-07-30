@@ -1380,15 +1380,16 @@ function renderGestao(empInicial){
       ${botoesHtml}
       ${formNovoBotao}
 
-      ${personalizarDirty ? `<div style="background:#fef9e7;border:1.5px solid #f5c518;border-radius:12px;padding:14px 16px;margin-top:24px;">
+      <div id="pers-save-wrap" style="margin-top:32px;border-top:1px solid var(--line);padding-top:24px;${personalizarDirty?'display:none':''}">
+        <button class="btn" style="width:100%;" onclick="salvarInfoEmpresa()">Salvar</button>
+      </div>
+      <div id="pers-dirty-banner" style="background:#fef9e7;border:1.5px solid #f5c518;border-radius:12px;padding:14px 16px;margin-top:24px;${personalizarDirty?'':'display:none'}">
         <div style="font-size:14px;font-weight:600;color:#7a6400;margin-bottom:10px;">Você tem alterações não salvas</div>
         <div style="display:flex;gap:8px;">
           <button class="btn ghost" style="flex:1;font-size:13px;color:#7a6400;border-color:#f5c518;" onclick="descartarPersonalizar()">Descartar</button>
           <button class="btn" style="flex:1;font-size:13px;" onclick="salvarInfoEmpresa()">Salvar agora</button>
         </div>
-      </div>` : `<div style="margin-top:32px;border-top:1px solid var(--line);padding-top:24px;">
-        <button class="btn" style="width:100%;" onclick="salvarInfoEmpresa()">Salvar</button>
-      </div>`}
+      </div>
     `;
   }
 
@@ -1701,7 +1702,14 @@ function renderGestao(empInicial){
   };
 
   window.configurarIr = (sub)=>{ configurarSub=sub; personalizarDirty=false; draw(); };
-  window.marcarPersonalizarDirty = ()=>{ if(!personalizarDirty){ personalizarDirty=true; draw(); } };
+  window.marcarPersonalizarDirty = ()=>{
+    if(personalizarDirty) return;
+    personalizarDirty = true;
+    const saveWrap = document.getElementById('pers-save-wrap');
+    const dirtyBanner = document.getElementById('pers-dirty-banner');
+    if(saveWrap) saveWrap.style.display = 'none';
+    if(dirtyBanner) dirtyBanner.style.display = 'block';
+  };
   window.voltarDePersonalizar = ()=>{ if(personalizarDirty){ personalizarDirty=true; draw(); } else { configurarIr(null); } };
   window.descartarPersonalizar = ()=>{ personalizarDirty=false; configurarIr(null); };
   window.adicionarHorario = async ()=>{
