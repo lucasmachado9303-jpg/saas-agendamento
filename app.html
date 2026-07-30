@@ -996,6 +996,7 @@ function renderGestao(empInicial){
   let editandoId = null;
   let novoAgState = null;
   let configurarSub = null; // null | 'servicos' | 'horarios' | 'personalizar'
+  let personalizarDirty = false;
   let mesHorario = mesKey(new Date());
   let novoBotaoState = null;
   let editandoBotaoId = null;
@@ -1270,7 +1271,7 @@ function renderGestao(empInicial){
     if(configurarSub === 'personalizar'){
       return `
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
-          <button onclick="configurarIr(null)" class="btn ghost" style="padding:8px 14px;font-size:13px;">← Voltar</button>
+          <button onclick="voltarDePersonalizar()" class="btn ghost" style="padding:8px 14px;font-size:13px;">← Voltar</button>
           <div style="font-weight:700;font-size:16px;">Personalize seu link</div>
         </div>
         ${personalizarBody()}
@@ -1356,9 +1357,9 @@ function renderGestao(empInicial){
     return `
       <div class="eyebrow" style="margin-bottom:16px;color:#1a1a1a;">Identidade visual</div>
 
-      <div class="field"><label>Nome da empresa</label><input id="pNome" value="${escapeAttr(emp.nome)}"/></div>
-      <div class="field"><label>Descrição curta</label><textarea id="pDescricao" rows="2" style="resize:vertical;min-height:80px;">${escapeHtml(emp.descricao||'')}</textarea></div>
-      <div class="field"><label>Texto de destaque</label><input id="pTextoDestaque" value="${escapeAttr(emp.textoDestaque||'')}" placeholder="Ex: Atendimento premium"/></div>
+      <div class="field"><label>Nome da empresa</label><input id="pNome" value="${escapeAttr(emp.nome)}" oninput="marcarPersonalizarDirty()"/></div>
+      <div class="field"><label>Descrição curta</label><textarea id="pDescricao" rows="2" style="resize:vertical;min-height:80px;" oninput="marcarPersonalizarDirty()">${escapeHtml(emp.descricao||'')}</textarea></div>
+      <div class="field"><label>Texto de destaque</label><input id="pTextoDestaque" value="${escapeAttr(emp.textoDestaque||'')}" placeholder="Ex: Atendimento premium" oninput="marcarPersonalizarDirty()"/></div>
       <div class="field">
         <label>Logo</label>
         ${emp.logo ? `<img src="${escapeAttr(emp.logo)}" style="width:90px;height:90px;object-fit:cover;border-radius:50%;display:block;margin-bottom:10px;border:2px solid var(--line);"/>` : `<div style="width:90px;height:90px;border-radius:50%;background:#f0f0f0;display:flex;align-items:center;justify-content:center;margin-bottom:10px;color:#999999;font-size:13px;text-align:center;">Sem logo</div>`}
@@ -1372,7 +1373,7 @@ function renderGestao(empInicial){
       <div class="field">
         <label>Cor principal</label>
         <div style="display:flex;align-items:center;gap:12px;">
-          <input type="color" id="pCor" value="${escapeAttr(cor)}" style="padding:4px;height:48px;width:64px;border-radius:10px;cursor:pointer;"/>
+          <input type="color" id="pCor" value="${escapeAttr(cor)}" style="padding:4px;height:48px;width:64px;border-radius:10px;cursor:pointer;" oninput="marcarPersonalizarDirty()"/>
           <span class="muted" style="font-size:13px;">Usada nos botões e destaques da página</span>
         </div>
       </div>
@@ -1382,13 +1383,15 @@ function renderGestao(empInicial){
       ${botoesHtml}
       ${formNovoBotao}
 
-      <div style="margin-top:32px;border-top:1px solid var(--line);padding-top:24px;">
-        <button class="btn ghost" style="width:100%;" onclick="salvarInfoEmpresa()">Salvar informações</button>
-        <div class="row" style="margin-top:10px;">
-          <button class="btn ghost" style="flex:1;" onclick="goto({empresa:'${emp.slug}'})">Ver página</button>
-          <button class="btn ghost" style="flex:1;" onclick="compartilharLink()">Compartilhar link</button>
+      ${personalizarDirty ? `<div style="background:#fef9e7;border:1.5px solid #f5c518;border-radius:12px;padding:14px 16px;margin-top:24px;">
+        <div style="font-size:14px;font-weight:600;color:#7a6400;margin-bottom:10px;">Você tem alterações não salvas</div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn ghost" style="flex:1;font-size:13px;color:#7a6400;border-color:#f5c518;" onclick="descartarPersonalizar()">Descartar</button>
+          <button class="btn" style="flex:1;font-size:13px;" onclick="salvarInfoEmpresa()">Salvar agora</button>
         </div>
-      </div>
+      </div>` : `<div style="margin-top:32px;border-top:1px solid var(--line);padding-top:24px;">
+        <button class="btn" style="width:100%;" onclick="salvarInfoEmpresa()">Salvar</button>
+      </div>`}
     `;
   }
 
@@ -1700,7 +1703,10 @@ function renderGestao(empInicial){
     if(error) console.error('Erro ao atualizar serviço:', error);
   };
 
-  window.configurarIr = (sub)=>{ configurarSub=sub; draw(); };
+  window.configurarIr = (sub)=>{ configurarSub=sub; personalizarDirty=false; draw(); };
+  window.marcarPersonalizarDirty = ()=>{ personalizarDirty=true; draw(); };
+  window.voltarDePersonalizar = ()=>{ if(personalizarDirty){ personalizarDirty=true; draw(); } else { configurarIr(null); } };
+  window.descartarPersonalizar = ()=>{ personalizarDirty=false; configurarIr(null); };
   window.adicionarHorario = async ()=>{
     const val = document.getElementById('novoHorarioInput').value;
     if(!val){ toast('Selecione um horário.','err'); return; }
@@ -1759,6 +1765,7 @@ function renderGestao(empInicial){
       texto_destaque:        emp.textoDestaque         || null,
     }).eq('id', emp.id);
     if(error){ console.error('Erro ao salvar informações:', error); toast('Erro ao salvar. Tente novamente.','err'); return; }
+    personalizarDirty = false;
     toast('Informações salvas!','ok');
     draw();
   };
