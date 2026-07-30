@@ -948,6 +948,7 @@ function renderGestao(empInicial){
   let gestaoNavAberta = false;
   let diaSelecionado = null;
   let editandoId = null;
+  let novoAgState = null; // { data, hora } para criar agendamento em slot vago
   let mesHorario = mesKey(new Date());
   let novoBotaoState = null;
   let editandoBotaoId = null;
@@ -996,20 +997,43 @@ function renderGestao(empInicial){
           </div>
           <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;">
             <button class="btn ghost" style="font-size:13px;" onclick="editarAgendamento('${ag.id}')">Editar</button>
-            <button class="btn danger" style="font-size:13px;" onclick="cancelarAgendamento('${ag.id}')">Cancelar</button>
+            <button class="btn" style="font-size:13px;background:#e53935;border:none;color:#fff;" onclick="cancelarAgendamento('${ag.id}')">Cancelar</button>
             <button class="btn" style="font-size:13px;background:#25d366;border:none;color:#fff;" onclick="window.open('${waLink}','_blank','noopener,noreferrer')">WhatsApp</button>
           </div>
         </div>`;
       }
       if(bloqueado){
-        return `<div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;margin-bottom:8px;border-radius:12px;background:#f7f7f7;opacity:.6;">
-          <div><strong>${h}</strong> — <span class="muted">Bloqueado</span></div>
-          <button class="btn ghost" onclick="desbloquearHorario('${diaSelecionado}','${h}')">Desbloquear</button>
+        return `<div style="padding:16px;margin-bottom:8px;border-radius:12px;border:1.5px solid #e0e0e0;background:var(--card);display:flex;flex-direction:column;gap:12px;opacity:.55;">
+          <div style="font-weight:700;font-size:15px;">${h} — <span class="muted">Bloqueado</span></div>
+          <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;">
+            <button class="btn ghost" style="font-size:13px;grid-column:1/4;" onclick="desbloquearHorario('${diaSelecionado}','${h}')">Desbloquear</button>
+          </div>
         </div>`;
       }
-      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;margin-bottom:8px;border-radius:12px;background:#f7f7f7;opacity:.55;">
-        <div><strong>${h}</strong> — <span class="muted">Livre</span></div>
-        <button class="btn ghost" onclick="bloquearHorario('${diaSelecionado}','${h}')">Bloquear</button>
+      if(novoAgState && novoAgState.data===diaSelecionado && novoAgState.hora===h){
+        const servicoOpts = emp.servicos.map(s=>`<option value="${s.id}">${escapeHtml(s.nome)}</option>`).join("");
+        const horariosOpts = horarios.map(hh=>`<option value="${hh}" ${hh===h?'selected':''}>${hh}</option>`).join("");
+        return `<div class="list-item" style="flex-direction:column;align-items:stretch;">
+          <div style="font-weight:700;font-size:14px;margin-bottom:8px;">${h} — Novo agendamento</div>
+          <div class="field"><label>Nome</label><input id="novoNome" placeholder="Nome do cliente"/></div>
+          <div class="field"><label>Telefone</label><input id="novoTel" placeholder="(xx) xxxxx-xxxx"/></div>
+          <div class="row">
+            <div class="field"><label>Serviço</label><select id="novoServico">${servicoOpts}</select></div>
+            <div class="field"><label>Horário</label><select id="novoHora">${horariosOpts}</select></div>
+          </div>
+          <div class="row">
+            <button class="btn ghost" onclick="cancelarNovoAg()">Cancelar</button>
+            <button class="btn" onclick="salvarNovoAg('${diaSelecionado}')">Salvar</button>
+          </div>
+        </div>`;
+      }
+      return `<div style="padding:16px;margin-bottom:8px;border-radius:12px;border:1.5px solid #e0e0e0;background:var(--card);display:flex;flex-direction:column;gap:12px;opacity:.45;">
+        <div style="font-weight:700;font-size:15px;">${h} — <span class="muted">Livre</span></div>
+        <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;">
+          <button class="btn ghost" style="font-size:13px;" onclick="novoAgendamento('${diaSelecionado}','${h}')">Editar</button>
+          <button class="btn ghost" style="font-size:13px;" onclick="bloquearHorario('${diaSelecionado}','${h}')">Bloquear</button>
+          <button class="btn" style="font-size:13px;background:#25d366;border:none;color:#fff;" onclick="">WhatsApp</button>
+        </div>
       </div>`;
     }).join("") : `<p class="muted" style="text-align:center;padding:20px 0;">Nenhum horário configurado para este dia.</p>`;
 
@@ -1338,11 +1362,11 @@ function renderGestao(empInicial){
     `);
   }
 
-  window.setCorner = (c)=>{ corner=c; editandoId=null; gestaoNavAberta=false; draw(); };
+  window.setCorner = (c)=>{ corner=c; editandoId=null; novoAgState=null; gestaoNavAberta=false; draw(); };
   window.gestaoToggleNav = ()=>{ gestaoNavAberta=!gestaoNavAberta; draw(); };
   window.selecionarDiaGestao = (iso)=>{
     if(!iso || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return;
-    diaSelecionado=iso; editandoId=null; draw();
+    diaSelecionado=iso; editandoId=null; novoAgState=null; draw();
   };
 
   window.selecionarImagem = (tipo)=>{
@@ -1369,7 +1393,30 @@ function renderGestao(empInicial){
     draw();
   };
 
-  window.editarAgendamento = (id)=>{ editandoId=id; draw(); };
+  window.novoAgendamento = (data, hora)=>{ novoAgState={data,hora}; editandoId=null; draw(); };
+  window.cancelarNovoAg = ()=>{ novoAgState=null; draw(); };
+  window.salvarNovoAg = async (data)=>{
+    const nome = document.getElementById('novoNome')?.value?.trim();
+    const tel  = document.getElementById('novoTel')?.value?.trim();
+    const servicoId = document.getElementById('novoServico')?.value;
+    const hora = document.getElementById('novoHora')?.value;
+    if(!nome||!tel||!servicoId||!hora){ alert('Preencha todos os campos.'); return; }
+    const servico = emp.servicos.find(s=>s.id===servicoId);
+    const {data:row, error} = await supabaseClient.from('agendamentos').insert({
+      empresa_id: emp.id, slug: emp.slug,
+      nome, telefone: tel, servico_id: servicoId, servico_nome: servico?.nome||'',
+      data, hora
+    }).select().single();
+    if(error){ alert('Erro ao salvar: '+error.message); return; }
+    agendamentos.push({
+      id:row.id, empresa_id:emp.id, slug:emp.slug,
+      nome:row.nome, telefone:row.telefone,
+      servicoId:row.servico_id, servicoNome:row.servico_nome,
+      data:row.data, hora:row.hora
+    });
+    novoAgState=null; draw();
+  };
+  window.editarAgendamento = (id)=>{ editandoId=id; novoAgState=null; draw(); };
   window.cancelarEdicaoAgendamento = ()=>{ editandoId=null; draw(); };
   window.salvarEdicaoAgendamento = async (id)=>{
     const ag = agendamentos.find(a=>a.id===id);
