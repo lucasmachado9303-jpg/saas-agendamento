@@ -2286,7 +2286,7 @@ function renderMasterPanel(){
           <button class="btn ghost" style="padding:0 12px;font-size:13px;height:40px;" onclick="goto({empresa:'${e.slug}'})">Visualizar</button>
           <button class="btn ghost" style="padding:0 12px;font-size:13px;height:40px;" onclick="goto({empresa:'${e.slug}', page:'gestao'})">Ver gestão</button>
           <button class="btn ghost" style="padding:0 12px;font-size:13px;height:40px;" onclick="navigator.clipboard.writeText('${escapeAttr(link)}').then(()=>toast('Link copiado!','ok'))">Copiar link</button>
-          <button class="btn ghost" style="padding:0 12px;font-size:13px;height:40px;" onclick="editingSlug='${e.slug}'; drawMaster();">Editar</button>
+          <button class="btn ghost" style="padding:0 12px;font-size:13px;height:40px;" onclick="masterEditarEmpresa('${e.slug}')">Editar</button>
         </div>
       </div>`;
     }).join('')}</div>` : `<p class="muted">${masterSearch ? 'Nenhuma empresa encontrada.' : 'Nenhuma empresa cadastrada ainda.'}</p>`;
@@ -2490,6 +2490,15 @@ function renderMasterPanel(){
       toast(`"${nome}" criada! Gestor: ${email}. Compartilhe a senha por canal seguro.`,'ok',8000);
     }
     draw();
+  };
+  window.masterEditarEmpresa = async (slug) => {
+    editingSlug = slug;
+    draw();
+    const emp = empresas.find(e => e.slug === slug);
+    if(emp && !emp.gestorEmail){
+      const { data } = await supabaseClient.from('profiles').select('email').eq('empresa_id', emp.id).eq('role','owner_empresa').single();
+      if(data?.email){ emp.gestorEmail = data.email; draw(); }
+    }
   };
   window.masterSalvarEdicao = ()=>{
     editingSlug = null; draw();
