@@ -449,6 +449,8 @@ function mesKey(d){
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
 }
 function horariosDoMes(emp, key){
+  const uni = (emp.horariosPorMes && emp.horariosPorMes['_uni_']) || [];
+  if(uni.length) return [...uni].sort();
   const lista = (emp.horariosPorMes && emp.horariosPorMes[key]) || [];
   return [...lista].sort();
 }
@@ -948,7 +950,8 @@ function renderGestao(empInicial){
   let gestaoNavAberta = false;
   let diaSelecionado = null;
   let editandoId = null;
-  let novoAgState = null; // { data, hora } para criar agendamento em slot vago
+  let novoAgState = null;
+  let configurarSub = null; // null | 'servicos' | 'horarios'
   let mesHorario = mesKey(new Date());
   let novoBotaoState = null;
   let editandoBotaoId = null;
@@ -968,7 +971,12 @@ function renderGestao(empInicial){
     }
 
     const horarios = horariosDoMes(emp, diaSelecionado.slice(0,7));
-    const diaTodoBloqueado = horarios.length > 0 && horarios.every(h=>(emp.bloqueios||[]).some(b=>b.data===diaSelecionado && b.hora===h));
+    const diasTrabalho = (emp.horariosPorMes && emp.horariosPorMes['_dias_'])
+      ? emp.horariosPorMes['_dias_'].map(Number)
+      : [0,1,2,3,4,5,6];
+    const diaDaSemana = new Date(diaSelecionado+"T00:00:00").getDay();
+    const diaNaoTrabalha = !diasTrabalho.includes(diaDaSemana);
+    const diaTodoBloqueado = diaNaoTrabalha || (horarios.length > 0 && horarios.every(h=>(emp.bloqueios||[]).some(b=>b.data===diaSelecionado && b.hora===h)));
     const linhas = horarios.length ? horarios.map(h=>{
       const ag = agendamentos.find(a=>a.slug===emp.slug && a.data===diaSelecionado && a.hora===h);
       const bloqueado = (emp.bloqueios||[]).some(b=>b.data===diaSelecionado && b.hora===h);
@@ -1051,23 +1059,44 @@ function renderGestao(empInicial){
         <button class="btn ghost" style="padding:10px 16px;font-size:18px;line-height:1;" onclick="selecionarDiaGestao('${isoAddDias(diaSelecionado,1)}')">&#8594;</button>
       </div>
       <div style="text-align:center;margin-bottom:20px;">
-        ${diaTodoBloqueado
-          ? `<button class="icon-btn" style="font-size:12px;color:#2e7d32;" onclick="desbloquearDiaTodo()">Desbloquear dia todo</button>`
-          : `<button class="icon-btn" style="font-size:12px;color:var(--danger);" onclick="bloquearDiaTodo()">Bloquear dia todo</button>`
+        ${diaNaoTrabalha
+          ? ``
+          : diaTodoBloqueado
+            ? `<button class="icon-btn" style="font-size:12px;color:#2e7d32;" onclick="desbloquearDiaTodo()">Desbloquear dia todo</button>`
+            : `<button class="icon-btn" style="font-size:12px;color:var(--danger);" onclick="bloquearDiaTodo()">Bloquear dia todo</button>`
         }
       </div>
-      ${diaTodoBloqueado
-        ? `<p class="muted" style="text-align:center;padding:24px 0;">Dia bloqueado. Nenhum horário disponível.</p>`
-        : linhas
+      ${diaNaoTrabalha
+        ? `<p class="muted" style="text-align:center;padding:24px 0;">Dia não disponível para agendamentos.</p>`
+        : diaTodoBloqueado
+          ? `<p class="muted" style="text-align:center;padding:24px 0;">Dia bloqueado. Nenhum horário disponível.</p>`
+          : linhas
       }
     `;
   }
 
   function configurarBody(){
-    const lista = horariosDoMes(emp, mesHorario);
-    return `
-      <div class="card" style="margin-bottom:16px;">
-        <div class="eyebrow" style="margin-bottom:12px;color:#1a1a1a;">Serviços disponíveis</div>
+    if(configurarSub === null){
+      return `
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <button onclick="configurarIr('servicos')" style="display:flex;flex-direction:column;gap:4px;padding:20px;border-radius:12px;border:1.5px solid #e0e0e0;background:var(--card);text-align:left;cursor:pointer;width:100%;">
+            <div style="font-weight:700;font-size:15px;">Serviços</div>
+            <div class="muted" style="font-size:13px;">Configurar os serviços/produtos que você oferece.</div>
+          </button>
+          <button onclick="configurarIr('horarios')" style="display:flex;flex-direction:column;gap:4px;padding:20px;border-radius:12px;border:1.5px solid #e0e0e0;background:var(--card);text-align:left;cursor:pointer;width:100%;">
+            <div style="font-weight:700;font-size:15px;">Horários</div>
+            <div class="muted" style="font-size:13px;">Configurar os horários que você deseja para os agendamentos.</div>
+          </button>
+        </div>
+      `;
+    }
+
+    if(configurarSub === 'servicos'){
+      return `
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+          <button onclick="configurarIr(null)" class="btn ghost" style="padding:8px 14px;font-size:13px;">← Voltar</button>
+          <div style="font-weight:700;font-size:16px;">Serviços</div>
+        </div>
         ${emp.servicos.length ? `<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;">${emp.servicos.map((s,i)=>`
           <div style="display:inline-flex;align-items:center;gap:8px;background:#f4f4f4;border:1.5px solid #e0e0e0;border-radius:10px;padding:8px 12px;">
             <span style="font-size:14px;font-weight:600;color:#1a1a1a;">${escapeHtml(s.nome)}</span>
@@ -1078,23 +1107,49 @@ function renderGestao(empInicial){
           <input type="text" id="novoServicoInput" placeholder="Nome do serviço"/>
           <button class="btn ghost" style="flex:0 0 auto;" onclick="adicionarServico()">+ Adicionar</button>
         </div>
-      </div>
+      `;
+    }
 
-      <div class="card">
-        <div class="eyebrow" style="margin-bottom:12px;color:#1a1a1a;">Horários de atendimento</div>
-        <div class="field"><label>Mês</label><input type="month" value="${mesHorario}" onchange="mudarMesHorario(this.value)"/></div>
+    if(configurarSub === 'horarios'){
+      const DIAS = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+      const diasTrabalho = (emp.horariosPorMes && emp.horariosPorMes['_dias_'])
+        ? emp.horariosPorMes['_dias_'].map(Number)
+        : [0,1,2,3,4,5,6];
+      const lista = horariosDoMes(emp, '_uni_');
+      return `
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+          <button onclick="configurarIr(null)" class="btn ghost" style="padding:8px 14px;font-size:13px;">← Voltar</button>
+          <div style="font-weight:700;font-size:16px;">Horários</div>
+        </div>
+
+        <div class="eyebrow" style="margin-bottom:10px;color:#1a1a1a;">Dias que atende</div>
+        <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:6px;">
+          ${DIAS.map((d,i)=>{
+            const ativo = diasTrabalho.includes(i);
+            return `<div style="display:flex;flex-direction:column;align-items:center;gap:5px;">
+              <div style="font-size:11px;color:#888;font-weight:600;">${d}</div>
+              <div onclick="toggleDiaSemana(${i})" style="width:34px;height:34px;border-radius:50%;border:1.5px solid #e0e0e0;background:${ativo?'#1c1917':'var(--card)'};display:flex;align-items:center;justify-content:center;cursor:pointer;">
+                <span style="color:${ativo?'#fff':'#bbb'};font-size:14px;">${ativo?'✓':'—'}</span>
+              </div>
+            </div>`;
+          }).join('')}
+        </div>
+        <p class="muted" style="font-size:12px;margin-bottom:20px;">Dias desmarcados ficam automaticamente bloqueados para agendamento.</p>
+
+        <div class="eyebrow" style="margin-bottom:10px;color:#1a1a1a;">Horários disponíveis</div>
         ${lista.length ? `<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;">${lista.map(h=>`
           <div style="display:inline-flex;align-items:center;gap:8px;background:#f4f4f4;border:1.5px solid #e0e0e0;border-radius:10px;padding:8px 12px;">
             <span style="font-size:14px;font-weight:600;color:#1a1a1a;">${h}</span>
             <button onclick="removerHorario('${h}')" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:18px;line-height:1;padding:0;min-height:0;">×</button>
           </div>
-        `).join('')}</div>` : `<p class="muted" style="margin-bottom:14px;">Nenhum horário adicionado para este mês ainda.</p>`}
+        `).join('')}</div>` : `<p class="muted" style="margin-bottom:14px;">Nenhum horário adicionado ainda.</p>`}
         <div class="row" style="margin-top:4px;">
           <input type="time" id="novoHorarioInput"/>
           <button class="btn ghost" style="flex:0 0 auto;" onclick="adicionarHorario()">+ Adicionar horário</button>
         </div>
-      </div>
-    `;
+      `;
+    }
+    return '';
   }
 
   function personalizarBody(){
@@ -1369,7 +1424,7 @@ function renderGestao(empInicial){
     `);
   }
 
-  window.setCorner = (c)=>{ corner=c; editandoId=null; novoAgState=null; gestaoNavAberta=false; draw(); };
+  window.setCorner = (c)=>{ corner=c; editandoId=null; novoAgState=null; configurarSub=null; gestaoNavAberta=false; draw(); };
   window.gestaoToggleNav = ()=>{ gestaoNavAberta=!gestaoNavAberta; draw(); };
   window.selecionarDiaGestao = (iso)=>{
     if(!iso || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return;
@@ -1509,27 +1564,48 @@ function renderGestao(empInicial){
     if(error) console.error('Erro ao atualizar serviço:', error);
   };
 
-  window.mudarMesHorario = (val)=>{ mesHorario = val; draw(); };
+  window.configurarIr = (sub)=>{ configurarSub=sub; draw(); };
   window.adicionarHorario = async ()=>{
     const val = document.getElementById('novoHorarioInput').value;
     if(!val){ alert("Selecione um horário."); return; }
-    if(!mesHorario || !/^\d{4}-\d{2}$/.test(mesHorario)){ alert("Mês inválido. Selecione um mês válido."); return; }
     emp.horariosPorMes = emp.horariosPorMes || {};
-    const lista = emp.horariosPorMes[mesHorario] || [];
+    const lista = emp.horariosPorMes['_uni_'] || [];
     if(lista.includes(val)){ return; }
     const { error } = await supabaseClient.from('horarios_disponiveis').insert({
-      empresa_id: emp.id, mes: mesHorario, hora: val
+      empresa_id: emp.id, mes: '_uni_', hora: val
     });
     if(error){ console.error('Erro ao adicionar horário:', error); return; }
     lista.push(val);
-    emp.horariosPorMes[mesHorario] = lista;
+    emp.horariosPorMes['_uni_'] = lista;
     draw();
   };
   window.removerHorario = async (h)=>{
     const { error } = await supabaseClient.from('horarios_disponiveis')
-      .delete().eq('empresa_id', emp.id).eq('mes', mesHorario).eq('hora', h);
+      .delete().eq('empresa_id', emp.id).eq('mes', '_uni_').eq('hora', h);
     if(error){ console.error('Erro ao remover horário:', error); return; }
-    emp.horariosPorMes[mesHorario] = (emp.horariosPorMes[mesHorario]||[]).filter(x=>x!==h);
+    emp.horariosPorMes['_uni_'] = (emp.horariosPorMes['_uni_']||[]).filter(x=>x!==h);
+    draw();
+  };
+  window.toggleDiaSemana = async (dia)=>{
+    emp.horariosPorMes = emp.horariosPorMes || {};
+    const atual = (emp.horariosPorMes['_dias_'] || []).map(Number);
+    const jaExiste = atual.length > 0;
+    let novos;
+    if(!jaExiste){
+      // primeira vez: começa com todos os dias e remove o clicado
+      novos = [0,1,2,3,4,5,6].filter(d=>d!==dia);
+    } else {
+      novos = atual.includes(dia) ? atual.filter(d=>d!==dia) : [...atual, dia].sort();
+    }
+    // remove entradas antigas de _dias_ e insere as novas
+    await supabaseClient.from('horarios_disponiveis')
+      .delete().eq('empresa_id', emp.id).eq('mes', '_dias_');
+    if(novos.length){
+      const rows = novos.map(d=>({ empresa_id: emp.id, mes: '_dias_', hora: String(d) }));
+      const { error } = await supabaseClient.from('horarios_disponiveis').insert(rows);
+      if(error){ console.error('Erro ao salvar dias:', error); return; }
+    }
+    emp.horariosPorMes['_dias_'] = novos.map(String);
     draw();
   };
 
