@@ -1403,7 +1403,7 @@ function renderGestao(empInicial){
     if(!nome||!tel||!servicoId||!hora){ alert('Preencha todos os campos.'); return; }
     const servico = emp.servicos.find(s=>s.id===servicoId);
     const {data:row, error} = await supabaseClient.from('agendamentos').insert({
-      empresa_id: emp.id, slug: emp.slug,
+      empresa_id: emp.id,
       nome_cliente: nome, telefone: tel, servico_id: servicoId, servico_nome: servico?.nome||'',
       data, hora
     }).select().single();
