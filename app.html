@@ -235,8 +235,8 @@ let modoRecuperacao  = false;   // true quando o usuário chega pelo link de red
 
 // Ícones padrão por tipo de botão
 const ICONE_POR_TIPO = {
-  whatsapp: '💬', instagram: '📸', telefone: '📞',
-  maps: '📍', site: '🌐', link: '🔗'
+  whatsapp: '', instagram: '', telefone: '',
+  maps: '', site: '', link: ''
 };
 
 let empresas = [];
@@ -1140,14 +1140,12 @@ function renderGestao(empInicial){
       </div>
       ${diaNaoTrabalha
         ? `<div style="text-align:center;padding:32px 16px;color:var(--ink-soft);">
-            <div style="font-size:32px;margin-bottom:8px;">📅</div>
             <div style="font-weight:600;margin-bottom:4px;">Dia não configurado</div>
             <div style="font-size:13px;margin-bottom:16px;">Este dia da semana não está marcado como dia de atendimento.</div>
             <button class="btn ghost" style="font-size:13px;" onclick="corner='configurar';configurarSub='horarios';draw()">Ajustar dias de atendimento</button>
           </div>`
         : diaTodoBloqueado
           ? `<div style="text-align:center;padding:32px 16px;color:var(--ink-soft);">
-              <div style="font-size:32px;margin-bottom:8px;">🔒</div>
               <div style="font-weight:600;margin-bottom:4px;">Dia bloqueado</div>
               <div style="font-size:13px;">Todos os horários estão bloqueados.</div>
             </div>`
@@ -1292,7 +1290,7 @@ function renderGestao(empInicial){
         ondrop="dragBotaoDrop(event,'${b.id}')"
         ondragend="dragBotaoEnd(event)">
         <div style="display:flex;align-items:center;gap:10px;min-width:0;">
-          <div style="color:#bbb;font-size:20px;cursor:grab;padding:0 4px;line-height:1;touch-action:none;flex-shrink:0;" title="Arraste para reordenar">⠿</div>
+          <div style="color:#bbb;font-size:14px;cursor:grab;padding:0 4px;line-height:1;touch-action:none;flex-shrink:0;letter-spacing:1px;" title="Arraste para reordenar">::</div>
           <div style="flex:1;min-width:0;">
             <div style="font-weight:700;font-size:14px;">${escapeHtml(b.nome)}</div>
             <div class="muted" style="font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(b.link)}</div>
@@ -1810,11 +1808,11 @@ function renderGestao(empInicial){
       toast('O link deve começar com https://, http://, tel: ou mailto:','err'); return;
     }
     const { error } = await supabaseClient.from('botoes_empresa').update({
-      nome, tipo, link, icone: ICONE_POR_TIPO[tipo] || '🔗', abrir_nova_aba: true
+      nome, tipo, link, icone: ICONE_POR_TIPO[tipo] || '', abrir_nova_aba: true
     }).eq('id', id);
     if(error){ console.error('Erro ao editar botão:', error); toast('Erro ao salvar. Tente novamente.','err'); return; }
     const b = emp.botoes.find(x=>x.id===id);
-    Object.assign(b, { nome, tipo, link, icone: ICONE_POR_TIPO[tipo] || '🔗', abrirNovaAba: true });
+    Object.assign(b, { nome, tipo, link, icone: ICONE_POR_TIPO[tipo] || '', abrirNovaAba: true });
     editandoBotaoId = null;
     draw();
   };
