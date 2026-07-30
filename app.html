@@ -1152,11 +1152,10 @@ function renderGestao(empInicial){
               <div style="font-size:13px;">Todos os horários estão bloqueados.</div>
             </div>`
           : horarios.length === 0
-            ? `<div style="text-align:center;padding:32px 16px;color:var(--ink-soft);">
-                <div style="font-size:32px;margin-bottom:8px;">⏰</div>
-                <div style="font-weight:600;margin-bottom:4px;">Nenhum horário configurado</div>
-                <div style="font-size:13px;margin-bottom:16px;">Adicione os horários disponíveis para começar a receber agendamentos.</div>
-                <button class="btn ghost" style="font-size:13px;" onclick="corner='configurar';configurarSub='horarios';draw()">Configurar horários</button>
+            ? `<div style="text-align:center;padding:32px 16px;">
+                <div style="font-weight:600;margin-bottom:8px;">Nenhum horário configurado</div>
+                <div style="font-size:13px;color:var(--ink-soft);margin-bottom:16px;line-height:1.5;">Acesse <strong style="font-weight:500;">Configurar</strong> para adicionar seus serviços e horários de atendimento.</div>
+                <button class="btn ghost" style="font-size:13px;" onclick="setCorner('configurar')">Ir para Configurar</button>
               </div>`
             : linhas
       }
