@@ -1186,7 +1186,7 @@ function renderGestao(empInicial){
         <div class="eyebrow" style="margin-bottom:14px;color:#1a1a1a;">Novo botão</div>
         <div class="field"><label>Nome exibido</label><input id="bNome" placeholder="Ex: WhatsApp"/></div>
         <div class="field"><label>Tipo</label>
-          <select id="bTipo">
+          <select id="bTipo" onchange="atualizarCampoBotao('bTipo','bLink','bLinkHint')">
             <option value="whatsapp">WhatsApp</option>
             <option value="instagram">Instagram</option>
             <option value="telefone">Telefone</option>
@@ -1195,7 +1195,10 @@ function renderGestao(empInicial){
             <option value="link">Link personalizado</option>
           </select>
         </div>
-        <div class="field"><label>Link</label><input id="bLink" placeholder="https://wa.me/5511999999999"/></div>
+        <div class="field"><label>Link / Número</label>
+          <input id="bLink" placeholder="011912345678" type="tel" inputmode="numeric" maxlength="12"/>
+          <div id="bLinkHint" style="font-size:12px;color:var(--danger);margin-top:6px;display:none;">Formato: 0 + DDD (2 dígitos) + 9 + número (8 dígitos). Ex: <strong>011912345678</strong></div>
+        </div>
         <div class="row">
           <button class="btn ghost" onclick="cancelarNovoBotao()">Cancelar</button>
           <button class="btn" onclick="salvarNovoBotao()">Adicionar</button>
@@ -1206,7 +1209,7 @@ function renderGestao(empInicial){
         <div class="eyebrow" style="margin-bottom:14px;color:#1a1a1a;">Editar botão</div>
         <div class="field"><label>Nome exibido</label><input id="ebNome" value="${escapeAttr(eb.nome||'')}"/></div>
         <div class="field"><label>Tipo</label>
-          <select id="ebTipo">
+          <select id="ebTipo" onchange="atualizarCampoBotao('ebTipo','ebLink','ebLinkHint')">
             <option value="whatsapp" ${eb.tipo==='whatsapp'?'selected':''}>WhatsApp</option>
             <option value="instagram" ${eb.tipo==='instagram'?'selected':''}>Instagram</option>
             <option value="telefone" ${eb.tipo==='telefone'?'selected':''}>Telefone</option>
@@ -1215,7 +1218,10 @@ function renderGestao(empInicial){
             <option value="link" ${eb.tipo==='link'?'selected':''}>Link personalizado</option>
           </select>
         </div>
-        <div class="field"><label>Link</label><input id="ebLink" value="${escapeAttr(eb.link||'')}"/></div>
+        <div class="field"><label>Link / Número</label>
+          <input id="ebLink" value="${escapeAttr(eb.link||'')}" placeholder="${eb.tipo==='whatsapp'?'011912345678':'https://...'}"/>
+          <div id="ebLinkHint" style="font-size:12px;color:var(--danger);margin-top:6px;display:none;">Formato: 0 + DDD (2 dígitos) + 9 + número (8 dígitos). Ex: <strong>011912345678</strong></div>
+        </div>
         <div class="row">
           <button class="btn ghost" onclick="cancelarEdicaoBotao()">Cancelar</button>
           <button class="btn" onclick="salvarEdicaoBotao('${editandoBotaoId}')">Salvar</button>
@@ -1631,17 +1637,46 @@ function renderGestao(empInicial){
     draw();
   };
 
+  function validarConverterWhatsapp(val){
+    const d = val.replace(/\D/g,'');
+    if(!/^0\d{2}9\d{8}$/.test(d)) return null;
+    return 'https://wa.me/55' + d.slice(1);
+  }
+  window.atualizarCampoBotao = (tipoId, linkId, hintId)=>{
+    const tipo = document.getElementById(tipoId)?.value;
+    const inp  = document.getElementById(linkId);
+    const hint = document.getElementById(hintId);
+    if(!inp) return;
+    if(tipo === 'whatsapp'){
+      inp.placeholder = '011912345678';
+      inp.type = 'tel'; inp.inputMode = 'numeric'; inp.maxLength = 12;
+    } else {
+      inp.placeholder = 'https://...';
+      inp.type = 'text'; inp.inputMode = ''; inp.maxLength = 500;
+      if(hint) hint.style.display = 'none';
+    }
+  };
   window.iniciarNovoBotao  = ()=>{ novoBotaoState = {}; editandoBotaoId = null; draw(); };
   window.cancelarNovoBotao = ()=>{ novoBotaoState = null; draw(); };
   window.editarBotao       = (id)=>{ editandoBotaoId = id; novoBotaoState = null; draw(); };
   window.cancelarEdicaoBotao = ()=>{ editandoBotaoId = null; draw(); };
   window.salvarEdicaoBotao = async (id)=>{
-    const nome    = document.getElementById('ebNome').value.trim();
-    const tipo    = document.getElementById('ebTipo').value;
-    const link    = document.getElementById('ebLink').value.trim();
+    const nome = document.getElementById('ebNome').value.trim();
+    const tipo = document.getElementById('ebTipo').value;
+    let link   = document.getElementById('ebLink').value.trim();
     if(!nome){ alert('Preencha o nome do botão.'); return; }
     if(!link){ alert('Preencha o link do botão.'); return; }
-    if(!/^(https?:|tel:|mailto:)/i.test(link)){ alert('O link deve começar com https://, http://, tel: ou mailto:'); return; }
+    if(tipo === 'whatsapp'){
+      const convertido = validarConverterWhatsapp(link);
+      if(!convertido){
+        const hint = document.getElementById('ebLinkHint');
+        if(hint) hint.style.display = 'block';
+        return;
+      }
+      link = convertido;
+    } else if(!/^(https?:|tel:|mailto:)/i.test(link)){
+      alert('O link deve começar com https://, http://, tel: ou mailto:'); return;
+    }
     const { error } = await supabaseClient.from('botoes_empresa').update({
       nome, tipo, link, icone: ICONE_POR_TIPO[tipo] || '🔗', abrir_nova_aba: true
     }).eq('id', id);
@@ -1653,12 +1688,22 @@ function renderGestao(empInicial){
   };
 
   window.salvarNovoBotao = async ()=>{
-    const nome    = document.getElementById('bNome').value.trim();
-    const tipo    = document.getElementById('bTipo').value;
-    const link    = document.getElementById('bLink').value.trim();
+    const nome = document.getElementById('bNome').value.trim();
+    const tipo = document.getElementById('bTipo').value;
+    let link   = document.getElementById('bLink').value.trim();
     if(!nome){ alert('Preencha o nome do botão.'); return; }
     if(!link){ alert('Preencha o link do botão.'); return; }
-    if(!/^(https?:|tel:|mailto:)/i.test(link)){ alert('O link deve começar com https://, http://, tel: ou mailto:'); return; }
+    if(tipo === 'whatsapp'){
+      const convertido = validarConverterWhatsapp(link);
+      if(!convertido){
+        const hint = document.getElementById('bLinkHint');
+        if(hint) hint.style.display = 'block';
+        return;
+      }
+      link = convertido;
+    } else if(!/^(https?:|tel:|mailto:)/i.test(link)){
+      alert('O link deve começar com https://, http://, tel: ou mailto:'); return;
+    }
     const ordemMax = emp.botoes.length > 0 ? Math.max(...emp.botoes.map(b=>b.ordem)) + 1 : 0;
     const { data: row, error } = await supabaseClient.from('botoes_empresa').insert({
       empresa_id:    emp.id,
