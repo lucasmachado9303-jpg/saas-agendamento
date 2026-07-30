@@ -294,7 +294,7 @@ async function loadData(){
       // Campos de personalização (Fase 2)
       descricao:            e.descricao             || '',
       logo:                 e.logo                  || '',
-      corPrincipal:         e.cor_principal         || '#3d1f3a',
+      corPrincipal:         sanitizeCor(e.cor_principal || '#3d1f3a'),
       textoDestaque:        e.texto_destaque        || '',
       // Relações
       servicos:             [],
@@ -1641,14 +1641,14 @@ function renderGestao(empInicial){
       servico_nome: servico ? servico.nome : ag.servicoNome,
       hora:         hora
     }).eq('id', id);
-    if(error){ console.error('Erro ao editar agendamento:', error); return; }
+    if(error){ toast(friendlyError(error,'Erro ao salvar agendamento. Tente novamente.'),'err'); return; }
     ag.nome = nome; ag.telefone = telNorm; ag.servicoId = servicoId; ag.servicoNome = servico?servico.nome:ag.servicoNome; ag.hora = hora;
     editandoId = null; draw();
   };
   window.cancelarAgendamento = async (id)=>{
     if(!confirm('Cancelar este agendamento? Essa ação não pode ser desfeita.')) return;
     const { error } = await supabaseClient.from('agendamentos').delete().eq('id', id);
-    if(error){ console.error('Erro ao cancelar agendamento:', error); return; }
+    if(error){ toast(friendlyError(error,'Erro ao cancelar agendamento. Tente novamente.'),'err'); return; }
     agendamentos = agendamentos.filter(a=>a.id!==id);
     draw();
   };
@@ -1656,7 +1656,7 @@ function renderGestao(empInicial){
     const { data: row, error } = await supabaseClient.from('bloqueios').insert({
       empresa_id: emp.id, data, hora
     }).select().single();
-    if(error){ console.error('Erro ao bloquear horário:', error); return; }
+    if(error){ toast(friendlyError(error,'Erro ao bloquear horário. Tente novamente.'),'err'); return; }
     emp.bloqueios = emp.bloqueios || [];
     emp.bloqueios.push({ id: row.id, data, hora });
     draw();
@@ -1664,7 +1664,7 @@ function renderGestao(empInicial){
   window.desbloquearHorario = async (data,hora)=>{
     const { error } = await supabaseClient.from('bloqueios')
       .delete().eq('empresa_id', emp.id).eq('data', data).eq('hora', hora);
-    if(error){ console.error('Erro ao desbloquear horário:', error); return; }
+    if(error){ toast(friendlyError(error,'Erro ao desbloquear horário. Tente novamente.'),'err'); return; }
     emp.bloqueios = (emp.bloqueios||[]).filter(b=>!(b.data===data && b.hora===hora));
     draw();
   };
@@ -1673,10 +1673,11 @@ function renderGestao(empInicial){
     const inp = document.getElementById('novoServicoInput');
     const nome = inp ? inp.value.trim() : '';
     if(!nome){ toast('Digite o nome do serviço.','err'); return; }
+    if(emp.servicos.some(s=>s.nome.toLowerCase()===nome.toLowerCase())){ toast('Já existe um serviço com esse nome.','err'); return; }
     const { data: row, error } = await supabaseClient.from('servicos').insert({
       empresa_id: emp.id, nome, duracao: 60, preco: 0
     }).select().single();
-    if(error){ console.error('Erro ao adicionar serviço:', error); return; }
+    if(error){ toast(friendlyError(error,'Erro ao adicionar serviço. Tente novamente.'),'err'); return; }
     emp.servicos.push({ id: row.id, nome: row.nome, duracao: row.duracao, preco: Number(row.preco) });
     draw();
   };
@@ -1706,7 +1707,7 @@ function renderGestao(empInicial){
     if(saveWrap) saveWrap.style.display = 'none';
     if(dirtyBanner) dirtyBanner.style.display = 'block';
   };
-  window.voltarDePersonalizar = ()=>{ if(personalizarDirty){ personalizarDirty=true; draw(); } else { configurarIr(null); } };
+  window.voltarDePersonalizar = ()=>{ personalizarDirty=false; configurarIr(null); };
   window.descartarPersonalizar = ()=>{ personalizarDirty=false; configurarIr(null); };
   window.adicionarHorario = async ()=>{
     const val = document.getElementById('novoHorarioInput').value;
@@ -1717,7 +1718,7 @@ function renderGestao(empInicial){
     const { error } = await supabaseClient.from('horarios_disponiveis').insert({
       empresa_id: emp.id, mes: '_uni_', hora: val
     });
-    if(error){ console.error('Erro ao adicionar horário:', error); return; }
+    if(error){ toast(friendlyError(error,'Erro ao adicionar horário. Tente novamente.'),'err'); return; }
     lista.push(val);
     emp.horariosPorMes['_uni_'] = lista;
     draw();
@@ -1725,7 +1726,7 @@ function renderGestao(empInicial){
   window.removerHorario = async (h)=>{
     const { error } = await supabaseClient.from('horarios_disponiveis')
       .delete().eq('empresa_id', emp.id).eq('mes', '_uni_').eq('hora', h);
-    if(error){ console.error('Erro ao remover horário:', error); return; }
+    if(error){ toast(friendlyError(error,'Erro ao remover horário. Tente novamente.'),'err'); return; }
     emp.horariosPorMes['_uni_'] = (emp.horariosPorMes['_uni_']||[]).filter(x=>x!==h);
     draw();
   };
@@ -1741,12 +1742,13 @@ function renderGestao(empInicial){
       novos = atual.includes(dia) ? atual.filter(d=>d!==dia) : [...atual, dia].sort();
     }
     // remove entradas antigas de _dias_ e insere as novas
-    await supabaseClient.from('horarios_disponiveis')
+    const { error: delErr } = await supabaseClient.from('horarios_disponiveis')
       .delete().eq('empresa_id', emp.id).eq('mes', '_dias_');
+    if(delErr){ toast(friendlyError(delErr,'Erro ao salvar dias. Tente novamente.'),'err'); return; }
     if(novos.length){
       const rows = novos.map(d=>({ empresa_id: emp.id, mes: '_dias_', hora: String(d) }));
       const { error } = await supabaseClient.from('horarios_disponiveis').insert(rows);
-      if(error){ console.error('Erro ao salvar dias:', error); return; }
+      if(error){ toast(friendlyError(error,'Erro ao salvar dias. Tente novamente.'),'err'); return; }
     }
     emp.horariosPorMes['_dias_'] = novos.map(String);
     draw();
@@ -1814,12 +1816,13 @@ function renderGestao(empInicial){
     } else if(!/^(https?:|tel:|mailto:)/i.test(link)){
       toast('O link deve começar com https://, http://, tel: ou mailto:','err'); return;
     }
+    const existingB = emp.botoes.find(x=>x.id===id);
+    const iconeAtual = existingB?.icone || '🔗';
     const { error } = await supabaseClient.from('botoes_empresa').update({
-      nome, tipo, link, icone: ICONE_POR_TIPO[tipo] || '', abrir_nova_aba: true
+      nome, tipo, link, icone: ICONE_POR_TIPO[tipo] || iconeAtual, abrir_nova_aba: true
     }).eq('id', id);
-    if(error){ console.error('Erro ao editar botão:', error); toast('Erro ao salvar. Tente novamente.','err'); return; }
-    const b = emp.botoes.find(x=>x.id===id);
-    Object.assign(b, { nome, tipo, link, icone: ICONE_POR_TIPO[tipo] || '', abrirNovaAba: true });
+    if(error){ toast('Erro ao salvar. Tente novamente.','err'); return; }
+    Object.assign(existingB, { nome, tipo, link, icone: ICONE_POR_TIPO[tipo] || iconeAtual, abrirNovaAba: true });
     editandoBotaoId = null;
     draw();
   };
@@ -1861,7 +1864,7 @@ function renderGestao(empInicial){
   window.removerBotao = async (id)=>{
     if(!confirm('Remover este botão?')) return;
     const { error } = await supabaseClient.from('botoes_empresa').delete().eq('id', id);
-    if(error){ console.error('Erro ao remover botão:', error); return; }
+    if(error){ toast(friendlyError(error,'Erro ao remover botão. Tente novamente.'),'err'); return; }
     emp.botoes = emp.botoes.filter(b=>b.id!==id);
     draw();
   };
@@ -1910,7 +1913,9 @@ function renderGestao(empInicial){
     // Reaponta para o objeto novo criado pelo loadData()
     const atual = empresas.find(e => e.slug === emp.slug);
     if(atual) emp = atual;
-    if(corner===null || corner==='dashboard') draw();
+    // Não redesenha se houver formulário aberto (evita apagar campos em edição)
+    const formAberto = editandoId !== null || novoAgState !== null || novoBotaoState !== null || editandoBotaoId !== null;
+    if(!formAberto && (corner===null || corner==='dashboard')) draw();
   });
 }
 
@@ -1957,7 +1962,7 @@ window.tentarLoginMaster = async ()=>{
   if(error){ toast('E-mail ou senha incorretos.','err'); return; }
 
   const { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', data.user.id).single();
-  if(!profile || profile.role !== 'master'){
+  if(!profile || profile.role !== 'master' || profile.status !== 'ativo'){
     await supabaseClient.auth.signOut();
     toast('Essa conta não tem acesso ao painel master.','err');
     return;
@@ -2012,6 +2017,7 @@ let masterAba = 'dashboard'; // 'dashboard' | 'empresas' | 'financeiro'
 let masterNavAberta = false;
 let financeiroData = []; // registros da tabela financeiro
 let _finForm = null; // { mode:'configurar'|'editar', empresaId, regId, valor, dia }
+let _filtroFin = 'todos';
 
 async function carregarFinanceiro(){
   const { data, error } = await supabaseClient.from('financeiro').select('*');
@@ -2340,7 +2346,7 @@ function renderMasterPanel(){
       return { e, reg };
     });
 
-    const filtroFin = window._filtroFin || 'todos';
+    const filtroFin = _filtroFin;
     const filtrados = rows.filter(({reg}) => {
       if(filtroFin === 'todos') return true;
       if(!reg) return filtroFin === 'sem-dados';
@@ -2352,7 +2358,7 @@ function renderMasterPanel(){
     });
 
     const tabBtns = ['todos','pagos','vencidos','a-vencer'].map(f => `
-      <button onclick="window._filtroFin='${f}'; drawMaster();"
+      <button onclick="_filtroFin='${f}'; drawMaster();"
         style="padding:6px 14px;border-radius:20px;border:1.5px solid var(--line);font-size:13px;cursor:pointer;
         background:${filtroFin===f?'#1c1917':'var(--paper)'};color:${filtroFin===f?'#fff':'var(--ink)'};">
         ${{todos:'Todos',pagos:'Pagos',vencidos:'Vencidos','a-vencer':'A vencer'}[f]}
@@ -2524,7 +2530,7 @@ function renderMasterPanel(){
     if(!confirm(`Excluir "${e.nome}" definitivamente? Isso também apaga os agendamentos dela. Essa ação não pode ser desfeita.`)) return;
     if(e.id){
       const { error } = await supabaseClient.from('empresas').delete().eq('id', e.id);
-      if(error){ console.error('Erro ao excluir empresa:', error); return; }
+      if(error){ toast(friendlyError(error,'Erro ao excluir empresa. Tente novamente.'),'err'); return; }
     }
     empresas = empresas.filter(x=>x.slug!==slug);
     agendamentos = agendamentos.filter(a=>a.slug!==slug);
@@ -2536,25 +2542,29 @@ function renderMasterPanel(){
   iniciarPolling(()=>{ if(!editingSlug) carregarFinanceiro().then(()=>{ if(!editingSlug) draw(); }); });
 }
 
+function _limparEstado(){
+  empresas = []; agendamentos = []; loaded = false;
+  editingSlug = null; masterSearch = ''; masterAba = 'dashboard';
+  financeiroData = []; _finForm = null; _filtroFin = 'todos';
+}
 window.masterLogout = async ()=>{
   pararPolling();
   await supabaseClient.auth.signOut();
   currentUser = null; currentProfile = null;
+  _limparEstado();
   renderMasterLogin();
 };
 window.gestaoLogout = async (slug)=>{
   pararPolling();
   await supabaseClient.auth.signOut();
   currentUser = null; currentProfile = null;
+  _limparEstado();
   goto({empresa: slug});
 };
 window.masterRedefinirSenha = async ()=>{
   const email = prompt("Digite o e-mail do gestor para enviar a redefinição de senha:");
   if(!email) return;
-  const base = location.hostname === 'localhost' || location.hostname === '127.0.0.1'
-    ? location.origin
-    : 'https://saas-agendamento-seven.vercel.app';
-  const { error } = await supabaseClient.auth.resetPasswordForEmail(email, { redirectTo: base + '/app.html' });
+  const { error } = await supabaseClient.auth.resetPasswordForEmail(email, { redirectTo: location.origin + '/app.html' });
   if(error){ toast('Erro ao enviar. Tente novamente.','err'); return; }
   toast('E-mail de redefinição enviado para ' + email,'ok',5000);
 };
@@ -2637,6 +2647,7 @@ async function excluirImagensEmpresa(slug){
 
 function escapeHtml(s){ return String(s==null?"":s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function escapeAttr(s){ return escapeHtml(s); }
+function sanitizeCor(c){ return /^#[0-9a-fA-F]{3,8}$/.test(c) ? c : '#3d1f3a'; }
 
 // Bloqueia links do tipo "javascript:" salvos nos botões da empresa,
 // que executariam código na página pública.
