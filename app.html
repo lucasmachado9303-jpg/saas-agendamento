@@ -2529,6 +2529,15 @@ function renderMasterPanel(){
     const e = empresas.find(x=>x.slug===slug);
     if(!confirm(`Excluir "${e.nome}" definitivamente? Isso também apaga os agendamentos dela. Essa ação não pode ser desfeita.`)) return;
     if(e.id){
+      // Remove o auth user do gestor via API (service role)
+      try {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        await fetch('/api/delete-user', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session?.access_token },
+          body: JSON.stringify({ empresa_id: e.id })
+        });
+      } catch(_){}
       const { error } = await supabaseClient.from('empresas').delete().eq('id', e.id);
       if(error){ toast(friendlyError(error,'Erro ao excluir empresa. Tente novamente.'),'err'); return; }
     }
