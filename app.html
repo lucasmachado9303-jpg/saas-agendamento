@@ -1444,6 +1444,10 @@ function renderGestao(empInicial){
   window.selecionarImagem = (tipo)=>{
     abrirCrop(tipo, emp.slug, async (url)=>{
       if(tipo==='logo'){ emp.logo = url; } else { emp.fotoUrl = url; }
+      // preserva campos digitados antes de re-renderizar
+      const _nome = document.getElementById('pNome')?.value; if(_nome!=null) emp.nome = _nome;
+      const _desc = document.getElementById('pDescricao')?.value; if(_desc!=null) emp.descricao = _desc;
+      const _dest = document.getElementById('pTextoDestaque')?.value; if(_dest!=null) emp.textoDestaque = _dest;
       draw();
     });
   };
