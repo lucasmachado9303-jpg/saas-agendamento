@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Agenda+</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css">
 <link rel="icon" href="/icon.svg" type="image/svg+xml">
 <link rel="manifest" href="/manifest.json">
@@ -27,8 +27,8 @@
     --shadow:0 10px 30px -12px rgba(0,0,0,0.12);
   }
   *{box-sizing:border-box;}
-  body{margin:0;font-family:'Inter',sans-serif;background:var(--paper);color:var(--ink);}
-  h1,h2,h3,.display{font-family:'Inter',sans-serif;font-weight:700;letter-spacing:-0.02em;}
+  body{margin:0;font-family:'Nunito',sans-serif;background:var(--paper);color:var(--ink);}
+  h1,h2,h3,.display{font-family:'Nunito',sans-serif;font-weight:700;letter-spacing:-0.02em;}
   a{color:inherit;}
   button{font-family:inherit;cursor:pointer;}
   .btn{
@@ -42,7 +42,7 @@
   .btn.danger{background:var(--danger);}
   .btn:disabled{opacity:.45;cursor:not-allowed;transform:none;}
   input,select,textarea{
-    font-family:'Inter',sans-serif;padding:12px 14px;border-radius:10px;border:1.5px solid var(--line);
+    font-family:'Nunito',sans-serif;padding:12px 14px;border-radius:10px;border:1.5px solid var(--line);
     background:#fff;font-size:15px;width:100%;color:var(--ink);
   }
   input:focus,select:focus,textarea:focus{outline:none;border-color:#1a1a1a;}
@@ -86,7 +86,7 @@
   .hero-content h1{font-size:clamp(32px,7vw,52px);margin:0 0 10px;}
   .hero-content p{font-size:16px;opacity:.9;margin:0 0 28px;}
   .topbar{display:flex;justify-content:space-between;align-items:center;padding:20px 24px;}
-  .topbar .brand{font-family:'Inter',sans-serif;font-weight:800;font-size:20px;}
+  .topbar .brand{font-family:'Nunito',sans-serif;font-weight:800;font-size:20px;}
   .empty{text-align:center;padding:60px 20px;color:var(--ink-soft);}
   .list-item{
     display:flex;justify-content:space-between;align-items:center;padding:16px 0;border-bottom:1px solid var(--line);
@@ -591,7 +591,7 @@ function renderHome(emp){
 
   const logoHtml = emp.logo
     ? `<img src="${escapeAttr(emp.logo)}" alt="Logo" style="width:180px;height:180px;border-radius:50%;border:4px solid #fff;object-fit:cover;box-shadow:0 4px 24px rgba(0,0,0,0.22);">`
-    : `<div style="width:180px;height:180px;border-radius:50%;border:4px solid #fff;background:${cor};display:flex;align-items:center;justify-content:center;font-size:72px;font-family:'Inter',sans-serif;font-weight:600;color:#fff;box-shadow:0 4px 24px rgba(0,0,0,0.22);">${escapeHtml(emp.nome.charAt(0).toUpperCase())}</div>`;
+    : `<div style="width:180px;height:180px;border-radius:50%;border:4px solid #fff;background:${cor};display:flex;align-items:center;justify-content:center;font-size:72px;font-family:'Nunito',sans-serif;font-weight:600;color:#fff;box-shadow:0 4px 24px rgba(0,0,0,0.22);">${escapeHtml(emp.nome.charAt(0).toUpperCase())}</div>`;
 
   const botoesHtml = botoesAtivos.map(b => {
     const target = b.abrirNovaAba ? 'target="_blank" rel="noopener noreferrer"' : '';
@@ -616,7 +616,7 @@ function renderHome(emp){
 
         ${logoHtml}
 
-        <h1 style="font-family:'Inter',sans-serif;font-size:26px;font-weight:600;margin:14px 0 4px;text-align:center;color:var(--ink);">${escapeHtml(emp.nome)}</h1>
+        <h1 style="font-family:'Nunito',sans-serif;font-size:26px;font-weight:600;margin:14px 0 4px;text-align:center;color:var(--ink);">${escapeHtml(emp.nome)}</h1>
 
         ${emp.descricao    ? `<p style="color:var(--ink-soft);font-size:14px;text-align:center;margin:0 0 6px;max-width:300px;line-height:1.5;">${escapeHtml(emp.descricao)}</p>` : ''}
         ${emp.textoDestaque ? `<p style="color:var(--ink);font-size:13px;font-weight:700;text-align:center;margin:0 0 4px;letter-spacing:.02em;">${escapeHtml(emp.textoDestaque)}</p>` : ''}
@@ -626,7 +626,7 @@ function renderHome(emp){
         <!-- Botão principal de agendamento -->
         <div style="width:100%;max-width:360px;margin:0 auto 12px;">
           <button onclick="goto({empresa:'${emp.slug}', page:'agendar'})"
-            style="width:100%;background:${cor};color:#fff;border:none;border-radius:14px;padding:16px 20px;font-size:16px;font-weight:700;font-family:'Inter',sans-serif;cursor:pointer;text-align:center;box-shadow:0 4px 16px rgba(0,0,0,0.15);">
+            style="width:100%;background:${cor};color:#fff;border:none;border-radius:14px;padding:16px 20px;font-size:16px;font-weight:700;font-family:'Nunito',sans-serif;cursor:pointer;text-align:center;box-shadow:0 4px 16px rgba(0,0,0,0.15);">
             Agendar horário
           </button>
         </div>
@@ -639,7 +639,7 @@ function renderHome(emp){
       <!-- Rodapé -->
       <div style="text-align:center;padding:16px 20px calc(16px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--line);margin-top:24px;">
         <button class="icon-btn" onclick="goto({empresa:'${emp.slug}', page:'gestao'})"
-          style="font-size:11px;color:var(--ink-soft);opacity:0.4;letter-spacing:.05em;">
+          style="font-size:12px;color:var(--ink-soft);opacity:0.7;letter-spacing:.04em;text-decoration:underline;text-underline-offset:3px;">
           Área da empresa
         </button>
       </div>
@@ -697,8 +697,9 @@ function renderAgendar(emp){
 
     const servicosHtml = emp.servicos.map(s=>{
       const sel = bookingState.servico===s.id;
+      const precoFmt = s.preco ? ` — R$ ${Number(s.preco).toLocaleString('pt-BR',{minimumFractionDigits:0})}` : '';
       return `<div class="service-opt ${sel?'selected':''}" onclick="selectServico('${s.id}')">
-        <strong>${escapeHtml(s.nome)}</strong>
+        <strong>${escapeHtml(s.nome)}</strong>${precoFmt ? `<span style="font-weight:400;color:var(--ink-soft)">${precoFmt}</span>` : ''}
       </div>`;
     }).join("");
 
@@ -706,6 +707,7 @@ function renderAgendar(emp){
     const telValido = telDigits.length === 12 && telDigits[0] === '0' && telDigits[3] === '9';
     const telErro   = telDigits.length > 0 && !telValido;
     const canSubmit = bookingState.servico && bookingState.data && bookingState.hora && bookingState.nome.trim() && telValido;
+    const pendente = !canSubmit ? (!bookingState.servico ? 'Escolha um serviço' : !bookingState.data ? 'Escolha um dia' : !bookingState.hora ? 'Escolha um horário' : !bookingState.nome.trim() ? 'Informe seu nome' : 'Informe um telefone válido') : null;
 
     render(`
       ${barraVoltarMaster()}
@@ -739,17 +741,18 @@ function renderAgendar(emp){
           <div class="field"><label>Nome</label><input id="inpNome" value="${escapeAttr(bookingState.nome)}" oninput="bookingState.nome=this.value.toUpperCase();this.value=this.value.toUpperCase()" placeholder="SEU NOME" style="text-transform:uppercase;"/></div>
           <div class="field">
             <label>Telefone (WhatsApp)</label>
-            <input id="inpTel" type="tel" inputmode="numeric" maxlength="12"
-              value="${escapeAttr(bookingState.telefone)}"
+            <input id="inpTel" type="tel" inputmode="numeric" maxlength="16"
+              value="${escapeAttr(bookingState.telefoneDisplay||bookingState.telefone)}"
               oninput="formatarTelefone(this)"
-              placeholder="011912345678"/>
+              placeholder="(11) 91234-5678"/>
             <div id="telError" style="display:${telErro?'flex':'none'};align-items:flex-start;gap:6px;margin-top:8px;color:var(--danger);font-size:13px;line-height:1.4;">
               <span style="font-weight:700;font-size:15px;flex-shrink:0;">ⓘ</span>
-              <span>Formato: 0 + DDD (2 dígitos) + 9 + número (8 dígitos). Ex: <strong>011912345678</strong></span>
+              <span>DDD + 9 + 8 dígitos. Ex: <strong>(11) 91234-5678</strong></span>
             </div>
           </div>
 
           <button id="btnAgendar" class="btn" style="width:100%;margin-top:8px;" ${canSubmit?'':'disabled'} onclick="confirmarAgendamento('${emp.slug}')">Agendar</button>
+          ${pendente ? `<div style="text-align:center;font-size:12px;color:var(--ink-soft);margin-top:6px;">${pendente}</div>` : ''}
         </div>
       </div>
     `);
@@ -759,16 +762,23 @@ function renderAgendar(emp){
   window.selectDiaOutra = (iso)=>{ if(iso){ bookingState.data = iso; bookingState.hora=null; draw(); } };
   window.selectHora = (h)=>{ bookingState.hora = h; draw(); };
   window.formatarTelefone = (input)=>{
-    let v = input.value.replace(/\D/g,'');
-    // Remove DDI 55 colado do WhatsApp e prefixo 0 duplo
-    if(v.startsWith('55') && v.length > 11) v = v.slice(2);
-    if(v.length > 0 && v[0] !== '0') v = '0' + v;
-    v = v.slice(0, 12);
-    input.value = v;
-    bookingState.telefone = v;
-    const digits = v;
-    const valido = digits.length === 12 && digits[0] === '0' && digits[3] === '9';
-    const erro = digits.length > 0 && !valido;
+    let d = input.value.replace(/\D/g,'');
+    // Remove DDI 55 colado do WhatsApp
+    if(d.startsWith('55') && d.length > 11) d = d.slice(2);
+    // Remove 0 inicial para normalizar
+    if(d.startsWith('0')) d = d.slice(1);
+    d = d.slice(0, 11);
+    // Formato de exibição: (DDD) 9XXXX-XXXX
+    let display = d;
+    if(d.length > 7) display = `(${d.slice(0,2)}) ${d.slice(2,7)}-${d.slice(7)}`;
+    else if(d.length > 2) display = `(${d.slice(0,2)}) ${d.slice(2)}`;
+    input.value = display;
+    // Armazena normalizado com 0 para validação
+    const norm = d.length > 0 ? '0' + d : '';
+    bookingState.telefone = norm;
+    bookingState.telefoneDisplay = display;
+    const valido = norm.length === 12 && norm[0] === '0' && norm[3] === '9';
+    const erro = d.length > 0 && !valido;
     const errEl = document.getElementById('telError');
     if(errEl) errEl.style.display = erro ? 'flex' : 'none';
     const btn = document.getElementById('btnAgendar');
@@ -785,7 +795,7 @@ async function confirmarAgendamento(slug){
   const nomeInp = document.getElementById('inpNome');
   const telInp = document.getElementById('inpTel');
   bookingState.nome = nomeInp ? nomeInp.value : bookingState.nome;
-  bookingState.telefone = telInp ? telInp.value : bookingState.telefone;
+  if(telInp){ let _d=telInp.value.replace(/\D/g,''); if(_d.startsWith('55')&&_d.length>11)_d=_d.slice(2); if(_d.startsWith('0'))_d=_d.slice(1); bookingState.telefone=_d.length?'0'+_d:''; }
   const _digits = bookingState.telefone.replace(/\D/g,'');
   const _telOk = _digits.length === 12 && _digits[0] === '0' && _digits[3] === '9';
   if(!bookingState.servico || !bookingState.data || !bookingState.hora || !bookingState.nome.trim() || !_telOk){
@@ -849,16 +859,16 @@ function renderConfirmacao(emp){
     </div>
     <div class="container">
       <div class="card" style="text-align:center;">
-        <div class="eyebrow" style="color:var(--ok);">Agendamento reservado</div>
-        <h1 class="display">Falta pouco!</h1>
-        <p class="muted">Confirme seu horário direto pelo WhatsApp de ${escapeHtml(emp.nome)}.</p>
+        <div style="font-size:52px;margin-bottom:8px;">✓</div>
+        <div class="eyebrow" style="color:var(--ok);">Agendamento confirmado</div>
+        <h1 class="display">Agendado!</h1>
         <div style="text-align:left;background:var(--paper);border-radius:10px;padding:16px;margin:20px 0;">
           <div><strong>Serviço:</strong> ${escapeHtml(b.servicoNome)}</div>
           <div><strong>Dia:</strong> ${dataFmt}</div>
           <div><strong>Hora:</strong> ${b.hora}</div>
           <div><strong>Nome:</strong> ${escapeHtml(b.nome)}</div>
         </div>
-        <a href="${link}" target="_blank" rel="noopener noreferrer"><button class="btn" style="width:100%;background:#25d366;">Confirmar no WhatsApp</button></a>
+        ${emp.whatsapp ? `<a href="${link}" target="_blank" rel="noopener noreferrer"><button class="btn ghost" style="width:100%;">Enviar confirmação pelo WhatsApp</button></a>` : ''}
         <div style="margin-top:14px;"><button class="icon-btn" onclick="goto({empresa:'${emp.slug}'})">Voltar ao início</button></div>
       </div>
     </div>
@@ -945,6 +955,7 @@ function renderGestao(empInicial){
   // e precisamos trocar a referência, senão a tela congela nos dados antigos.
   let emp = empInicial;
   applyAccent('#1c1917');
+  document.title = `Gestão — ${emp.nome}`;
   dispensarPWA();
   let corner = 'dashboard'; // 'dashboard' | null=agendamentos | 'configurar' | 'personalizar'
   let gestaoNavAberta = false;
@@ -1042,10 +1053,9 @@ function renderGestao(empInicial){
       }
       return `<div style="padding:16px;margin-bottom:8px;border-radius:12px;border:1.5px solid #e0e0e0;background:var(--card);display:flex;flex-direction:column;gap:12px;opacity:.45;">
         <div style="font-weight:700;font-size:15px;">${h} — <span class="muted">Livre</span></div>
-        <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
           <button class="btn ghost" style="font-size:13px;" onclick="novoAgendamento('${diaSelecionado}','${h}')">Agendar Manual</button>
           <button class="btn ghost" style="font-size:13px;" onclick="bloquearHorario('${diaSelecionado}','${h}')">Bloquear</button>
-          <button class="btn ghost" style="font-size:13px;" onclick="">WhatsApp</button>
         </div>
       </div>`;
     }).join("") : `<p class="muted" style="text-align:center;padding:20px 0;">Nenhum horário configurado para este dia.</p>`;
@@ -1055,7 +1065,7 @@ function renderGestao(empInicial){
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
         <button class="btn ghost" style="padding:10px 16px;font-size:18px;line-height:1;" onclick="selecionarDiaGestao('${isoAddDias(diaSelecionado,-1)}')">&#8592;</button>
         <div style="position:relative;text-align:center;cursor:pointer;" onclick="document.getElementById('calGestao').showPicker ? document.getElementById('calGestao').showPicker() : document.getElementById('calGestao').click()">
-          <div style="font-family:'Inter',sans-serif;font-size:18px;font-weight:600;">${dataFmt}</div>
+          <div style="font-family:'Nunito',sans-serif;font-size:18px;font-weight:600;">${dataFmt}</div>
           <div style="font-size:13px;font-weight:600;color:var(--ink-soft);text-transform:capitalize;margin:2px 0;">${diaNome}</div>
           <div class="muted" style="font-size:11px;">toque para escolher</div>
           <input type="date" id="calGestao" value="${diaSelecionado}" style="position:absolute;opacity:0;width:1px;height:1px;top:0;left:50%;" onchange="selecionarDiaGestao(this.value)"/>
@@ -1066,7 +1076,7 @@ function renderGestao(empInicial){
         ${diaNaoTrabalha
           ? ``
           : diaTodoBloqueado
-            ? `<button class="icon-btn" style="font-size:12px;color:#2e7d32;" onclick="desbloquearDiaTodo()">Desbloquear dia todo</button>`
+            ? `<button class="icon-btn" style="font-size:12px;color:var(--ok);" onclick="desbloquearDiaTodo()">Desbloquear dia todo</button>`
             : `<button class="icon-btn" style="font-size:12px;color:var(--danger);" onclick="bloquearDiaTodo()">Bloquear dia todo</button>`
         }
       </div>
@@ -1101,9 +1111,14 @@ function renderGestao(empInicial){
           <button onclick="configurarIr(null)" class="btn ghost" style="padding:8px 14px;font-size:13px;">← Voltar</button>
           <div style="font-weight:700;font-size:16px;">Serviços</div>
         </div>
-        ${emp.servicos.length ? `<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;">${emp.servicos.map((s,i)=>`
-          <div style="display:inline-flex;align-items:center;gap:8px;background:#f4f4f4;border:1.5px solid #e0e0e0;border-radius:10px;padding:8px 12px;">
-            <span style="font-size:14px;font-weight:600;color:#1a1a1a;">${escapeHtml(s.nome)}</span>
+        ${emp.servicos.length ? `<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;">${emp.servicos.map((s,i)=>`
+          <div style="display:flex;align-items:center;gap:8px;background:#f4f4f4;border:1.5px solid #e0e0e0;border-radius:10px;padding:8px 12px;">
+            <span style="font-size:14px;font-weight:600;color:#1a1a1a;flex:1;">${escapeHtml(s.nome)}</span>
+            <div style="display:flex;align-items:center;gap:4px;">
+              <span style="font-size:12px;color:#888;">R$</span>
+              <input type="number" min="0" step="1" value="${s.preco||0}" onchange="updServico(${i},'preco',this.value)"
+                style="width:64px;padding:4px 6px;border:1px solid #e0e0e0;border-radius:6px;font-size:13px;text-align:right;background:#fff;"/>
+            </div>
             <button onclick="removeServico(${i})" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:18px;line-height:1;padding:0;min-height:0;">×</button>
           </div>
         `).join('')}</div>` : `<p class="muted" style="margin-bottom:14px;">Nenhum serviço cadastrado ainda.</p>`}
@@ -1318,7 +1333,7 @@ function renderGestao(empInicial){
     .g-dash-label { font-size:12px; color:var(--ink-soft); margin-top:6px; }
 
     .g-topbar { height:52px; display:flex; align-items:center; justify-content:space-between; padding:0 20px; background:#1c1917; color:#fff; }
-    .g-topbar .brand { font-family:'Inter',sans-serif; font-weight:800; font-size:18px; }
+    .g-topbar .brand { font-family:'Nunito',sans-serif; font-weight:800; font-size:18px; }
 
     /* ── Desktop ── */
     @media(min-width:768px){
@@ -1337,11 +1352,12 @@ function renderGestao(empInicial){
     @media(max-width:767px){
       .g-sidebar {
         position:fixed; left:0; top:52px; bottom:0;
-        width:36px; padding:4px 0;
-        transition:width .22s ease;
+        width:185px; padding:4px 0;
+        transform:translateX(-149px);
+        transition:transform .22s cubic-bezier(.4,0,.2,1);
         box-shadow:2px 0 8px rgba(0,0,0,0.3);
       }
-      .g-sidebar.open { width:185px; box-shadow:4px 0 24px rgba(0,0,0,0.5); }
+      .g-sidebar.open { transform:translateX(0); box-shadow:4px 0 24px rgba(0,0,0,0.5); }
       .g-sidebar-toggle { padding:13px 0; font-size:20px; }
       .g-nav-item { padding:13px; justify-content:center; }
       .g-sidebar.open .g-nav-item { padding:13px 16px; justify-content:flex-start; }
@@ -1912,6 +1928,7 @@ function finStatusInfo(reg){
 
 function renderMasterPanel(){
   applyAccent('#1c1917');
+  document.title = 'Painel Master — Agenda+';
   mostrarBannerPWA();
 
   const M_ICO = {
@@ -1964,7 +1981,7 @@ function renderMasterPanel(){
       .fin-status { display:inline-block; padding:3px 10px; border-radius:20px; font-size:12px; font-weight:600; }
 
       .master-topbar { height:52px; display:flex; align-items:center; justify-content:space-between; padding:0 20px; background:#1c1917; color:#fff; }
-      .master-topbar .brand { font-family:'Inter',sans-serif; font-weight:800; font-size:18px; }
+      .master-topbar .brand { font-family:'Nunito',sans-serif; font-weight:800; font-size:18px; }
 
       @media(min-width:768px){
         .master-sidebar {
@@ -1980,11 +1997,12 @@ function renderMasterPanel(){
       @media(max-width:767px){
         .master-sidebar {
           position:fixed; left:0; top:52px; bottom:0;
-          width:36px; padding:4px 0;
-          transition:width .22s ease;
+          width:185px; padding:4px 0;
+          transform:translateX(-149px);
+          transition:transform .22s cubic-bezier(.4,0,.2,1);
           box-shadow:2px 0 8px rgba(0,0,0,0.3);
         }
-        .master-sidebar.open { width:185px; box-shadow:4px 0 24px rgba(0,0,0,0.5); }
+        .master-sidebar.open { transform:translateX(0); box-shadow:4px 0 24px rgba(0,0,0,0.5); }
         .master-sidebar-toggle { padding:13px 0; font-size:20px; }
         .master-nav-item { padding:13px; justify-content:center; }
         .master-sidebar.open .master-nav-item { padding:13px 16px; justify-content:flex-start; }
