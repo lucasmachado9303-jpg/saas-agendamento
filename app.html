@@ -1815,12 +1815,11 @@ function renderGestao(empInicial){
       toast('O link deve começar com https://, http://, tel: ou mailto:','err'); return;
     }
     const existingB = emp.botoes.find(x=>x.id===id);
-    const iconeAtual = existingB?.icone || '🔗';
     const { error } = await supabaseClient.from('botoes_empresa').update({
-      nome, tipo, link, icone: ICONE_POR_TIPO[tipo] || iconeAtual, abrir_nova_aba: true
+      nome, tipo, link, icone: '', abrir_nova_aba: true
     }).eq('id', id);
     if(error){ toast('Erro ao salvar. Tente novamente.','err'); return; }
-    Object.assign(existingB, { nome, tipo, link, icone: ICONE_POR_TIPO[tipo] || iconeAtual, abrirNovaAba: true });
+    Object.assign(existingB, { nome, tipo, link, icone: '', abrirNovaAba: true });
     editandoBotaoId = null;
     draw();
   };
@@ -1845,7 +1844,7 @@ function renderGestao(empInicial){
     const { data: row, error } = await supabaseClient.from('botoes_empresa').insert({
       empresa_id:    emp.id,
       nome, tipo, link,
-      icone:         ICONE_POR_TIPO[tipo] || '🔗',
+      icone:         '',
       ordem:         ordemMax,
       ativo:         true,
       abrir_nova_aba: true
