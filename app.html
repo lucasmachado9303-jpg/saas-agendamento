@@ -104,6 +104,19 @@
   .icon-btn{background:none;border:none;color:var(--ink-soft);font-size:13px;font-weight:600;text-decoration:underline;padding:0;}
   .loading{display:flex;align-items:center;justify-content:center;min-height:60vh;color:var(--ink-soft);}
 
+  /* ── SPINNER ────────────────────────────────────────────── */
+  @keyframes _spin{to{transform:rotate(360deg);}}
+  .spinner{display:inline-block;width:18px;height:18px;border:2.5px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:_spin .7s linear infinite;vertical-align:middle;}
+  .spinner-dark{border-color:rgba(0,0,0,0.12);border-top-color:#1a1a1a;}
+  .loading-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;gap:14px;color:var(--ink-soft);}
+
+  /* ── TOAST ──────────────────────────────────────────────── */
+  #toast-root{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:9999;display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none;width:min(340px,90vw);}
+  .toast{background:#1a1a1a;color:#fff;padding:12px 20px;border-radius:10px;font-size:14px;font-weight:500;opacity:0;transform:translateY(10px);transition:opacity .2s,transform .2s;pointer-events:auto;text-align:center;box-shadow:0 4px 16px rgba(0,0,0,0.25);}
+  .toast.show{opacity:1;transform:translateY(0);}
+  .toast.ok{background:#2d5a3d;}
+  .toast.err{background:#a3423a;}
+
   /* ── MOBILE FOUNDATION ─────────────────────────────────── */
   html { -webkit-text-size-adjust:100%; }
   body { -webkit-font-smoothing:antialiased; }
@@ -461,6 +474,24 @@ function isoData(d){
 const root = document.getElementById('root');
 function render(html){ root.innerHTML = html; }
 
+function toast(msg, type='info', ms=3200){
+  let c = document.getElementById('toast-root');
+  if(!c){ c = document.createElement('div'); c.id='toast-root'; document.body.appendChild(c); }
+  const el = document.createElement('div');
+  el.className = `toast${type==='ok'?' ok':type==='err'?' err':''}`;
+  el.textContent = msg;
+  c.appendChild(el);
+  requestAnimationFrame(()=>requestAnimationFrame(()=>el.classList.add('show')));
+  setTimeout(()=>{ el.classList.remove('show'); el.addEventListener('transitionend',()=>el.remove(),{once:true}); }, ms);
+}
+function friendlyError(err, fallback='Algo deu errado. Tente novamente.'){
+  if(!err) return fallback;
+  if(err.code==='23505') return 'Esse horário já está reservado. Escolha outro.';
+  if(err.code==='42501'||err.code==='PGRST301') return 'Sem permissão para esta ação.';
+  if(err.message && err.message.toLowerCase().includes('network')) return 'Sem conexão. Verifique sua internet.';
+  return fallback;
+}
+
 let _pollInterval = null;
 let _pollFn = null;
 function iniciarPolling(fn){
@@ -478,7 +509,7 @@ function pararPolling(){
 
 // ---------- INIT ----------
 async function init(){
-  render(`<div class="loading">Carregando…</div>`);
+  render(`<div class="loading-wrap"><div class="spinner spinner-dark" style="width:28px;height:28px;"></div><div>Carregando…</div></div>`);
 
   // Escuta mudanças de auth (inclui PASSWORD_RECOVERY vindo do e-mail)
   supabaseClient.auth.onAuthStateChange(async (event, session) => {
@@ -652,7 +683,7 @@ function renderHome(emp){
 let bookingState = {};
 function renderAgendar(emp){
   applyAccent(emp.corPrincipal);
-  bookingState = { servico:null, data:null, hora:null, nome:"", telefone:"" };
+  if(bookingState._slug !== emp.slug) bookingState = { _slug:emp.slug, servico:null, data:null, hora:null, nome:"", telefone:"", telefoneDisplay:"" };
 
   function primeiros7Dias(emp){
     const out = [];
@@ -695,13 +726,15 @@ function renderAgendar(emp){
       return `<div class="slot free ${sel?'selected':''}" onclick="selectHora('${h}')">${h}</div>`;
     }).join("") : `<p class="muted">Nenhum horário disponível nesta data.</p>`) : `<p class="muted">Escolha um dia primeiro.</p>`;
 
-    const servicosHtml = emp.servicos.map(s=>{
-      const sel = bookingState.servico===s.id;
-      const precoFmt = s.preco ? ` — R$ ${Number(s.preco).toLocaleString('pt-BR',{minimumFractionDigits:0})}` : '';
-      return `<div class="service-opt ${sel?'selected':''}" onclick="selectServico('${s.id}')">
-        <strong>${escapeHtml(s.nome)}</strong>${precoFmt ? `<span style="font-weight:400;color:var(--ink-soft)">${precoFmt}</span>` : ''}
-      </div>`;
-    }).join("");
+    const servicosHtml = emp.servicos.length
+      ? emp.servicos.map(s=>{
+          const sel = bookingState.servico===s.id;
+          const precoFmt = s.preco ? ` — R$ ${Number(s.preco).toLocaleString('pt-BR',{minimumFractionDigits:0})}` : '';
+          return `<div class="service-opt ${sel?'selected':''}" onclick="selectServico('${s.id}')">
+            <strong>${escapeHtml(s.nome)}</strong>${precoFmt ? `<span style="font-weight:400;color:var(--ink-soft)">${precoFmt}</span>` : ''}
+          </div>`;
+        }).join("")
+      : `<p class="muted" style="font-size:13px;padding:8px 0;">Em breve — serviços sendo configurados.</p>`;
 
     const telDigits = bookingState.telefone.replace(/\D/g,'');
     const telValido = telDigits.length === 12 && telDigits[0] === '0' && telDigits[3] === '9';
@@ -790,7 +823,7 @@ function renderAgendar(emp){
 async function confirmarAgendamento(slug){
   const btnAg = document.getElementById('btnAgendar');
   if(btnAg && btnAg.disabled) return;
-  if(btnAg) btnAg.disabled = true;
+  if(btnAg){ btnAg.disabled = true; btnAg.innerHTML = '<span class="spinner"></span> Agendando…'; }
   const emp = empresas.find(e=>e.slug===slug);
   const nomeInp = document.getElementById('inpNome');
   const telInp = document.getElementById('inpTel');
@@ -804,7 +837,7 @@ async function confirmarAgendamento(slug){
 
   const jaOcupado = agendamentos.some(a=>a.slug===slug && a.data===bookingState.data && a.hora===bookingState.hora)
     || (emp.bloqueios||[]).some(b=>b.data===bookingState.data && b.hora===bookingState.hora);
-  if(jaOcupado){ alert("Esse horário acabou de ser reservado ou bloqueado. Escolha outro."); renderAgendar(emp); return; }
+  if(jaOcupado){ toast('Esse horário foi reservado ou bloqueado. Escolha outro.','err'); if(btnAg){btnAg.disabled=false;btnAg.innerHTML='Agendar';} renderAgendar(emp); return; }
 
   const servico = emp.servicos.find(s=>s.id===bookingState.servico);
   // Sem .select(): o visitante tem permissão de gravar, mas não de ler
@@ -819,9 +852,9 @@ async function confirmarAgendamento(slug){
     telefone:     bookingState.telefone.trim()
   });
   if(error){
-    if(error.code === '23505'){ alert("Esse horário acabou de ser reservado. Escolha outro."); renderAgendar(emp); return; }
-    if(btnAg) btnAg.disabled = false;
-    alert("Erro ao realizar agendamento. Tente novamente."); return;
+    if(btnAg){ btnAg.disabled=false; btnAg.innerHTML='Agendar'; }
+    toast(friendlyError(error,'Erro ao realizar agendamento. Tente novamente.'),'err');
+    if(error.code === '23505'){ renderAgendar(emp); } return;
   }
   const novo = {
     slug,
@@ -911,23 +944,23 @@ function renderGestaoLogin(emp){
 async function tentarLoginGestao(slug){
   const email = (document.getElementById('gestaoEmail').value || '').trim();
   const senha = document.getElementById('gestaoSenha').value;
-  if(!email || !senha){ alert("Preencha e-mail e senha."); return; }
+  if(!email || !senha){ toast('Preencha e-mail e senha.','err'); return; }
 
   const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password: senha });
-  if(error){ alert("E-mail ou senha incorretos."); return; }
+  if(error){ toast('E-mail ou senha incorretos.','err'); return; }
 
   const { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', data.user.id).single();
 
   if(!profile || profile.status !== 'ativo'){
     await supabaseClient.auth.signOut();
-    alert("Conta bloqueada ou sem acesso. Entre em contato com o administrador.");
+    toast('Conta bloqueada. Entre em contato com o administrador.','err');
     return;
   }
 
   const emp = empresas.find(e=>e.slug===slug);
   if(profile.role !== 'owner_empresa' || profile.empresa_id !== emp?.id){
     await supabaseClient.auth.signOut();
-    alert("Suas credenciais não têm acesso à gestão desta empresa.");
+    toast('Acesso não autorizado para esta empresa.','err');
     return;
   }
 
@@ -945,8 +978,8 @@ window.recuperarSenha = async (slug)=>{
     : 'https://saas-agendamento-seven.vercel.app';
   const redirectTo = base + '/app.html';
   const { error } = await supabaseClient.auth.resetPasswordForEmail(email, { redirectTo });
-  if(error){ alert("Erro: " + error.message); return; }
-  alert("Se o e-mail estiver cadastrado, você receberá um link para redefinir a senha.");
+  if(error){ toast('Erro ao enviar. Tente novamente.','err'); return; }
+  toast('Se o e-mail estiver cadastrado, você receberá um link em breve.','ok',5000);
 };
 
 // ---------- GESTÃO (PAINEL) ----------
@@ -962,6 +995,7 @@ function renderGestao(empInicial){
   let diaSelecionado = null;
   let editandoId = null;
   let novoAgState = null;
+  let mostrarLivres = false;
   let configurarSub = null; // null | 'servicos' | 'horarios'
   let mesHorario = mesKey(new Date());
   let novoBotaoState = null;
@@ -992,87 +1026,129 @@ function renderGestao(empInicial){
     const diaDaSemana = new Date(diaSelecionado+"T00:00:00").getDay();
     const diaNaoTrabalha = !diasTrabalho.includes(diaDaSemana);
     const diaTodoBloqueado = diaNaoTrabalha || (horarios.length > 0 && horarios.every(h=>(emp.bloqueios||[]).some(b=>b.data===diaSelecionado && b.hora===h)));
-    const linhas = horarios.length ? horarios.map(h=>{
-      const ag = agendamentos.find(a=>a.slug===emp.slug && a.data===diaSelecionado && a.hora===h);
-      const bloqueado = (emp.bloqueios||[]).some(b=>b.data===diaSelecionado && b.hora===h);
-      if(ag && editandoId===ag.id){
-        const servicoOpts = emp.servicos.map(s=>`<option value="${s.id}" ${ (ag.servicoId===s.id) ?'selected':''}>${escapeHtml(s.nome)}</option>`).join("");
-        const horariosOpts = horarios.map(hh=>`<option value="${hh}" ${hh===ag.hora?'selected':''}>${hh}</option>`).join("");
-        return `<div class="list-item" style="flex-direction:column;align-items:stretch;">
-          <div class="field"><label>Nome</label><input id="editNome" value="${escapeAttr(ag.nome)}"/></div>
-          <div class="field"><label>Telefone</label><input id="editTel" value="${escapeAttr(ag.telefone)}"/></div>
-          <div class="row">
-            <div class="field"><label>Serviço</label><select id="editServico">${servicoOpts}</select></div>
-            <div class="field"><label>Horário</label><select id="editHora">${horariosOpts}</select></div>
+    const _livresHoras = [];
+    const linhas = horarios.length ? (()=>{
+      const parts = [];
+      for(const h of horarios){
+        const ag = agendamentos.find(a=>a.slug===emp.slug && a.data===diaSelecionado && a.hora===h);
+        const bloqueado = (emp.bloqueios||[]).some(b=>b.data===diaSelecionado && b.hora===h);
+        if(ag && editandoId===ag.id){
+          const servicoOpts = emp.servicos.map(s=>`<option value="${s.id}" ${ag.servicoId===s.id?'selected':''}>${escapeHtml(s.nome)}</option>`).join("");
+          const horariosOpts = horarios.map(hh=>`<option value="${hh}" ${hh===ag.hora?'selected':''}>${hh}</option>`).join("");
+          parts.push(`<div class="list-item" style="flex-direction:column;align-items:stretch;">
+            <div class="field"><label>Nome</label><input id="editNome" value="${escapeAttr(ag.nome)}"/></div>
+            <div class="field"><label>Telefone</label><input id="editTel" value="${escapeAttr(ag.telefone)}"/></div>
+            <div class="row">
+              <div class="field"><label>Serviço</label><select id="editServico">${servicoOpts}</select></div>
+              <div class="field"><label>Horário</label><select id="editHora">${horariosOpts}</select></div>
+            </div>
+            <div class="row">
+              <button class="btn ghost" onclick="cancelarEdicaoAgendamento()">Cancelar</button>
+              <button class="btn" onclick="salvarEdicaoAgendamento('${ag.id}')">Salvar</button>
+            </div>
+          </div>`); continue;
+        }
+        if(ag){
+          const waNum = '55' + ag.telefone.replace(/\D/g,'').replace(/^0/,'');
+          const waLink = `https://wa.me/${waNum}`;
+          parts.push(`<div style="padding:16px;margin-bottom:8px;border-radius:12px;border:1.5px solid #e0e0e0;background:var(--card);display:flex;flex-direction:column;gap:12px;">
+            <div>
+              <div style="font-weight:700;font-size:15px;">${h} — ${escapeHtml(ag.nome)}</div>
+              <div class="muted" style="font-size:13px;margin-top:4px;">${escapeHtml(ag.servicoNome)}</div>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;">
+              <button class="btn ghost" style="font-size:13px;" onclick="editarAgendamento('${ag.id}')">Editar</button>
+              <button class="btn" style="font-size:13px;background:#e53935;border:none;color:#fff;" onclick="cancelarAgendamento('${ag.id}')">Cancelar</button>
+              <button class="btn" style="font-size:13px;background:#25d366;border:none;color:#fff;" onclick="window.open('${waLink}','_blank','noopener,noreferrer')">WhatsApp</button>
+            </div>
+          </div>`); continue;
+        }
+        if(bloqueado){
+          parts.push(`<div style="padding:16px;margin-bottom:8px;border-radius:12px;border:1.5px solid #e0e0e0;background:var(--card);display:flex;flex-direction:column;gap:12px;opacity:.55;">
+            <div style="font-weight:700;font-size:15px;">${h} — <span class="muted">Bloqueado</span></div>
+            <button class="btn ghost" style="font-size:13px;" onclick="desbloquearHorario('${diaSelecionado}','${h}')">Desbloquear</button>
+          </div>`); continue;
+        }
+        if(novoAgState && novoAgState.data===diaSelecionado && novoAgState.hora===h){
+          const servicoOpts = emp.servicos.map(s=>`<option value="${s.id}">${escapeHtml(s.nome)}</option>`).join("");
+          const horariosOpts = horarios.map(hh=>`<option value="${hh}" ${hh===h?'selected':''}>${hh}</option>`).join("");
+          parts.push(`<div class="list-item" style="flex-direction:column;align-items:stretch;">
+            <div style="font-weight:700;font-size:14px;margin-bottom:8px;">${h} — Novo agendamento</div>
+            <div class="field"><label>Nome</label><input id="novoNome" placeholder="Nome do cliente"/></div>
+            <div class="field"><label>Telefone</label><input id="novoTel" placeholder="(xx) xxxxx-xxxx"/></div>
+            <div class="row">
+              <div class="field"><label>Serviço</label><select id="novoServico">${servicoOpts}</select></div>
+              <div class="field"><label>Horário</label><select id="novoHora">${horariosOpts}</select></div>
+            </div>
+            <div class="row">
+              <button class="btn ghost" onclick="cancelarNovoAg()">Cancelar</button>
+              <button class="btn" onclick="salvarNovoAg('${diaSelecionado}')">Agendar</button>
+            </div>
+          </div>`); continue;
+        }
+        // Slot livre
+        _livresHoras.push(h);
+        if(mostrarLivres) parts.push(`<div style="padding:16px;margin-bottom:8px;border-radius:12px;border:1.5px solid #e0e0e0;background:var(--card);display:flex;flex-direction:column;gap:12px;opacity:.45;">
+          <div style="font-weight:700;font-size:15px;">${h} — <span class="muted">Livre</span></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            <button class="btn ghost" style="font-size:13px;" onclick="novoAgendamento('${diaSelecionado}','${h}')">Agendar Manual</button>
+            <button class="btn ghost" style="font-size:13px;" onclick="bloquearHorario('${diaSelecionado}','${h}')">Bloquear</button>
           </div>
-          <div class="row">
-            <button class="btn ghost" onclick="cancelarEdicaoAgendamento()">Cancelar</button>
-            <button class="btn" onclick="salvarEdicaoAgendamento('${ag.id}')">Salvar</button>
-          </div>
-        </div>`;
+        </div>`);
       }
-      if(ag){
-        const waNum = '55' + ag.telefone.replace(/\D/g,'').replace(/^0/,'');
-        const waLink = `https://wa.me/${waNum}`;
-        return `<div style="padding:16px;margin-bottom:8px;border-radius:12px;border:1.5px solid #e0e0e0;background:var(--card);display:flex;flex-direction:column;gap:12px;">
-          <div>
-            <div style="font-weight:700;font-size:15px;">${h} — ${escapeHtml(ag.nome)}</div>
-            <div class="muted" style="font-size:13px;margin-top:4px;">${escapeHtml(ag.servicoNome)}</div>
-          </div>
-          <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;">
-            <button class="btn ghost" style="font-size:13px;" onclick="editarAgendamento('${ag.id}')">Editar</button>
-            <button class="btn" style="font-size:13px;background:#e53935;border:none;color:#fff;" onclick="cancelarAgendamento('${ag.id}')">Cancelar</button>
-            <button class="btn" style="font-size:13px;background:#25d366;border:none;color:#fff;" onclick="window.open('${waLink}','_blank','noopener,noreferrer')">WhatsApp</button>
-          </div>
-        </div>`;
+      // Sumário de livres
+      if(_livresHoras.length > 0){
+        const n = _livresHoras.length;
+        if(!mostrarLivres){
+          parts.push(`<div onclick="toggleLivres()" style="cursor:pointer;padding:14px 16px;margin-bottom:8px;border-radius:12px;border:1.5px dashed #ccc;display:flex;align-items:center;justify-content:space-between;color:var(--ink-soft);font-size:14px;font-weight:500;">
+            <span>${n} horário${n>1?'s':''} livre${n>1?'s':''}</span>
+            <span style="font-size:12px;font-weight:600;text-decoration:underline;">Mostrar</span>
+          </div>`);
+        } else {
+          parts.push(`<div onclick="toggleLivres()" style="cursor:pointer;text-align:center;font-size:12px;font-weight:600;color:var(--ink-soft);padding:6px 0 4px;text-decoration:underline;">Ocultar livres</div>`);
+        }
       }
-      if(bloqueado){
-        return `<div style="padding:16px;margin-bottom:8px;border-radius:12px;border:1.5px solid #e0e0e0;background:var(--card);display:flex;flex-direction:column;gap:12px;opacity:.55;">
-          <div style="font-weight:700;font-size:15px;">${h} — <span class="muted">Bloqueado</span></div>
-          <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;">
-            <button class="btn ghost" style="font-size:13px;grid-column:1/4;" onclick="desbloquearHorario('${diaSelecionado}','${h}')">Desbloquear</button>
-          </div>
-        </div>`;
-      }
-      if(novoAgState && novoAgState.data===diaSelecionado && novoAgState.hora===h){
-        const servicoOpts = emp.servicos.map(s=>`<option value="${s.id}">${escapeHtml(s.nome)}</option>`).join("");
-        const horariosOpts = horarios.map(hh=>`<option value="${hh}" ${hh===h?'selected':''}>${hh}</option>`).join("");
-        return `<div class="list-item" style="flex-direction:column;align-items:stretch;">
-          <div style="font-weight:700;font-size:14px;margin-bottom:8px;">${h} — Novo agendamento</div>
-          <div class="field"><label>Nome</label><input id="novoNome" placeholder="Nome do cliente"/></div>
-          <div class="field"><label>Telefone</label><input id="novoTel" placeholder="(xx) xxxxx-xxxx"/></div>
-          <div class="row">
-            <div class="field"><label>Serviço</label><select id="novoServico">${servicoOpts}</select></div>
-            <div class="field"><label>Horário</label><select id="novoHora">${horariosOpts}</select></div>
-          </div>
-          <div class="row">
-            <button class="btn ghost" onclick="cancelarNovoAg()">Cancelar</button>
-            <button class="btn" onclick="salvarNovoAg('${diaSelecionado}')">Agendar</button>
-          </div>
-        </div>`;
-      }
-      return `<div style="padding:16px;margin-bottom:8px;border-radius:12px;border:1.5px solid #e0e0e0;background:var(--card);display:flex;flex-direction:column;gap:12px;opacity:.45;">
-        <div style="font-weight:700;font-size:15px;">${h} — <span class="muted">Livre</span></div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-          <button class="btn ghost" style="font-size:13px;" onclick="novoAgendamento('${diaSelecionado}','${h}')">Agendar Manual</button>
-          <button class="btn ghost" style="font-size:13px;" onclick="bloquearHorario('${diaSelecionado}','${h}')">Bloquear</button>
-        </div>
-      </div>`;
-    }).join("") : `<p class="muted" style="text-align:center;padding:20px 0;">Nenhum horário configurado para este dia.</p>`;
+      return parts.join('');
+    })()
+    : `<p class="muted" style="text-align:center;padding:20px 0;">Nenhum horário configurado para este dia.</p>`;
 
     const diaNome = dataObj.toLocaleDateString('pt-BR',{weekday:'long'});
+    const hoje = isoData(new Date());
+    const isHoje = diaSelecionado === hoje;
+    // Mini visão semanal: 7 dias centrados no dia selecionado
+    const semanaBase = new Date(diaSelecionado+"T00:00:00");
+    semanaBase.setDate(semanaBase.getDate() - 3);
+    const semanaHtml = Array.from({length:7},(_,i)=>{
+      const d = new Date(semanaBase); d.setDate(semanaBase.getDate()+i);
+      const iso = isoData(d);
+      const isSelected = iso === diaSelecionado;
+      const isToday = iso === hoje;
+      const temAg = agendamentos.some(a=>a.slug===emp.slug && a.data===iso);
+      const diaSem = d.toLocaleDateString('pt-BR',{weekday:'narrow'});
+      const diaNum = d.getDate();
+      return `<div onclick="selecionarDiaGestao('${iso}')" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;flex:1;">
+        <div style="font-size:10px;color:${isSelected?'#fff':isToday?'var(--accent)':'var(--ink-soft)'};font-weight:600;">${diaSem}</div>
+        <div style="width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;
+          background:${isSelected?'#1c1917':'transparent'};color:${isSelected?'#fff':isToday?'var(--accent)':'var(--ink)'};
+          border:${isToday&&!isSelected?'1.5px solid var(--accent)':'1.5px solid transparent'};">${diaNum}</div>
+        <div style="width:5px;height:5px;border-radius:50%;background:${temAg?'var(--ok)':'transparent'};"></div>
+      </div>`;
+    }).join('');
     return `
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-        <button class="btn ghost" style="padding:10px 16px;font-size:18px;line-height:1;" onclick="selecionarDiaGestao('${isoAddDias(diaSelecionado,-1)}')">&#8592;</button>
+      <div style="display:flex;overflow-x:auto;gap:0;padding:8px 0 12px;margin:0 -4px;">
+        ${semanaHtml}
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <button class="btn ghost" style="padding:10px 14px;font-size:18px;line-height:1;" onclick="selecionarDiaGestao('${isoAddDias(diaSelecionado,-1)}')">&#8592;</button>
         <div style="position:relative;text-align:center;cursor:pointer;" onclick="document.getElementById('calGestao').showPicker ? document.getElementById('calGestao').showPicker() : document.getElementById('calGestao').click()">
-          <div style="font-family:'Nunito',sans-serif;font-size:18px;font-weight:600;">${dataFmt}</div>
-          <div style="font-size:13px;font-weight:600;color:var(--ink-soft);text-transform:capitalize;margin:2px 0;">${diaNome}</div>
-          <div class="muted" style="font-size:11px;">toque para escolher</div>
+          <div style="font-family:'Nunito',sans-serif;font-size:17px;font-weight:700;">${dataFmt}</div>
+          <div style="font-size:12px;color:var(--ink-soft);text-transform:capitalize;">${diaNome}${isHoje?' · Hoje':''}</div>
           <input type="date" id="calGestao" value="${diaSelecionado}" style="position:absolute;opacity:0;width:1px;height:1px;top:0;left:50%;" onchange="selecionarDiaGestao(this.value)"/>
         </div>
-        <button class="btn ghost" style="padding:10px 16px;font-size:18px;line-height:1;" onclick="selecionarDiaGestao('${isoAddDias(diaSelecionado,1)}')">&#8594;</button>
+        <button class="btn ghost" style="padding:10px 14px;font-size:18px;line-height:1;" onclick="selecionarDiaGestao('${isoAddDias(diaSelecionado,1)}')">&#8594;</button>
       </div>
-      <div style="text-align:center;margin-bottom:20px;">
+      ${!isHoje ? `<div style="text-align:center;margin-bottom:8px;"><button class="icon-btn" style="font-size:12px;" onclick="selecionarDiaGestao('${hoje}')">Ir para hoje</button></div>` : ''}
+      <div style="text-align:center;margin-bottom:16px;">
         ${diaNaoTrabalha
           ? ``
           : diaTodoBloqueado
@@ -1081,25 +1157,59 @@ function renderGestao(empInicial){
         }
       </div>
       ${diaNaoTrabalha
-        ? `<p class="muted" style="text-align:center;padding:24px 0;">Dia não disponível para agendamentos.</p>`
+        ? `<div style="text-align:center;padding:32px 16px;color:var(--ink-soft);">
+            <div style="font-size:32px;margin-bottom:8px;">📅</div>
+            <div style="font-weight:600;margin-bottom:4px;">Dia não configurado</div>
+            <div style="font-size:13px;margin-bottom:16px;">Este dia da semana não está marcado como dia de atendimento.</div>
+            <button class="btn ghost" style="font-size:13px;" onclick="corner='configurar';configurarSub='horarios';draw()">Ajustar dias de atendimento</button>
+          </div>`
         : diaTodoBloqueado
-          ? `<p class="muted" style="text-align:center;padding:24px 0;">Dia bloqueado. Nenhum horário disponível.</p>`
-          : linhas
+          ? `<div style="text-align:center;padding:32px 16px;color:var(--ink-soft);">
+              <div style="font-size:32px;margin-bottom:8px;">🔒</div>
+              <div style="font-weight:600;margin-bottom:4px;">Dia bloqueado</div>
+              <div style="font-size:13px;">Todos os horários estão bloqueados.</div>
+            </div>`
+          : horarios.length === 0
+            ? `<div style="text-align:center;padding:32px 16px;color:var(--ink-soft);">
+                <div style="font-size:32px;margin-bottom:8px;">⏰</div>
+                <div style="font-weight:600;margin-bottom:4px;">Nenhum horário configurado</div>
+                <div style="font-size:13px;margin-bottom:16px;">Adicione os horários disponíveis para começar a receber agendamentos.</div>
+                <button class="btn ghost" style="font-size:13px;" onclick="corner='configurar';configurarSub='horarios';draw()">Configurar horários</button>
+              </div>`
+            : linhas
       }
     `;
   }
 
   function configurarBody(){
     if(configurarSub === null){
+      const semServicos = emp.servicos.length === 0;
+      const semHorarios = !horariosDoMes(emp,'_uni_').length;
+      const banner = (semServicos || semHorarios)
+        ? `<div style="background:#fef9e7;border:1.5px solid #f5e79e;border-radius:12px;padding:14px 16px;margin-bottom:16px;font-size:13px;color:#7a6400;">
+            <strong>Configure para começar a receber agendamentos:</strong>
+            <ul style="margin:8px 0 0 16px;padding:0;line-height:2;">
+              ${semServicos ? '<li>Adicione pelo menos um serviço</li>' : ''}
+              ${semHorarios ? '<li>Adicione os horários disponíveis</li>' : ''}
+            </ul>
+          </div>`
+        : '';
       return `
+        ${banner}
         <div style="display:flex;flex-direction:column;gap:12px;">
-          <button onclick="configurarIr('servicos')" style="display:flex;flex-direction:column;gap:4px;padding:20px;border-radius:12px;border:1.5px solid #e0e0e0;background:var(--card);text-align:left;cursor:pointer;width:100%;">
-            <div style="font-weight:700;font-size:15px;">Serviços</div>
-            <div class="muted" style="font-size:13px;">Configurar os serviços/produtos que você oferece.</div>
+          <button onclick="configurarIr('servicos')" style="display:flex;align-items:center;gap:12px;padding:20px;border-radius:12px;border:1.5px solid ${semServicos?'#f5c518':'#e0e0e0'};background:var(--card);text-align:left;cursor:pointer;width:100%;">
+            <div style="flex:1;">
+              <div style="font-weight:700;font-size:15px;">Serviços</div>
+              <div class="muted" style="font-size:13px;">${emp.servicos.length ? `${emp.servicos.length} serviço${emp.servicos.length>1?'s':''} cadastrado${emp.servicos.length>1?'s':''}` : 'Nenhum serviço ainda — toque para adicionar'}</div>
+            </div>
+            <span style="font-size:18px;color:var(--ink-soft);">›</span>
           </button>
-          <button onclick="configurarIr('horarios')" style="display:flex;flex-direction:column;gap:4px;padding:20px;border-radius:12px;border:1.5px solid #e0e0e0;background:var(--card);text-align:left;cursor:pointer;width:100%;">
-            <div style="font-weight:700;font-size:15px;">Horários</div>
-            <div class="muted" style="font-size:13px;">Configurar os horários que você deseja para os agendamentos.</div>
+          <button onclick="configurarIr('horarios')" style="display:flex;align-items:center;gap:12px;padding:20px;border-radius:12px;border:1.5px solid ${semHorarios?'#f5c518':'#e0e0e0'};background:var(--card);text-align:left;cursor:pointer;width:100%;">
+            <div style="flex:1;">
+              <div style="font-weight:700;font-size:15px;">Horários</div>
+              <div class="muted" style="font-size:13px;">${!semHorarios ? `${horariosDoMes(emp,'_uni_').length} horário${horariosDoMes(emp,'_uni_').length>1?'s':''} configurado${horariosDoMes(emp,'_uni_').length>1?'s':''}` : 'Nenhum horário ainda — toque para adicionar'}</div>
+            </div>
+            <span style="font-size:18px;color:var(--ink-soft);">›</span>
           </button>
         </div>
       `;
@@ -1456,6 +1566,7 @@ function renderGestao(empInicial){
     if(!iso || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return;
     diaSelecionado=iso; editandoId=null; novoAgState=null; draw();
   };
+  window.toggleLivres = ()=>{ mostrarLivres=!mostrarLivres; draw(); };
 
   window.selecionarImagem = (tipo)=>{
     abrirCrop(tipo, emp.slug, async (url)=>{
@@ -1470,14 +1581,14 @@ function renderGestao(empInicial){
 
   window.bloquearDiaTodo = async ()=>{
     const horarios = horariosDoMes(emp, diaSelecionado.slice(0,7));
-    if(!horarios.length){ alert("Nenhum horário configurado para este dia."); return; }
+    if(!horarios.length){ toast('Nenhum horário configurado para este dia.','err'); return; }
     const naoBloquados = horarios.filter(h=>!((emp.bloqueios||[]).some(b=>b.data===diaSelecionado && b.hora===h)));
     const dataFmtConf = new Date(diaSelecionado+"T00:00:00").toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'});
     if(!confirm(`Bloquear o dia ${dataFmtConf} inteiro?`)) return;
     if(naoBloquados.length){
       const rows = naoBloquados.map(h=>({ empresa_id: emp.id, data: diaSelecionado, hora: h }));
       const { data, error } = await supabaseClient.from('bloqueios').insert(rows).select();
-      if(error){ alert("Erro ao bloquear: " + error.message); return; }
+      if(error){ toast('Erro ao bloquear. Tente novamente.','err'); return; }
       if(data) data.forEach(r=>{ (emp.bloqueios=emp.bloqueios||[]).push({id:r.id, data:r.data, hora:r.hora}); });
     }
     draw();
@@ -1488,7 +1599,7 @@ function renderGestao(empInicial){
     const ids = (emp.bloqueios||[]).filter(b=>b.data===diaSelecionado).map(b=>b.id);
     if(!ids.length){ draw(); return; }
     const { error } = await supabaseClient.from('bloqueios').delete().in('id', ids);
-    if(error){ alert("Erro ao desbloquear: " + error.message); return; }
+    if(error){ toast('Erro ao desbloquear. Tente novamente.','err'); return; }
     emp.bloqueios = (emp.bloqueios||[]).filter(b=>b.data!==diaSelecionado);
     draw();
   };
@@ -1500,14 +1611,14 @@ function renderGestao(empInicial){
     const tel  = document.getElementById('novoTel')?.value?.trim();
     const servicoId = document.getElementById('novoServico')?.value;
     const hora = document.getElementById('novoHora')?.value;
-    if(!nome||!tel||!servicoId||!hora){ alert('Preencha todos os campos.'); return; }
+    if(!nome||!tel||!servicoId||!hora){ toast('Preencha todos os campos.','err'); return; }
     const servico = emp.servicos.find(s=>s.id===servicoId);
     const {data:row, error} = await supabaseClient.from('agendamentos').insert({
       empresa_id: emp.id,
       nome_cliente: nome, telefone: tel, servico_id: servicoId, servico_nome: servico?.nome||'',
       data, hora
     }).select().single();
-    if(error){ alert('Erro ao agendar: '+error.message); return; }
+    if(error){ toast(friendlyError(error,'Erro ao agendar.'),'err'); return; }
     agendamentos.push({
       id:row.id, slug:emp.slug,
       nome:row.nome_cliente, telefone:row.telefone,
@@ -1524,12 +1635,12 @@ function renderGestao(empInicial){
     const tel = document.getElementById('editTel').value.trim();
     const servicoId = document.getElementById('editServico').value;
     const hora = document.getElementById('editHora').value;
-    if(!nome || !tel){ alert("Preencha nome e telefone."); return; }
+    if(!nome || !tel){ toast('Preencha nome e telefone.','err'); return; }
     const telDigitos = tel.replace(/\D/g,'').replace(/^(55|0)/,'');
-    if(telDigitos.length < 10 || telDigitos.length > 11){ alert("Telefone inválido. Use apenas celular com DDD (ex: 11912345678)."); return; }
+    if(telDigitos.length < 10 || telDigitos.length > 11){ toast('Telefone inválido. Use DDD + 9 dígitos.','err'); return; }
     if(hora !== ag.hora){
       const ocupado = agendamentos.some(a=>a.id!==ag.id && a.slug===emp.slug && a.data===ag.data && a.hora===hora);
-      if(ocupado){ alert("Esse horário já está ocupado."); return; }
+      if(ocupado){ toast('Esse horário já está ocupado.','err'); return; }
     }
     const servico = emp.servicos.find(s=>s.id===servicoId);
     const { error } = await supabaseClient.from('agendamentos').update({
@@ -1570,7 +1681,7 @@ function renderGestao(empInicial){
   window.adicionarServico = async ()=>{
     const inp = document.getElementById('novoServicoInput');
     const nome = inp ? inp.value.trim() : '';
-    if(!nome){ alert("Digite o nome do serviço."); return; }
+    if(!nome){ toast('Digite o nome do serviço.','err'); return; }
     const { data: row, error } = await supabaseClient.from('servicos').insert({
       empresa_id: emp.id, nome, duracao: 60, preco: 0
     }).select().single();
@@ -1597,7 +1708,7 @@ function renderGestao(empInicial){
   window.configurarIr = (sub)=>{ configurarSub=sub; draw(); };
   window.adicionarHorario = async ()=>{
     const val = document.getElementById('novoHorarioInput').value;
-    if(!val){ alert("Selecione um horário."); return; }
+    if(!val){ toast('Selecione um horário.','err'); return; }
     emp.horariosPorMes = emp.horariosPorMes || {};
     const lista = emp.horariosPorMes['_uni_'] || [];
     if(lista.includes(val)){ return; }
@@ -1652,8 +1763,8 @@ function renderGestao(empInicial){
       cor_principal:         emp.corPrincipal,
       texto_destaque:        emp.textoDestaque         || null,
     }).eq('id', emp.id);
-    if(error){ console.error('Erro ao salvar informações:', error); alert('Erro ao salvar. Verifique o console.'); return; }
-    alert('Informações salvas!');
+    if(error){ console.error('Erro ao salvar informações:', error); toast('Erro ao salvar. Tente novamente.','err'); return; }
+    toast('Informações salvas!','ok');
     draw();
   };
 
@@ -1684,8 +1795,8 @@ function renderGestao(empInicial){
     const nome = document.getElementById('ebNome').value.trim();
     const tipo = document.getElementById('ebTipo').value;
     let link   = document.getElementById('ebLink').value.trim();
-    if(!nome){ alert('Preencha o nome do botão.'); return; }
-    if(!link){ alert('Preencha o link do botão.'); return; }
+    if(!nome){ toast('Preencha o nome do botão.','err'); return; }
+    if(!link){ toast('Preencha o link do botão.','err'); return; }
     if(tipo === 'whatsapp'){
       const convertido = validarConverterWhatsapp(link);
       if(!convertido){
@@ -1695,12 +1806,12 @@ function renderGestao(empInicial){
       }
       link = convertido;
     } else if(!/^(https?:|tel:|mailto:)/i.test(link)){
-      alert('O link deve começar com https://, http://, tel: ou mailto:'); return;
+      toast('O link deve começar com https://, http://, tel: ou mailto:','err'); return;
     }
     const { error } = await supabaseClient.from('botoes_empresa').update({
       nome, tipo, link, icone: ICONE_POR_TIPO[tipo] || '🔗', abrir_nova_aba: true
     }).eq('id', id);
-    if(error){ console.error('Erro ao editar botão:', error); alert('Erro ao salvar.'); return; }
+    if(error){ console.error('Erro ao editar botão:', error); toast('Erro ao salvar. Tente novamente.','err'); return; }
     const b = emp.botoes.find(x=>x.id===id);
     Object.assign(b, { nome, tipo, link, icone: ICONE_POR_TIPO[tipo] || '🔗', abrirNovaAba: true });
     editandoBotaoId = null;
@@ -1711,8 +1822,8 @@ function renderGestao(empInicial){
     const nome = document.getElementById('bNome').value.trim();
     const tipo = document.getElementById('bTipo').value;
     let link   = document.getElementById('bLink').value.trim();
-    if(!nome){ alert('Preencha o nome do botão.'); return; }
-    if(!link){ alert('Preencha o link do botão.'); return; }
+    if(!nome){ toast('Preencha o nome do botão.','err'); return; }
+    if(!link){ toast('Preencha o link do botão.','err'); return; }
     if(tipo === 'whatsapp'){
       const convertido = validarConverterWhatsapp(link);
       if(!convertido){
@@ -1722,7 +1833,7 @@ function renderGestao(empInicial){
       }
       link = convertido;
     } else if(!/^(https?:|tel:|mailto:)/i.test(link)){
-      alert('O link deve começar com https://, http://, tel: ou mailto:'); return;
+      toast('O link deve começar com https://, http://, tel: ou mailto:','err'); return;
     }
     const ordemMax = emp.botoes.length > 0 ? Math.max(...emp.botoes.map(b=>b.ordem)) + 1 : 0;
     const { data: row, error } = await supabaseClient.from('botoes_empresa').insert({
@@ -1733,7 +1844,7 @@ function renderGestao(empInicial){
       ativo:         true,
       abrir_nova_aba: true
     }).select().single();
-    if(error){ console.error('Erro ao adicionar botão:', error); alert('Erro ao salvar. Verifique o console.'); return; }
+    if(error){ console.error('Erro ao adicionar botão:', error); toast('Erro ao salvar. Tente novamente.','err'); return; }
     emp.botoes.push({ id:row.id, nome:row.nome, tipo:row.tipo, link:row.link,
       icone:row.icone, ordem:row.ordem, ativo:row.ativo, abrirNovaAba:row.abrir_nova_aba });
     emp.botoes.sort((a,b)=>a.ordem-b.ordem);
@@ -1783,7 +1894,7 @@ function renderGestao(empInicial){
     if(navigator.share){
       try{ await navigator.share({ title: emp.nome, url }); } catch(e){}
     } else {
-      try{ await navigator.clipboard.writeText(url); alert('Link copiado!'); }
+      try{ await navigator.clipboard.writeText(url); toast('Link copiado!','ok'); }
       catch(e){ prompt('Copie o link abaixo:', url); }
     }
   };
@@ -1834,15 +1945,15 @@ function renderMasterLogin(){
 window.tentarLoginMaster = async ()=>{
   const email = (document.getElementById('masterEmail').value || '').trim();
   const senha = document.getElementById('masterPass').value;
-  if(!email || !senha){ alert("Preencha e-mail e senha."); return; }
+  if(!email || !senha){ toast('Preencha e-mail e senha.','err'); return; }
 
   const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password: senha });
-  if(error){ alert("E-mail ou senha incorretos."); return; }
+  if(error){ toast('E-mail ou senha incorretos.','err'); return; }
 
   const { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', data.user.id).single();
   if(!profile || profile.role !== 'master'){
     await supabaseClient.auth.signOut();
-    alert("Essa conta não tem acesso ao painel master.");
+    toast('Essa conta não tem acesso ao painel master.','err');
     return;
   }
 
@@ -1878,11 +1989,11 @@ function renderRedefinirSenha(){
 window.confirmarRedefinicaoSenha = async ()=>{
   const nova = document.getElementById('novaSenhaReset').value;
   const conf = document.getElementById('confirmarSenhaReset').value;
-  if(nova.length < 6){ alert("A senha deve ter pelo menos 6 caracteres."); return; }
-  if(nova !== conf){ alert("As senhas não coincidem."); return; }
+  if(nova.length < 6){ toast('A senha deve ter pelo menos 6 caracteres.','err'); return; }
+  if(nova !== conf){ toast('As senhas não coincidem.','err'); return; }
   const { error } = await supabaseClient.auth.updateUser({ password: nova });
-  if(error){ alert("Erro ao redefinir senha: " + error.message); return; }
-  alert("Senha redefinida com sucesso! Você já pode fazer login.");
+  if(error){ toast('Erro ao redefinir senha. Tente novamente.','err'); return; }
+  toast('Senha redefinida! Você já pode fazer login.','ok',5000);
   currentUser = null; currentProfile = null; modoRecuperacao = false;
   await supabaseClient.auth.signOut();
   goto({master:1});
@@ -2205,7 +2316,7 @@ function renderMasterPanel(){
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
           <button class="btn ghost" style="padding:0 12px;font-size:13px;height:40px;" onclick="goto({empresa:'${e.slug}'})">Visualizar</button>
           <button class="btn ghost" style="padding:0 12px;font-size:13px;height:40px;" onclick="goto({empresa:'${e.slug}', page:'gestao'})">Ver gestão</button>
-          <button class="btn ghost" style="padding:0 12px;font-size:13px;height:40px;" onclick="navigator.clipboard.writeText('${escapeAttr(link)}').then(()=>alert('Link copiado!'))">Copiar link</button>
+          <button class="btn ghost" style="padding:0 12px;font-size:13px;height:40px;" onclick="navigator.clipboard.writeText('${escapeAttr(link)}').then(()=>toast('Link copiado!','ok'))">Copiar link</button>
           <button class="btn ghost" style="padding:0 12px;font-size:13px;height:40px;" onclick="editingSlug='${e.slug}'; drawMaster();">Editar</button>
         </div>
       </div>`;
@@ -2331,15 +2442,15 @@ function renderMasterPanel(){
     const diaEl   = document.getElementById('finFormDia');
     const valor = parseFloat(valorEl?.value) || 0;
     const diaNum = parseInt(diaEl?.value);
-    if(isNaN(diaNum) || diaNum < 1 || diaNum > 28){ alert("Dia inválido. Use um número entre 1 e 28."); return; }
+    if(isNaN(diaNum) || diaNum < 1 || diaNum > 28){ toast('Dia inválido. Use um número entre 1 e 28.','err'); return; }
     const form = _finForm;
     _finForm = null;
     if(form.mode === 'configurar'){
       const { error } = await supabaseClient.from('financeiro').insert({ empresa_id: form.empresaId, valor, dia_vencimento: diaNum });
-      if(error){ alert("Erro ao salvar: " + error.message); return; }
+      if(error){ toast('Erro ao salvar. Tente novamente.','err'); return; }
     } else {
       const { error } = await supabaseClient.from('financeiro').update({ valor, dia_vencimento: diaNum, updated_at: new Date().toISOString() }).eq('id', form.regId);
-      if(error){ alert("Erro ao salvar: " + error.message); return; }
+      if(error){ toast('Erro ao salvar. Tente novamente.','err'); return; }
     }
     await carregarFinanceiro();
     draw();
@@ -2351,7 +2462,7 @@ function renderMasterPanel(){
     const hoje = `${_d.getFullYear()}-${String(_d.getMonth()+1).padStart(2,'0')}-${String(_d.getDate()).padStart(2,'0')}`;
     supabaseClient.from('financeiro').update({ pago_em: hoje, updated_at: new Date().toISOString() }).eq('id', regId)
       .then(async ({ error }) => {
-        if(error){ alert("Erro ao salvar: " + error.message); return; }
+        if(error){ toast('Erro ao registrar pagamento.','err'); return; }
         await carregarFinanceiro();
         draw();
       });
@@ -2361,14 +2472,14 @@ function renderMasterPanel(){
     const nome  = document.getElementById('novoNome').value.trim();
     const email = document.getElementById('novoEmail').value.trim();
     const senha = document.getElementById('novaSenha').value;
-    if(!nome){ alert("Digite o nome da empresa."); return; }
-    if(!email){ alert("Digite o e-mail do gestor."); return; }
-    if(senha.length < 6){ alert("A senha deve ter pelo menos 6 caracteres."); return; }
+    if(!nome){ toast('Digite o nome da empresa.','err'); return; }
+    if(!email){ toast('Digite o e-mail do gestor.','err'); return; }
+    if(senha.length < 6){ toast('A senha deve ter pelo menos 6 caracteres.','err'); return; }
 
     // 1. Cria a empresa no banco
     const SLUGS_RESERVADOS = ['api','app','admin','master','login','logout','static','assets','sw','manifest','index','null','undefined','favicon'];
     let slug = slugify(nome);
-    if(SLUGS_RESERVADOS.includes(slug)){ alert(`O nome "${nome}" gera um slug reservado pelo sistema. Use um nome diferente.`); return; }
+    if(SLUGS_RESERVADOS.includes(slug)){ toast(`O nome "${nome}" é reservado pelo sistema. Use um nome diferente.`,'err'); return; }
     let s2 = slug, n=1;
     while(empresas.some(e=>e.slug===s2)){ s2 = slug+"-"+(++n); }
     const nova = defaultEmpresa();
@@ -2380,7 +2491,7 @@ function renderMasterPanel(){
     const empCriada = empresas.find(e=>e.slug===s2);
     if(!empCriada?.id){
       empresas = empresas.filter(e=>e.slug!==s2);
-      alert("Não foi possível criar a empresa. Verifique sua conexão e tente novamente.");
+      toast('Não foi possível criar a empresa. Verifique sua conexão e tente novamente.','err',6000);
       masterShowForm = false; draw(); return;
     }
 
@@ -2398,18 +2509,17 @@ function renderMasterPanel(){
       });
       if(!resp.ok){
         const err = await resp.json();
-        alert("Empresa criada, mas erro ao criar usuário: " + (err.error || 'Erro desconhecido') +
-              "\n\nVocê pode criar o usuário manualmente no Supabase.");
+        toast('Empresa criada, mas erro ao criar usuário: ' + (err.error || 'Erro desconhecido') + '. Crie manualmente no Supabase.','err',8000);
       } else {
         apiOk = true;
       }
     } catch(e) {
-      alert("Empresa criada, mas não foi possível contatar a API de criação de usuário.\n\nCrie o usuário manualmente no Supabase.");
+      toast('Empresa criada, mas não foi possível contatar a API. Crie o usuário manualmente no Supabase.','err',8000);
     }
 
     masterShowForm = false;
     if(apiOk){
-      alert(`Empresa "${nome}" criada com sucesso!\n\nE-mail do gestor: ${email}\n\nA senha temporária foi definida conforme digitado. Compartilhe-a com o gestor por um canal seguro.`);
+      toast(`"${nome}" criada! Gestor: ${email}. Compartilhe a senha por canal seguro.`,'ok',8000);
     }
     draw();
   };
@@ -2460,8 +2570,8 @@ window.masterRedefinirSenha = async ()=>{
     ? location.origin
     : 'https://saas-agendamento-seven.vercel.app';
   const { error } = await supabaseClient.auth.resetPasswordForEmail(email, { redirectTo: base + '/app.html' });
-  if(error){ alert("Erro: " + error.message); return; }
-  alert("E-mail de redefinição de senha enviado para " + email);
+  if(error){ toast('Erro ao enviar. Tente novamente.','err'); return; }
+  toast('E-mail de redefinição enviado para ' + email,'ok',5000);
 };
 
 // ── UPLOAD DE IMAGENS ────────────────────────────────────────
@@ -2483,7 +2593,7 @@ function abrirCrop(tipo, slug, callback){
   input.type = 'file'; input.accept = 'image/jpeg,image/png,image/webp';
   input.onchange = (ev)=>{
     const file = ev.target.files[0]; if(!file) return;
-    const err = validarArquivo(file); if(err){ alert(err); return; }
+    const err = validarArquivo(file); if(err){ toast(err,'err'); return; }
     const reader = new FileReader();
     reader.onload = (e)=>{
       const modal = document.getElementById('cropModal');
@@ -2510,7 +2620,7 @@ async function confirmarCrop(){
     const bucket = isLogo ? 'logos' : 'backgrounds';
     const path   = `${_cropSlug}/${isLogo ? 'logo' : 'background'}.jpg`;
     const { error: upErr } = await supabaseClient.storage.from(bucket).upload(path, blob, { contentType: 'image/jpeg', upsert: true });
-    if(upErr){ alert('Erro ao enviar imagem: ' + upErr.message); btn.disabled=false; btn.textContent='Confirmar recorte'; return; }
+    if(upErr){ toast('Erro ao enviar imagem. Tente novamente.','err'); btn.disabled=false; btn.textContent='Confirmar recorte'; return; }
     const { data } = supabaseClient.storage.from(bucket).getPublicUrl(path);
     const url = data.publicUrl + '?t=' + Date.now();
     const col = isLogo ? 'logo' : 'foto_url';
