@@ -1058,22 +1058,7 @@ function renderGestao(empInicial){
       for(const h of horarios){
         const ag = agendamentos.find(a=>a.slug===emp.slug && a.data===diaSelecionado && a.hora===h);
         const bloqueado = (emp.bloqueios||[]).some(b=>b.data===diaSelecionado && b.hora===h);
-        if(ag && editandoId===ag.id){
-          const servicoOpts = emp.servicos.map(s=>`<option value="${s.id}" ${ag.servicoId===s.id?'selected':''}>${escapeHtml(s.nome)}</option>`).join("");
-          const horariosOpts = horarios.map(hh=>`<option value="${hh}" ${hh===ag.hora?'selected':''}>${hh}</option>`).join("");
-          parts.push(`<div class="list-item" style="flex-direction:column;align-items:stretch;">
-            <div class="field"><label>Nome</label><input id="editNome" value="${escapeAttr(ag.nome)}"/></div>
-            <div class="field"><label>Telefone</label><input id="editTel" type="tel" inputmode="numeric" maxlength="16" value="${escapeAttr(fmtTelStr(ag.telefone))}" oninput="maskTel(this)"/></div>
-            <div class="row">
-              <div class="field"><label>Serviço</label><select id="editServico">${servicoOpts}</select></div>
-              <div class="field"><label>Horário</label><select id="editHora">${horariosOpts}</select></div>
-            </div>
-            <div class="row">
-              <button class="btn ghost" onclick="cancelarEdicaoAgendamento()">Cancelar</button>
-              <button class="btn" onclick="salvarEdicaoAgendamento('${ag.id}')">Salvar</button>
-            </div>
-          </div>`); continue;
-        }
+        if(ag && editandoId===ag.id){ /* renderizado como modal abaixo */ }
         if(ag){
           const waNum = '55' + ag.telefone.replace(/\D/g,'').replace(/^0/,'');
           const waLink = `https://wa.me/${waNum}`;
@@ -1147,7 +1132,31 @@ function renderGestao(empInicial){
         <div style="width:5px;height:5px;border-radius:50%;background:${temAg?'var(--ok)':'transparent'};"></div>
       </div>`;
     }).join('');
+    const editModalHtml = (()=>{
+      if(!editandoId) return '';
+      const agEd = agendamentos.find(a=>a.id===editandoId);
+      if(!agEd) return '';
+      const servicoOpts = emp.servicos.map(s=>`<option value="${s.id}" ${agEd.servicoId===s.id?'selected':''}>${escapeHtml(s.nome)}</option>`).join('');
+      const horariosOpts = horarios.map(hh=>`<option value="${hh}" ${hh===agEd.hora?'selected':''}>${hh}</option>`).join('');
+      return `<div style="position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9000;display:flex;align-items:flex-end;justify-content:center;" onclick="if(event.target===this)cancelarEdicaoAgendamento()">
+        <div style="background:#fff;border-radius:18px 18px 0 0;padding:28px 24px 40px;width:100%;max-width:520px;">
+          <h3 style="font-family:Nunito,sans-serif;font-weight:700;font-size:18px;margin:0 0 20px;">Editar agendamento</h3>
+          <div class="field"><label>Nome</label><input id="editNome" value="${escapeAttr(agEd.nome)}"/></div>
+          <div class="field"><label>Telefone</label><input id="editTel" type="tel" inputmode="numeric" maxlength="16" value="${escapeAttr(fmtTelStr(agEd.telefone))}" oninput="maskTel(this)"/></div>
+          <div class="row">
+            <div class="field"><label>Serviço</label><select id="editServico">${servicoOpts}</select></div>
+            <div class="field"><label>Horário</label><select id="editHora">${horariosOpts}</select></div>
+          </div>
+          <div class="row" style="margin-top:8px;">
+            <button class="btn ghost" onclick="cancelarEdicaoAgendamento()">Cancelar</button>
+            <button class="btn" onclick="salvarEdicaoAgendamento('${agEd.id}')">Salvar</button>
+          </div>
+        </div>
+      </div>`;
+    })();
+
     return `
+      ${editModalHtml}
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
         <button style="background:none;border:none;font-size:22px;font-weight:300;color:#888;cursor:pointer;padding:4px 12px;line-height:1;" onclick="selecionarDiaGestao('${isoAddDias(diaSelecionado,-1)}')">&#8249;</button>
         <div style="position:relative;text-align:center;cursor:pointer;" onclick="document.getElementById('calGestao').showPicker ? document.getElementById('calGestao').showPicker() : document.getElementById('calGestao').click()">
