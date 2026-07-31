@@ -761,11 +761,6 @@ function renderAgendar(emp){
 
     render(`
       ${barraVoltarMaster()}
-      <div class="topbar top-plum" style="display:grid;grid-template-columns:44px 1fr 44px;align-items:center;">
-        <button class="icon-btn" style="color:rgba(255,255,255,0.85);font-size:22px;line-height:1;" onclick="goto({empresa:'${emp.slug}'})">←</button>
-        <div class="brand" style="text-align:center;font-size:17px;">${escapeHtml(emp.nome)}</div>
-        <div></div>
-      </div>
       <div class="container">
         <div class="card">
           <div class="eyebrow">Passo 1</div>
@@ -902,11 +897,6 @@ function renderConfirmacao(emp){
   const numero = '55' + (emp.whatsapp||"").replace(/\D/g,"").replace(/^0/,"");
   const link = `https://wa.me/${numero}?text=${encodeURIComponent(msg)}`;
   render(`
-    <div class="topbar top-plum" style="display:grid;grid-template-columns:44px 1fr 44px;align-items:center;">
-      <button class="icon-btn" style="color:rgba(255,255,255,0.85);font-size:22px;line-height:1;" onclick="goto({empresa:'${emp.slug}'})">←</button>
-      <div class="brand" style="text-align:center;font-size:17px;">${escapeHtml(emp.nome)}</div>
-      <div></div>
-    </div>
     <div class="container">
       <div class="card" style="text-align:center;">
         <div style="font-size:52px;margin-bottom:8px;">✓</div>
@@ -930,11 +920,6 @@ function renderGestaoLogin(emp){
   applyAccent('#1c1917');
   render(`
     ${barraVoltarMaster()}
-    <div class="topbar" style="background:#1c1917;color:#fff;display:grid;grid-template-columns:44px 1fr 44px;align-items:center;">
-      <button class="icon-btn" style="color:#fff;font-size:22px;line-height:1;" onclick="goto({empresa:'${emp.slug}'})">←</button>
-      <div class="brand" style="text-align:center;font-size:17px;">${escapeHtml(emp.nome)}</div>
-      <div></div>
-    </div>
     <div class="container">
       <div class="card">
         <div class="eyebrow" style="color:#1a1a1a;">Área restrita</div>
@@ -1849,10 +1834,6 @@ function renderGestao(empInicial){
       ${GESTAO_CSS}
       <div style="position:sticky;top:0;z-index:300;">
         ${barraVoltarMaster()}
-        <div class="g-topbar">
-          <div class="brand">${escapeHtml(emp.nome)}</div>
-          <button class="icon-btn" style="color:#888;" onclick="${exitAction}">${exitLabel}</button>
-        </div>
       </div>
       <div class="g-layout">
         <nav class="g-bottom-nav">
@@ -2251,7 +2232,6 @@ function renderMasterLogin(){
   applyAccent('#1c1917');
   mostrarBannerPWA();
   render(`
-    <div class="topbar" style="background:#1c1917;color:#fff;"><div class="brand" style="text-align:center;width:100%;">Agenda+</div></div>
     <div class="container">
       <div class="card">
         <div class="eyebrow" style="color:#1a1a1a;">Painel master</div>
@@ -2299,7 +2279,6 @@ window.tentarLoginMaster = async ()=>{
 function renderRedefinirSenha(){
   applyAccent('#1c1917');
   render(`
-    <div class="topbar" style="background:#1c1917;color:#fff;"><div class="brand" style="text-align:center;width:100%;">Agenda+</div></div>
     <div class="container">
       <div class="card">
         <div class="eyebrow" style="color:#1a1a1a;">Redefinição de senha</div>
@@ -2447,9 +2426,6 @@ function renderMasterPanel(){
     render(`
       ${SIDEBAR_CSS}
       <div style="position:sticky;top:0;z-index:300;">
-        <div class="master-topbar">
-          <div class="brand">Agenda+ · Master</div>
-        </div>
       </div>
       <div class="master-layout">
         <nav class="master-bottom-nav">
