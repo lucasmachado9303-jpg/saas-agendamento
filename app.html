@@ -1166,7 +1166,7 @@ function renderGestao(empInicial){
         ? `<div style="text-align:center;padding:32px 16px;color:var(--ink-soft);">
             <div style="font-weight:600;margin-bottom:4px;">Dia não configurado</div>
             <div style="font-size:13px;margin-bottom:16px;">Este dia da semana não está marcado como dia de atendimento.</div>
-            <button class="btn ghost" style="font-size:13px;" onclick="corner='configurar';configurarSub='horarios';draw()">Ajustar dias de atendimento</button>
+            <button class="btn ghost" style="font-size:13px;" onclick="irParaHorarios()">Ajustar dias de atendimento</button>
           </div>`
         : diaTodoBloqueado
           ? `<div style="text-align:center;padding:32px 16px;color:var(--ink-soft);">
@@ -2004,6 +2004,7 @@ function renderGestao(empInicial){
   };
 
   window.configurarIr = (sub)=>{ configurarSub=sub; personalizarDirty=false; _removendoServicoIdx=null; draw(); };
+  window.irParaHorarios = ()=>{ corner='configurar'; configurarSub='horarios'; draw(); };
   window.marcarPersonalizarDirty = ()=>{
     if(personalizarDirty) return;
     personalizarDirty = true;
