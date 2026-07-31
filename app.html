@@ -1748,7 +1748,6 @@ function renderGestao(empInicial){
     if(!l) return;
     _gFinModal = { tipo: l.tipo, agId: l.agendamento_id||null, descricao: l.descricao, valor: String(l.valor), editId: id };
     draw();
-    setTimeout(()=>document.getElementById('gfin-desc')?.focus(), 50);
   };
 
   window.gFinExcluir = async (id)=>{
