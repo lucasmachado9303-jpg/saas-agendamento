@@ -983,8 +983,8 @@ async function tentarLoginGestao(slug){
 }
 window.loginComGoogle = async (slug)=>{
   const redirectTo = slug
-    ? location.origin + '/?empresa=' + slug + '&page=gestao'
-    : location.origin + '/?master=1';
+    ? location.origin + '/app.html?empresa=' + slug + '&page=gestao'
+    : location.origin + '/app.html?master=1';
   const { error } = await supabaseClient.auth.signInWithOAuth({
     provider: 'google',
     options: { redirectTo }
