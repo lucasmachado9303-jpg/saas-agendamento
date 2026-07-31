@@ -1643,10 +1643,9 @@ function renderGestao(empInicial){
           const bordClr= isIn ? '#008000' : '#FF0000';
           const valClr = isIn ? '#008000' : '#FF0000';
           const ag     = l.agendamento_id ? agendamentos.find(a=>a.id===l.agendamento_id) : null;
-          const svcNome= ag ? (ag.servicoNome||'') : '';
           const dataFmt= new Date(l.data+'T00:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
           const horario = ag?.hora ? ' · '+ag.hora.slice(0,5) : '';
-          const meta   = svcNome ? `${svcNome} · ${dataFmt}${horario}` : dataFmt;
+          const meta   = ag ? `${dataFmt}${horario}` : dataFmt;
           const lid    = escapeHtml(l.id);
           return `<div style="background:#fff;border:0.5px solid #eee;border-left:4px solid ${bordClr};border-radius:10px;padding:11px 12px;margin-bottom:6px;display:flex;align-items:center;gap:10px;">
             <div style="flex:1;min-width:0;">
