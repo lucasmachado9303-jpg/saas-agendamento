@@ -1062,15 +1062,18 @@ function renderGestao(empInicial){
         if(ag){
           const waNum = '55' + ag.telefone.replace(/\D/g,'').replace(/^0/,'');
           const waLink = `https://wa.me/${waNum}`;
-          parts.push(`<div style="padding:10px 12px;margin-bottom:6px;border-radius:9px;border:0.5px solid #e0e0e0;background:var(--card);display:flex;flex-direction:column;gap:8px;">
+          const ICO_PEN = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
+          const ICO_X   = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>`;
+          const ICO_WAG = `<svg width="11" height="11" viewBox="0 0 32 32" fill="currentColor"><path d="M16 0C7.163 0 0 7.163 0 16c0 2.82.736 5.469 2.027 7.773L0 32l8.418-2.002A15.94 15.94 0 0 0 16 32c8.837 0 16-7.163 16-16S24.837 0 16 0zm0 29.333a13.27 13.27 0 0 1-6.77-1.848l-.485-.29-5.001 1.19 1.226-4.866-.317-.5A13.267 13.267 0 0 1 2.667 16C2.667 8.636 8.636 2.667 16 2.667S29.333 8.636 29.333 16 23.364 29.333 16 29.333zm7.27-9.98c-.398-.199-2.354-1.162-2.719-1.295-.365-.133-.631-.199-.897.2-.265.398-1.03 1.295-1.263 1.56-.232.266-.465.3-.863.1-.398-.2-1.68-.619-3.2-1.974-1.183-1.054-1.981-2.355-2.213-2.753-.232-.398-.025-.613.174-.811.179-.178.398-.465.597-.697.2-.232.266-.398.398-.663.133-.266.067-.498-.033-.697-.1-.2-.897-2.163-1.23-2.962-.324-.778-.652-.672-.897-.685l-.764-.013c-.266 0-.697.1-1.063.498-.365.398-1.395 1.362-1.395 3.325s1.428 3.857 1.627 4.123c.2.265 2.812 4.292 6.815 6.02.953.411 1.696.657 2.276.841.956.305 1.827.262 2.515.159.767-.115 2.354-.962 2.686-1.892.333-.93.333-1.728.233-1.893-.1-.165-.365-.265-.763-.464z"/></svg>`;
+          parts.push(`<div style="padding:10px 12px;margin-bottom:6px;border-radius:9px;border:0.5px solid #e4e4e7;background:var(--card);display:flex;flex-direction:column;gap:8px;">
             <div>
               <div style="font-weight:700;font-size:15px;">${h} — ${escapeHtml(ag.nome)}</div>
               <div class="muted" style="font-size:13px;margin-top:2px;">${escapeHtml(ag.servicoNome)}</div>
             </div>
             <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;">
-              <button style="font-family:inherit;height:28px;border-radius:6px;border:0.5px solid #ccc;background:#f0f0f0;color:#1a1a1a;font-size:11px;font-weight:700;cursor:pointer;" onclick="editarAgendamento('${ag.id}')">Editar</button>
-              <button style="font-family:inherit;height:28px;border-radius:6px;border:none;background:#FF0000;color:#fff;font-size:11px;font-weight:700;cursor:pointer;" onclick="cancelarAgendamento('${ag.id}')">Cancelar</button>
-              <button style="font-family:inherit;height:28px;border-radius:6px;border:none;background:#008000;color:#fff;font-size:11px;font-weight:700;cursor:pointer;" onclick="window.open('${waLink}','_blank','noopener,noreferrer')">WhatsApp</button>
+              <button class="ag-btn ag-btn-edit" onclick="editarAgendamento('${ag.id}')">${ICO_PEN} Editar</button>
+              <button class="ag-btn ag-btn-cancel" onclick="cancelarAgendamento('${ag.id}')">${ICO_X} Cancelar</button>
+              <button class="ag-btn ag-btn-wa" onclick="window.open('${waLink}','_blank','noopener,noreferrer')">${ICO_WAG} WhatsApp</button>
             </div>
           </div>`); continue;
         }
@@ -1456,6 +1459,29 @@ function renderGestao(empInicial){
 
     .g-topbar { height:52px; display:flex; align-items:center; justify-content:space-between; padding:0 20px; background:#fff; box-shadow:0 4px 16px rgba(0,0,0,0.10); color:#1a1a1a; }
     .g-topbar .brand { font-family:'Nunito',sans-serif; font-weight:800; font-size:18px; }
+
+    /* ── Botões de agendamento ── */
+    .ag-btn {
+      font-family:inherit;
+      height:30px;
+      border-radius:6px;
+      font-size:11px;
+      font-weight:600;
+      cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:4px;
+      transition:background 160ms ease, border-color 160ms ease;
+      letter-spacing:.01em;
+      white-space:nowrap;
+    }
+    .ag-btn-edit  { background:#fff; border:1px solid #d1d5db; color:#374151; }
+    .ag-btn-edit:hover { background:#f9fafb; }
+    .ag-btn-cancel { background:#fff; border:1px solid #fca5a5; color:#dc2626; }
+    .ag-btn-cancel:hover { background:#fef2f2; }
+    .ag-btn-wa  { background:#f0fdf4; border:1px solid #86efac; color:#16a34a; }
+    .ag-btn-wa:hover { background:#dcfce7; }
 
     /* ── Bottom nav bar ── */
     .g-bottom-nav {
