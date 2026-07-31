@@ -1003,6 +1003,7 @@ function renderGestao(empInicial){
   let novoBotaoState = null;
   let editandoBotaoId = null;
   let _removendoServicoIdx = null;
+  let _linkMenuAberto = false;
 
   // Estado do financeiro (gestão)
   let _gFinPeriodo = 'dia'; // 'dia' | 'mes'
@@ -1220,7 +1221,24 @@ function renderGestao(empInicial){
           ${mkItem("configurarIr('horarios')",   '#f0fdf4', ICO_CAL,   'Horários de agendamento',  'Defina dias e horários de agendamento')}
           ${mkItem("configurarIr('personalizar')","#fdf4ff", ICO_LINK,  'Personalize seu link',     'Nome, textos, logo, cor e botões')}
           ${mkItem("configurarIr('mensagens')",  '#fff7ed', ICO_MSG,   'Configurar mensagens',     'Personalize mensagens automáticas')}
-          ${mkItem("compartilharLink()",         '#f0f9ff', `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0ea5e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>`,   'Link público',              'Compartilhar, copiar ou abrir seu link', false)}
+          ${mkItem("toggleLinkMenu()", '#f0f9ff', `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0ea5e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>`, 'Link público', 'Compartilhar, copiar ou abrir seu link', false)}
+        </div>
+        ${_linkMenuAberto ? `
+        <div style="background:#fff;border-radius:14px;overflow:hidden;border:0.5px solid #e5e5ea;margin-top:8px;">
+          <button onclick="linkAcao('abrir')" style="display:flex;align-items:center;gap:12px;padding:12px 16px;width:100%;background:#fff;border:none;border-bottom:0.5px solid #f0f0f0;cursor:pointer;font-family:inherit;" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background='#fff'">
+            <div style="width:30px;height:30px;border-radius:8px;background:#f0fdf4;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></div>
+            <span style="font-size:13px;font-weight:600;color:#1a1a1a;">Abrir</span>
+          </button>
+          <button onclick="linkAcao('copiar')" style="display:flex;align-items:center;gap:12px;padding:12px 16px;width:100%;background:#fff;border:none;border-bottom:0.5px solid #f0f0f0;cursor:pointer;font-family:inherit;" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background='#fff'">
+            <div style="width:30px;height:30px;border-radius:8px;background:#eff6ff;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></div>
+            <span style="font-size:13px;font-weight:600;color:#1a1a1a;">Copiar</span>
+          </button>
+          <button onclick="linkAcao('compartilhar')" style="display:flex;align-items:center;gap:12px;padding:12px 16px;width:100%;background:#fff;border:none;cursor:pointer;font-family:inherit;" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background='#fff'">
+            <div style="width:30px;height:30px;border-radius:8px;background:#f5f3ff;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></div>
+            <span style="font-size:13px;font-weight:600;color:#1a1a1a;">Compartilhar</span>
+          </button>
+        </div>` : ''}
+        <div style="display:none">
         </div>
         <div style="text-align:center;margin-top:40px;">
           <button onclick="${sairAction}" style="background:none;border:none;font-size:13px;font-weight:500;color:#8e8e93;cursor:pointer;padding:8px 16px;font-family:inherit;">Sair da conta</button>
@@ -2059,7 +2077,7 @@ function renderGestao(empInicial){
       carregarNotas();
       return;
     }
-    corner=c; editandoId=null; novoAgState=null; configurarSub=null; _removendoServicoIdx=null; _gFinModal=null; _notaModal=null;
+    corner=c; editandoId=null; novoAgState=null; configurarSub=null; _removendoServicoIdx=null; _gFinModal=null; _notaModal=null; _linkMenuAberto=false;
     draw();
     loadData().then(()=>{ const a=empresas.find(e=>e.slug===emp.slug); if(a) emp=a; draw(); });
   };
@@ -2210,10 +2228,13 @@ function renderGestao(empInicial){
     if(error) console.error('Erro ao atualizar serviço:', error);
   };
 
-  window.compartilharLink = ()=>{
+  window.toggleLinkMenu = ()=>{ _linkMenuAberto = !_linkMenuAberto; draw(); };
+  window.linkAcao = (acao)=>{
     const url = location.origin + '/' + emp.slug;
-    if(navigator.share){ navigator.share({ title: emp.nome, url }); }
-    else { navigator.clipboard.writeText(url).then(()=>toast('Link copiado!','ok')); }
+    if(acao==='abrir'){ window.open(url, '_blank'); }
+    else if(acao==='copiar'){ navigator.clipboard.writeText(url).then(()=>toast('Link copiado!','ok')); }
+    else if(acao==='compartilhar'){ if(navigator.share) navigator.share({ title: emp.nome, url }); else navigator.clipboard.writeText(url).then(()=>toast('Link copiado!','ok')); }
+    _linkMenuAberto = false; draw();
   };
   window.configurarIr = (sub)=>{ configurarSub=sub; personalizarDirty=false; _removendoServicoIdx=null; draw(); };
   window.irParaHorarios = ()=>{ corner='configurar'; configurarSub='horarios'; draw(); };
