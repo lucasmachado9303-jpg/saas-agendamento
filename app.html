@@ -1160,8 +1160,8 @@ function renderGestao(empInicial){
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
         <button style="background:none;border:none;font-size:22px;font-weight:300;color:#888;cursor:pointer;padding:4px 12px;line-height:1;" onclick="selecionarDiaGestao('${isoAddDias(diaSelecionado,-1)}')">&#8249;</button>
         <div style="position:relative;text-align:center;cursor:pointer;" onclick="document.getElementById('calGestao').showPicker ? document.getElementById('calGestao').showPicker() : document.getElementById('calGestao').click()">
-          <div style="font-family:'Nunito',sans-serif;font-size:14px;font-weight:700;">${dataFmt}</div>
-          <div style="font-size:11px;color:var(--ink-soft);text-transform:capitalize;">${diaNome}${isHoje?' · Hoje':''}</div>
+          <div style="font-family:'Nunito',sans-serif;font-size:18px;font-weight:700;">${dataFmt}</div>
+          <div style="font-size:13px;color:var(--ink-soft);text-transform:capitalize;">${diaNome}${isHoje?' · Hoje':''}</div>
           <input type="date" id="calGestao" value="${diaSelecionado}" style="position:absolute;opacity:0;width:1px;height:1px;top:0;left:50%;" onchange="selecionarDiaGestao(this.value)"/>
         </div>
         <button style="background:none;border:none;font-size:22px;font-weight:300;color:#888;cursor:pointer;padding:4px 12px;line-height:1;" onclick="selecionarDiaGestao('${isoAddDias(diaSelecionado,1)}')">&#8250;</button>
