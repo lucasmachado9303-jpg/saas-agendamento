@@ -1219,7 +1219,8 @@ function renderGestao(empInicial){
           ${mkItem("configurarIr('servicos')",   '#eff6ff', ICO_BRIEF, 'Serviços oferecidos',      'Configure os serviços disponíveis')}
           ${mkItem("configurarIr('horarios')",   '#f0fdf4', ICO_CAL,   'Horários de agendamento',  'Defina dias e horários de agendamento')}
           ${mkItem("configurarIr('personalizar')","#fdf4ff", ICO_LINK,  'Personalize seu link',     'Nome, textos, logo, cor e botões')}
-          ${mkItem("configurarIr('mensagens')",  '#fff7ed', ICO_MSG,   'Configurar mensagens',     'Personalize mensagens automáticas', false)}
+          ${mkItem("configurarIr('mensagens')",  '#fff7ed', ICO_MSG,   'Configurar mensagens',     'Personalize mensagens automáticas')}
+          ${mkItem("compartilharLink()",         '#f0f9ff', ICO_CLK,   'Link público',              'Compartilhar, copiar ou abrir seu link', false)}
         </div>
         <div style="text-align:center;margin-top:40px;">
           <button onclick="${sairAction}" style="background:none;border:none;font-size:13px;font-weight:500;color:#8e8e93;cursor:pointer;padding:8px 16px;font-family:inherit;">Sair da conta</button>
@@ -2209,6 +2210,11 @@ function renderGestao(empInicial){
     if(error) console.error('Erro ao atualizar serviço:', error);
   };
 
+  window.compartilharLink = ()=>{
+    const url = location.origin + '/' + emp.slug;
+    if(navigator.share){ navigator.share({ title: emp.nome, url }); }
+    else { navigator.clipboard.writeText(url).then(()=>toast('Link copiado!','ok')); }
+  };
   window.configurarIr = (sub)=>{ configurarSub=sub; personalizarDirty=false; _removendoServicoIdx=null; draw(); };
   window.irParaHorarios = ()=>{ corner='configurar'; configurarSub='horarios'; draw(); };
   window.marcarPersonalizarDirty = ()=>{
