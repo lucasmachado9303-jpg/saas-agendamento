@@ -1740,7 +1740,6 @@ function renderGestao(empInicial){
   window.gFinAbrirModal = (tipo)=>{
     _gFinModal = { tipo, agId: null, descricao: '', valor: '', editId: null };
     draw();
-    setTimeout(()=>document.getElementById('gfin-desc')?.focus(), 50);
   };
 
   window.gFinEditarLanc = (id)=>{
@@ -1764,7 +1763,6 @@ function renderGestao(empInicial){
     const svc = emp.servicos.find(s=>s.id===ag.servicoId);
     _gFinModal = { tipo:'receita', agId, descricao: ag.nome||'', valor: svc?.preco ? String(svc.preco) : '' };
     draw();
-    setTimeout(()=>document.getElementById('gfin-val')?.focus(), 50);
   };
 
   window.gFinFecharModal = ()=>{ _gFinModal=null; draw(); };
