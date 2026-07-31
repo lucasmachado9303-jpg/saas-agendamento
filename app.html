@@ -1223,9 +1223,9 @@ function renderGestao(empInicial){
     }
     if(configurarSub === 'mensagens'){
       return `
-        <div style="display:grid;grid-template-columns:auto 1fr auto;align-items:center;margin-bottom:16px;">
+        <div style="position:relative;display:flex;align-items:center;margin-bottom:16px;min-height:36px;">
           <button onclick="configurarIr(null)" style="background:none;border:none;font-size:14px;font-weight:600;color:#555;cursor:pointer;padding:0;font-family:inherit;display:flex;align-items:center;gap:4px;">&#8249; Voltar</button>
-          <div style="text-align:center;font-weight:700;font-size:16px;">Configurar mensagens</div>
+          <div style="position:absolute;left:0;right:0;text-align:center;font-weight:700;font-size:16px;pointer-events:none;">Configurar mensagens</div>
           <div></div>
         </div>
         <div style="text-align:center;padding:48px 20px;color:var(--ink-soft);">
@@ -1237,9 +1237,9 @@ function renderGestao(empInicial){
 
     if(configurarSub === 'servicos'){
       return `
-        <div style="display:grid;grid-template-columns:auto 1fr auto;align-items:center;margin-bottom:16px;">
+        <div style="position:relative;display:flex;align-items:center;margin-bottom:16px;min-height:36px;">
           <button onclick="configurarIr(null)" style="background:none;border:none;font-size:14px;font-weight:600;color:#555;cursor:pointer;padding:0;font-family:inherit;display:flex;align-items:center;gap:4px;">&#8249; Voltar</button>
-          <div style="text-align:center;font-weight:700;font-size:16px;">Serviços</div>
+          <div style="position:absolute;left:0;right:0;text-align:center;font-weight:700;font-size:16px;pointer-events:none;">Serviços</div>
           <div></div>
         </div>
         ${emp.servicos.length ? `<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;">${emp.servicos.map((s,i)=>`
@@ -1273,9 +1273,9 @@ function renderGestao(empInicial){
         : [0,1,2,3,4,5,6];
       const lista = horariosDoMes(emp, '_uni_');
       return `
-        <div style="display:grid;grid-template-columns:auto 1fr auto;align-items:center;margin-bottom:16px;">
+        <div style="position:relative;display:flex;align-items:center;margin-bottom:16px;min-height:36px;">
           <button onclick="configurarIr(null)" style="background:none;border:none;font-size:14px;font-weight:600;color:#555;cursor:pointer;padding:0;font-family:inherit;display:flex;align-items:center;gap:4px;">&#8249; Voltar</button>
-          <div style="text-align:center;font-weight:700;font-size:16px;">Horários</div>
+          <div style="position:absolute;left:0;right:0;text-align:center;font-weight:700;font-size:16px;pointer-events:none;">Horários</div>
           <div></div>
         </div>
 
@@ -1309,9 +1309,9 @@ function renderGestao(empInicial){
 
     if(configurarSub === 'personalizar'){
       return `
-        <div style="display:grid;grid-template-columns:auto 1fr auto;align-items:center;margin-bottom:16px;">
+        <div style="position:relative;display:flex;align-items:center;margin-bottom:16px;min-height:36px;">
           <button onclick="voltarDePersonalizar()" style="background:none;border:none;font-size:14px;font-weight:600;color:#555;cursor:pointer;padding:0;font-family:inherit;display:flex;align-items:center;gap:4px;">&#8249; Voltar</button>
-          <div style="text-align:center;font-weight:700;font-size:16px;">Personalize seu link</div>
+          <div style="position:absolute;left:0;right:0;text-align:center;font-weight:700;font-size:16px;pointer-events:none;">Personalize seu link</div>
           <div></div>
         </div>
         ${personalizarBody()}
