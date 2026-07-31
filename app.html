@@ -1639,25 +1639,25 @@ function renderGestao(empInicial){
     const lancamentosHtml = lancamentos.length===0
       ? `<div style="text-align:center;padding:28px 20px;color:#aaa;font-size:13px;">Nenhum lancamento neste periodo</div>`
       : lancamentos.map(l=>{
-          const isIn  = l.tipo==='receita';
-          const icoBg = isIn ? '#eaf3e0' : '#fdf0ee';
-          const icoClr= isIn ? '#2d6a47' : '#a3423a';
-          const valClr= isIn ? '#2d6a47' : '#a3423a';
-          const ag    = l.agendamento_id ? agendamentos.find(a=>a.id===l.agendamento_id) : null;
-          const meta  = ag ? `${ag.servicoNome||''}${ag.hora?' · '+ag.hora.slice(0,5):''}` : new Date(l.data+'T00:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
-          const badge = ag ? `<span style="background:#f0f0f0;color:#888;border-radius:4px;padding:1px 5px;font-size:10px;font-weight:600;margin-left:4px;">Agendamento</span>` : '';
-          const lid   = escapeHtml(l.id);
-          return `<div style="background:#fff;border:0.5px solid #eee;border-radius:10px;padding:11px 12px;margin-bottom:6px;display:flex;align-items:center;gap:10px;">
-            <div style="width:28px;height:28px;border-radius:7px;background:${icoBg};display:flex;align-items:center;justify-content:center;flex-shrink:0;color:${icoClr};">${isIn?ICO_UP:ICO_DOWN}</div>
+          const isIn   = l.tipo==='receita';
+          const bordClr= isIn ? '#008000' : '#FF0000';
+          const valClr = isIn ? '#008000' : '#FF0000';
+          const ag     = l.agendamento_id ? agendamentos.find(a=>a.id===l.agendamento_id) : null;
+          const svcNome= ag ? (ag.servicoNome||'') : '';
+          const dataFmt= new Date(l.data+'T00:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
+          const horario = ag?.hora ? ' · '+ag.hora.slice(0,5) : '';
+          const meta   = svcNome ? `${svcNome} · ${dataFmt}${horario}` : dataFmt;
+          const lid    = escapeHtml(l.id);
+          return `<div style="background:#fff;border:0.5px solid #eee;border-left:4px solid ${bordClr};border-radius:10px;padding:11px 12px;margin-bottom:6px;display:flex;align-items:center;gap:10px;">
             <div style="flex:1;min-width:0;">
               <div style="font-size:13px;font-weight:600;color:#1a1a1a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(l.descricao)}</div>
-              <div style="font-size:11px;color:#aaa;margin-top:2px;">${escapeHtml(meta)}${badge}</div>
+              <div style="font-size:11px;color:#aaa;margin-top:2px;">${escapeHtml(meta)}</div>
             </div>
             <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;">
               <div style="font-size:13px;font-weight:700;color:${valClr};font-variant-numeric:tabular-nums;">${isIn?'+':'-'}${gFinFmtMoeda(l.valor)}</div>
               <div style="display:flex;gap:3px;">
-                <button onclick="gFinEditarLanc('${lid}')" style="${CS}width:22px;height:22px;border-radius:5px;border:none;background:none;color:#ccc;display:flex;align-items:center;justify-content:center;">${ICO_EDIT}</button>
-                <button onclick="gFinExcluir('${lid}')" style="${CS}width:22px;height:22px;border-radius:5px;border:none;background:none;color:#ccc;display:flex;align-items:center;justify-content:center;">${ICO_TRASH}</button>
+                <button onclick="gFinEditarLanc('${lid}')" style="${CS}width:26px;height:26px;border-radius:6px;border:none;background:#e8eeff;color:#3949ab;display:flex;align-items:center;justify-content:center;">${ICO_EDIT}</button>
+                <button onclick="gFinExcluir('${lid}')" style="${CS}width:26px;height:26px;border-radius:6px;border:none;background:#ffe6e6;color:#FF0000;display:flex;align-items:center;justify-content:center;">${ICO_TRASH}</button>
               </div>
             </div>
           </div>`;
