@@ -1039,13 +1039,15 @@ function renderGestao(empInicial){
     const diaNaoTrabalha = !diasTrabalho.includes(diaDaSemana);
     const diaTodoBloqueado = diaNaoTrabalha || (horarios.length > 0 && horarios.every(h=>(emp.bloqueios||[]).some(b=>b.data===diaSelecionado && b.hora===h)));
     const agora = new Date();
+    const hojeStr = isoData(agora);
     const horaAgora = agora.getHours().toString().padStart(2,'0')+':'+agora.getMinutes().toString().padStart(2,'0');
+    const diaPassado = diaSelecionado < hojeStr;
     const linhas = horarios.length ? (()=>{
       const parts = [];
       for(const h of horarios){
         const ag = agendamentos.find(a=>a.slug===emp.slug && a.data===diaSelecionado && a.hora===h);
         const bloqueado = (emp.bloqueios||[]).some(b=>b.data===diaSelecionado && b.hora===h);
-        const passadoHora = diaSelecionado < isoData(agora) || (diaSelecionado === isoData(agora) && h < horaAgora);
+        const passadoHora = diaPassado || (diaSelecionado === hojeStr && h < horaAgora);
         if(ag && editandoId===ag.id){ /* renderizado como modal abaixo */ }
         if(ag){
           const waNum = '55' + ag.telefone.replace(/\D/g,'').replace(/^0/,'');
