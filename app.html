@@ -1631,7 +1631,7 @@ function renderGestao(empInicial){
             <div style="font-size:13px;font-weight:600;color:#1a1a1a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(a.nome||'')}</div>
             <div style="font-size:11px;color:#aaa;margin-top:2px;">${escapeHtml(svcNome)}${horario?' · '+dataFmt+' '+horario:''}</div>
           </div>
-          <button onclick="gFinAbrirModalPendente('${a.id}')" style="${CS}background:#1a1a1a;color:#fff;border:none;border-radius:7px;padding:7px 12px;font-size:11px;font-weight:700;flex-shrink:0;">Lancar</button>
+          <button onclick="gFinAbrirModalPendente('${a.id}')" style="${CS}background:#fff;color:#1a1a1a;border:1px solid #1a1a1a;border-radius:7px;padding:7px 12px;font-size:11px;font-weight:700;flex-shrink:0;">Lancar</button>
         </div>`;
       }).join('')}`;
 
@@ -1653,7 +1653,7 @@ function renderGestao(empInicial){
               <div style="font-size:11px;color:#aaa;margin-top:2px;">${escapeHtml(meta)}</div>
             </div>
             <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;">
-              <div style="font-size:13px;font-weight:700;color:${valClr};font-variant-numeric:tabular-nums;">${isIn?'+':'-'}${gFinFmtMoeda(l.valor)}</div>
+              <div style="font-size:13px;font-weight:400;color:${valClr};font-variant-numeric:tabular-nums;">${isIn?'+':'-'}${gFinFmtMoeda(l.valor)}</div>
               <div style="display:flex;gap:3px;">
                 <button onclick="gFinEditarLanc('${lid}')" style="${CS}width:26px;height:26px;border-radius:6px;border:none;background:none;color:#1a1a1a;display:flex;align-items:center;justify-content:center;">${ICO_EDIT}</button>
                 <button onclick="gFinExcluir('${lid}')" style="${CS}width:26px;height:26px;border-radius:6px;border:none;background:none;color:#1a1a1a;display:flex;align-items:center;justify-content:center;">${ICO_TRASH}</button>
