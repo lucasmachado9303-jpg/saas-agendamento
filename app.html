@@ -1220,7 +1220,7 @@ function renderGestao(empInicial){
           ${mkItem("configurarIr('horarios')",   '#f0fdf4', ICO_CAL,   'Horários de agendamento',  'Defina dias e horários de agendamento')}
           ${mkItem("configurarIr('personalizar')","#fdf4ff", ICO_LINK,  'Personalize seu link',     'Nome, textos, logo, cor e botões')}
           ${mkItem("configurarIr('mensagens')",  '#fff7ed', ICO_MSG,   'Configurar mensagens',     'Personalize mensagens automáticas')}
-          ${mkItem("compartilharLink()",         '#f0f9ff', ICO_CLK,   'Link público',              'Compartilhar, copiar ou abrir seu link', false)}
+          ${mkItem("compartilharLink()",         '#f0f9ff', `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0ea5e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>`,   'Link público',              'Compartilhar, copiar ou abrir seu link', false)}
         </div>
         <div style="text-align:center;margin-top:40px;">
           <button onclick="${sairAction}" style="background:none;border:none;font-size:13px;font-weight:500;color:#8e8e93;cursor:pointer;padding:8px 16px;font-family:inherit;">Sair da conta</button>
@@ -2767,7 +2767,11 @@ function renderMasterPanel(){
         <div class="field"><label>WhatsApp</label><input type="tel" inputmode="numeric" maxlength="16" value="${escapeAttr(fmtTelStr(editing.whatsapp))}" oninput="maskTel(this);masterUpd('whatsapp',this.value)"/></div>
         <div class="field">
           <label>Link público</label>
-          <input readonly value="${escapeAttr(location.origin+'/'+editing.slug)}" onclick="this.select()"/>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <span style="font-size:14px;color:var(--ink-soft);white-space:nowrap;">${escapeHtml(location.origin)}/</span>
+            <input id="masterSlugInput" value="${escapeAttr(editing.slug)}" placeholder="seu-link" style="flex:1;" oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9-]/g,'')"/>
+          </div>
+          <div style="font-size:11px;color:var(--ink-soft);margin-top:4px;">Atenção: alterar o link quebra o endereço antigo.</div>
         </div>
         <div class="field">
           <label>E-mail do gestor</label>
@@ -3027,7 +3031,45 @@ function renderMasterPanel(){
       if(data?.email){ emp.gestorEmail = data.email; draw(); }
     }
   };
-  window.masterSalvarEdicao = ()=>{
+  window.masterSalvarEdicao = async ()=>{
+    const e = empresas.find(x=>x.slug===editingSlug);
+    if(!e){ editingSlug=null; draw(); return; }
+
+    const novoSlug = (document.getElementById('masterSlugInput')?.value||'').trim();
+    const RESERVADOS = ['api','app','admin','master','login','logout','static','assets','sw','manifest','index','null','undefined','favicon'];
+
+    if(novoSlug && novoSlug !== editingSlug){
+      if(!novoSlug || !/^[a-z0-9][a-z0-9-]*[a-z0-9]$|^[a-z0-9]$/.test(novoSlug)){
+        toast('Link inválido. Use apenas letras minúsculas, números e hífens.','err'); return;
+      }
+      if(RESERVADOS.includes(novoSlug)){ toast('Esse link é reservado pelo sistema.','err'); return; }
+      if(empresas.some(x=>x.slug===novoSlug && x.id!==e.id)){ toast('Esse link já está em uso por outra empresa.','err'); return; }
+
+      const antigoSlug = editingSlug;
+      e.slug = novoSlug;
+      await saveEmpresas();
+
+      // Move imagens no Storage para o novo caminho
+      for(const bucket of ['logos','backgrounds']){
+        const file = bucket==='logos' ? 'logo.jpg' : 'background.jpg';
+        try{
+          const { data:blob } = await supabaseClient.storage.from(bucket).download(`${antigoSlug}/${file}`);
+          if(blob){
+            await supabaseClient.storage.from(bucket).upload(`${novoSlug}/${file}`, blob, { contentType:'image/jpeg', upsert:true });
+            await supabaseClient.storage.from(bucket).remove([`${antigoSlug}/${file}`]);
+            const { data:urlData } = supabaseClient.storage.from(bucket).getPublicUrl(`${novoSlug}/${file}`);
+            if(bucket==='logos') e.logo = urlData.publicUrl;
+            else e.fotoUrl = urlData.publicUrl;
+          }
+        }catch(_){}
+      }
+      await saveEmpresas();
+
+      agendamentos = agendamentos.map(a=> a.slug===antigoSlug ? {...a, slug:novoSlug} : a);
+      editingSlug = novoSlug;
+      toast('Link alterado com sucesso!','ok');
+    }
+
     editingSlug = null; draw();
   };
   window.masterUpd = async (field,val)=>{
