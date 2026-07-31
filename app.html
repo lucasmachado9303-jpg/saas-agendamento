@@ -1533,8 +1533,9 @@ function renderGestao(empInicial){
     if(_gFinPeriodo==='dia'){
       const d = new Date(_gFinData+'T00:00:00');
       const hoje = isoData(new Date());
-      if(_gFinData===hoje) return 'Hoje, '+d.toLocaleDateString('pt-BR',{day:'numeric',month:'short'}).replace('.',''  );
-      return d.toLocaleDateString('pt-BR',{weekday:'short',day:'numeric',month:'short'}).replace(/\./g,'');
+      if(_gFinData===hoje) return 'Hoje, '+d.toLocaleDateString('pt-BR',{day:'numeric',month:'short'}).replace('.','');
+      const s = d.toLocaleDateString('pt-BR',{weekday:'short',day:'numeric',month:'short'}).replace(/\./g,'');
+      return s.charAt(0).toUpperCase()+s.slice(1);
     } else {
       const [y,m] = _gFinData.split('-');
       return new Date(parseInt(y),parseInt(m)-1,1).toLocaleString('pt-BR',{month:'long',year:'numeric'}).replace(' de ',' / ');
@@ -1605,12 +1606,12 @@ function renderGestao(empInicial){
     const modalHtml = _gFinModal ? (()=>{
       const m = _gFinModal;
       const isEdit = !!m.editId;
-      const titulo = isEdit ? 'Editar lancamento' : (m.tipo==='receita' ? 'Nova Receita' : 'Nova Despesa');
+      const titulo = isEdit ? 'Editar lançamento' : (m.tipo==='receita' ? 'Nova Receita' : 'Nova Despesa');
       const corBtn = m.tipo==='receita' ? '#2d6a47' : '#a3423a';
       return `<div style="position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9000;display:flex;align-items:flex-end;justify-content:center;" onclick="if(event.target===this)gFinFecharModal()">
         <div style="background:#fff;border-radius:18px 18px 0 0;padding:28px 24px 40px;width:100%;max-width:520px;">
           <h3 style="${CS}font-weight:700;font-size:18px;margin:0 0 20px;">${titulo}</h3>
-          <div class="field"><label>Descricao</label><input id="gfin-desc" type="text" value="${escapeHtml(m.descricao||'')}" placeholder="Ex: Coloracao raiz"></div>
+          <div class="field"><label>Descrição</label><input id="gfin-desc" type="text" value="${escapeHtml(m.descricao||'')}" placeholder="Ex: Coloracao raiz"></div>
           <div class="field"><label>Valor (R$)</label><input id="gfin-val" type="number" min="0" step="0.01" value="${escapeHtml(m.valor||'')}" placeholder="0,00"></div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px;">
             <button class="btn ghost" onclick="gFinFecharModal()">Cancelar</button>
@@ -1636,7 +1637,7 @@ function renderGestao(empInicial){
       }).join('')}`;
 
     const lancamentosHtml = lancamentos.length===0
-      ? `<div style="text-align:center;padding:28px 20px;color:#aaa;font-size:13px;">Nenhum lancamento neste periodo</div>`
+      ? `<div style="text-align:center;padding:28px 20px;color:#aaa;font-size:13px;">Nenhum lançamento neste período</div>`
       : lancamentos.map(l=>{
           const isIn   = l.tipo==='receita';
           const bordClr= isIn ? '#008000' : '#FF0000';
@@ -1662,12 +1663,13 @@ function renderGestao(empInicial){
           </div>`;
         }).join('');
 
+    const filtroLabel = {todos:'Todos',entradas:'Entradas',saidas:'Saídas'};
     const filtros = ['todos','entradas','saidas'].map(f=>`
       <div onclick="gFinSetFiltro('${f}')" style="${CS}padding:5px 14px;border-radius:999px;font-size:12px;font-weight:600;
         color:${_gFinFiltro===f?'#1a1a1a':'#888'};
         background:${_gFinFiltro===f?'#fff':'transparent'};
         box-shadow:${_gFinFiltro===f?'0 1px 4px rgba(0,0,0,0.10)':'none'};">
-        ${f.charAt(0).toUpperCase()+f.slice(1)}
+        ${filtroLabel[f]}
       </div>`).join('');
 
     return `
@@ -1675,7 +1677,7 @@ function renderGestao(empInicial){
       <div style="background:#e8e8e8;border-radius:8px;padding:3px;display:flex;margin-bottom:14px;">
         ${['dia','mes'].map(p=>`<button onclick="gFinSetPeriodo('${p}')" style="${CS}flex:1;padding:6px;border-radius:6px;border:none;font-size:13px;font-weight:700;
           background:${_gFinPeriodo===p?'#fff':'transparent'};color:${_gFinPeriodo===p?'#1a1a1a':'#888'};
-          box-shadow:${_gFinPeriodo===p?'0 1px 4px rgba(0,0,0,0.12)':'none'};">${p==='dia'?'Dia':'Mes'}</button>`).join('')}
+          box-shadow:${_gFinPeriodo===p?'0 1px 4px rgba(0,0,0,0.12)':'none'};">${p==='dia'?'Dia':'Mês'}</button>`).join('')}
       </div>
 
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
@@ -1696,7 +1698,7 @@ function renderGestao(empInicial){
           <div style="font-size:15px;font-weight:700;color:#FF0000;font-variant-numeric:tabular-nums;">${gFinFmtMoeda(despesa)}</div>
         </div>
         <div style="background:#fff;border:0.5px solid #eee;border-radius:9px;padding:6px 10px;display:flex;flex-direction:column;justify-content:center;">
-          <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#1a1a1a;margin-bottom:1px;">Saldo ${_gFinPeriodo==='dia'?'do dia':'do mes'}</div>
+          <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#1a1a1a;margin-bottom:1px;">Saldo ${_gFinPeriodo==='dia'?'do dia':'do mês'}</div>
           <div style="font-size:15px;font-weight:700;color:#1a1a1a;font-variant-numeric:tabular-nums;">${gFinFmtMoeda(saldo)}</div>
         </div>
         <div style="display:flex;flex-direction:column;gap:6px;">
@@ -1707,7 +1709,7 @@ function renderGestao(empInicial){
 
       ${pendentesHtml}
 
-      <div style="font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.06em;margin:16px 0 8px;">Lancamentos</div>
+      <div style="font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.06em;margin:16px 0 8px;">Lançamentos</div>
       <div style="display:inline-flex;background:#f0f0f0;border-radius:999px;padding:3px;gap:2px;margin-bottom:12px;">${filtros}</div>
       ${lancamentosHtml}
     `;
