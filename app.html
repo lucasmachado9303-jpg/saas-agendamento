@@ -1201,41 +1201,45 @@ function renderGestao(empInicial){
 
   function configurarBody(){
     if(configurarSub === null){
-      const semServicos = emp.servicos.length === 0;
-      const semHorarios = !horariosDoMes(emp,'_uni_').length;
-      const banner = (semServicos || semHorarios)
-        ? `<div style="background:#fef9e7;border:1.5px solid #f5e79e;border-radius:12px;padding:14px 16px;margin-bottom:16px;font-size:13px;color:#7a6400;">
-            <strong>Configure para começar a receber agendamentos:</strong>
-            <ul style="margin:8px 0 0 16px;padding:0;line-height:2;">
-              ${semServicos ? '<li>Adicione pelo menos um serviço</li>' : ''}
-              ${semHorarios ? '<li>Adicione os horários disponíveis</li>' : ''}
-            </ul>
-          </div>`
-        : '';
+      const isMaster = currentProfile?.role === 'master';
+      const ICO_CHV = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#c7c7cc" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>`;
+      const mkItem = (onclick, iconBg, iconSvg, title, desc, divider=true) => `
+        <button onclick="${onclick}" style="display:flex;align-items:center;gap:14px;padding:0 20px;min-height:72px;background:#fff;border:none;text-align:left;cursor:pointer;width:100%;transition:background 150ms ease;" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background='#fff'">
+          <div style="width:34px;height:34px;border-radius:10px;background:${iconBg};display:flex;align-items:center;justify-content:center;flex-shrink:0;">${iconSvg}</div>
+          <div style="flex:1;min-width:0;padding:16px 0;">
+            <div style="font-size:16px;font-weight:600;color:#1a1a1a;line-height:1.2;">${title}</div>
+            <div style="font-size:13px;color:#8e8e93;margin-top:3px;line-height:1.3;">${desc}</div>
+          </div>
+          ${ICO_CHV}
+        </button>
+        ${divider ? `<div style="height:1px;background:#f2f2f7;margin-left:68px;"></div>` : ''}`;
+      const ICO_BRIEF = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg>`;
+      const ICO_CAL  = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`;
+      const ICO_LINK = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>`;
+      const ICO_MSG  = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`;
+      const sairAction = isMaster ? `goto({empresa:'${emp.slug}'})` : `gestaoLogout('${emp.slug}')`;
       return `
-        ${banner}
-        <div style="display:flex;flex-direction:column;gap:12px;">
-          <button onclick="configurarIr('servicos')" style="display:flex;align-items:center;gap:12px;padding:20px;border-radius:12px;border:1.5px solid ${semServicos?'#f5c518':'#e0e0e0'};background:var(--card);text-align:left;cursor:pointer;width:100%;">
-            <div style="flex:1;">
-              <div style="font-weight:700;font-size:15px;">Serviços oferecidos</div>
-              <div class="muted" style="font-size:13px;">${emp.servicos.length ? `${emp.servicos.length} serviço${emp.servicos.length>1?'s':''} cadastrado${emp.servicos.length>1?'s':''}` : 'Cadastre e edite seus serviços/produtos'}</div>
-            </div>
-            <span style="font-size:18px;color:var(--ink-soft);">›</span>
-          </button>
-          <button onclick="configurarIr('horarios')" style="display:flex;align-items:center;gap:12px;padding:20px;border-radius:12px;border:1.5px solid ${semHorarios?'#f5c518':'#e0e0e0'};background:var(--card);text-align:left;cursor:pointer;width:100%;">
-            <div style="flex:1;">
-              <div style="font-weight:700;font-size:15px;">Horários de agendamento</div>
-              <div class="muted" style="font-size:13px;">${!semHorarios ? `${horariosDoMes(emp,'_uni_').length} horário${horariosDoMes(emp,'_uni_').length>1?'s':''} configurado${horariosDoMes(emp,'_uni_').length>1?'s':''}` : 'Configure dias e horários de agendamento'}</div>
-            </div>
-            <span style="font-size:18px;color:var(--ink-soft);">›</span>
-          </button>
-          <button onclick="configurarIr('personalizar')" style="display:flex;align-items:center;gap:12px;padding:20px;border-radius:12px;border:1.5px solid #e0e0e0;background:var(--card);text-align:left;cursor:pointer;width:100%;">
-            <div style="flex:1;">
-              <div style="font-weight:700;font-size:15px;">Personalize seu link</div>
-              <div class="muted" style="font-size:13px;">Nome, textos, cor, logo e botões externos</div>
-            </div>
-            <span style="font-size:18px;color:var(--ink-soft);">›</span>
-          </button>
+        <div style="font-size:22px;font-weight:700;color:#1a1a1a;margin-bottom:20px;padding:0 4px;">Configurações</div>
+        <div style="background:#fff;border-radius:22px;box-shadow:0 2px 16px rgba(0,0,0,0.06);overflow:hidden;">
+          ${mkItem("configurarIr('servicos')",   '#eff6ff', ICO_BRIEF, 'Serviços oferecidos',      'Configure os serviços disponíveis')}
+          ${mkItem("configurarIr('horarios')",   '#f0fdf4', ICO_CAL,   'Horários de agendamento',  'Defina dias e horários de atendimento')}
+          ${mkItem("configurarIr('personalizar')","#fdf4ff", ICO_LINK,  'Personalize seu link',     'Nome, textos, logo, cor e botões')}
+          ${mkItem("configurarIr('mensagens')",  '#fff7ed', ICO_MSG,   'Configurar mensagens',     'Personalize mensagens automáticas', false)}
+        </div>
+        <div style="text-align:center;margin-top:20px;">
+          <button onclick="${sairAction}" style="background:none;border:none;font-size:13px;font-weight:500;color:#8e8e93;cursor:pointer;padding:8px 16px;font-family:inherit;">Sair da conta</button>
+        </div>
+      `;
+    }
+    if(configurarSub === 'mensagens'){
+      return `
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+          <button onclick="configurarIr(null)" class="btn ghost" style="padding:8px 14px;font-size:13px;">← Voltar</button>
+          <div style="font-weight:700;font-size:16px;">Configurar mensagens</div>
+        </div>
+        <div style="text-align:center;padding:48px 20px;color:var(--ink-soft);">
+          <div style="font-size:15px;font-weight:600;margin-bottom:8px;">Em breve</div>
+          <div style="font-size:13px;">Esta funcionalidade está sendo desenvolvida.</div>
         </div>
       `;
     }
