@@ -1473,6 +1473,22 @@ function renderGestao(empInicial){
       .g-dash-val { font-size:19px; }
     }
 
+    /* ── Dashboard ocupa a tela inteira, sem rolagem da página ── */
+    .g-dash-mode .g-content { padding-bottom:0; }
+    .g-dash-mode .container.wide {
+      padding:16px 16px 10px;
+      height:calc(100dvh - 60px - env(safe-area-inset-bottom, 0px));
+      display:flex; flex-direction:column;
+    }
+    .g-dash-mode .card { flex:1; min-height:0; display:flex; flex-direction:column; }
+    .g-dash-root { flex:1; min-height:0; display:flex; flex-direction:column; gap:9px; }
+    .g-dash-agenda { flex:1; min-height:0; display:flex; flex-direction:column; }
+    .g-dash-agenda-list { flex:1; min-height:0; overflow-y:auto; }
+    .g-dash-notas-list { max-height:16dvh; overflow-y:auto; display:flex; flex-direction:column; gap:8px; }
+    @media(min-width:768px){
+      .g-dash-mode .container.wide { height:100dvh; padding:24px 16px 16px; }
+    }
+
     .g-topbar { height:52px; display:flex; align-items:center; justify-content:space-between; padding:0 20px; background:#fff; box-shadow:0 4px 16px rgba(0,0,0,0.10); color:#1a1a1a; }
     .g-topbar .brand { font-family:'Nunito',sans-serif; font-weight:800; font-size:18px; }
 
@@ -1597,7 +1613,7 @@ function renderGestao(empInicial){
 
     // Agenda de hoje (metade da largura)
     const agendaRows = agsHoje.length
-      ? agsHoje.slice(0,6).map(a=>{
+      ? agsHoje.map(a=>{
           const passou = a.hora < horaAgora;
           const ehProx = prox && a.id === prox.id;
           return `<div class="g-ag-row" style="${passou?'opacity:.45;':''}">
@@ -1646,37 +1662,36 @@ function renderGestao(empInicial){
     })();
 
     return `
-      <div style="margin-bottom:14px;">
-        <div style="font-size:19px;font-weight:800;color:#1a1a1a;letter-spacing:-.02em;">${saudacao}</div>
-        <div style="font-size:12px;color:#8e8e93;margin-top:2px;">${dataFmt}</div>
-      </div>
+      <div class="g-dash-root">
+        <div>
+          <div style="font-size:19px;font-weight:800;color:#1a1a1a;letter-spacing:-.02em;">${saudacao}</div>
+          <div style="font-size:12px;color:#8e8e93;margin-top:2px;">${dataFmt}</div>
+        </div>
 
-      <div class="g-dash-cards" style="margin-bottom:9px;">
-        ${card('#eff6ff', ICO_CAL2, 'Agendamentos<br>hoje', agHoje,
-               deltaAg===0?'igual a ontem':(deltaAg>0?`+${deltaAg} vs ontem`:`${deltaAg} vs ontem`),
-               deltaAg>0?'#16a34a':(deltaAg<0?'#dc2626':'#8e8e93'))}
-        ${card('#fff7ed', ICO_CLK,  'Próximo<br>atendimento', proxVal, proxSub, proxCor)}
-        ${card('#f0fdf4', ICO_CASH, 'Faturamento<br>hoje', gFinFmtMoeda(fatHoje),
-               pctFat===null?'sem base de ontem':(pctFat>=0?`+${pctFat}% vs ontem`:`${pctFat}% vs ontem`),
-               pctFat===null?'#8e8e93':(pctFat>=0?'#16a34a':'#dc2626'))}
-        ${card('#faf5ff', ICO_USRS, 'Clientes<br>atendidos mês', atendidosMes, mesNome, '#8e8e93')}
-      </div>
+        <div class="g-dash-cards">
+          ${card('#eff6ff', ICO_CAL2, 'Agendamentos<br>hoje', agHoje,
+                 deltaAg===0?'igual a ontem':(deltaAg>0?`+${deltaAg} vs ontem`:`${deltaAg} vs ontem`),
+                 deltaAg>0?'#16a34a':(deltaAg<0?'#dc2626':'#8e8e93'))}
+          ${card('#fff7ed', ICO_CLK,  'Próximo<br>atendimento', proxVal, proxSub, proxCor)}
+          ${card('#f0fdf4', ICO_CASH, 'Faturamento<br>hoje', gFinFmtMoeda(fatHoje),
+                 pctFat===null?'sem base de ontem':(pctFat>=0?`+${pctFat}% vs ontem`:`${pctFat}% vs ontem`),
+                 pctFat===null?'#8e8e93':(pctFat>=0?'#16a34a':'#dc2626'))}
+          ${card('#faf5ff', ICO_USRS, 'Clientes<br>atendidos mês', atendidosMes, mesNome, '#8e8e93')}
+        </div>
 
-      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-bottom:9px;align-items:start;">
-        <div class="g-dash-panel">
+        <div class="g-dash-panel g-dash-agenda">
           <div class="g-dash-ttl" style="margin-bottom:6px;">Agenda de hoje</div>
-          ${agendaRows}
-          <button onclick="setCorner(null)" style="margin-top:9px;padding:8px 0 0;border:none;border-top:0.5px solid #f4f4f5;background:none;font-family:inherit;font-size:11px;color:#8e8e93;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:3px;width:100%;">Ver completa &#8250;</button>
+          <div class="g-dash-agenda-list">${agendaRows}</div>
+          <button onclick="setCorner(null)" style="margin-top:8px;padding:8px 0 0;border:none;border-top:0.5px solid #f4f4f5;background:none;font-family:inherit;font-size:11px;color:#8e8e93;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:3px;width:100%;flex-shrink:0;">Ver completa &#8250;</button>
         </div>
-        <div></div>
-      </div>
 
-      <div class="g-dash-panel">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-          <div class="g-dash-ttl">Bloco de notas</div>
-          <button onclick="novaNota()" style="background:none;border:none;font-family:inherit;font-size:11px;color:#3b82f6;font-weight:700;cursor:pointer;padding:0;">+ Nova</button>
+        <div class="g-dash-panel">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+            <div class="g-dash-ttl">Bloco de notas</div>
+            <button onclick="novaNota()" style="background:none;border:none;font-family:inherit;font-size:11px;color:#3b82f6;font-weight:700;cursor:pointer;padding:0;">+ Nova</button>
+          </div>
+          <div class="g-dash-notas-list">${notasHtml}</div>
         </div>
-        <div style="display:flex;flex-direction:column;gap:8px;">${notasHtml}</div>
       </div>
 
       ${notaModalHtml}
@@ -2027,7 +2042,7 @@ function renderGestao(empInicial){
       <div style="position:sticky;top:0;z-index:300;">
         ${barraVoltarMaster()}
       </div>
-      <div class="g-layout">
+      <div class="g-layout ${corner==='dashboard'?'g-dash-mode':''}">
         <nav class="g-bottom-nav">
           ${navItems}
         </nav>
