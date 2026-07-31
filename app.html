@@ -1013,6 +1013,11 @@ function renderGestao(empInicial){
   let _gFinCarregando = false;
   let _gFinAgLancados = new Set(); // IDs de agendamentos já lançados — nunca removido ao excluir lançamento
 
+  // Estado do bloco de notas (dashboard)
+  let _notas = [];          // registros da tabela notas
+  let _notaModal = null;    // { texto, cor, editId? }
+  let _notasCarregando = false;
+
   function agendamentosBody(){
     if(diaSelecionado===null){
       // começa no dia de hoje independente de ter horário ou não
@@ -1448,10 +1453,25 @@ function renderGestao(empInicial){
   const GESTAO_CSS = `<style>
     .g-layout { display:flex; flex-direction:column; min-height:calc(100vh - 52px); }
     .g-content { flex:1; min-width:0; padding-bottom:72px; }
-    .g-dash-cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:14px; }
-    .g-dash-card { background:var(--paper); border:1.5px solid var(--line); border-radius:12px; padding:18px 16px; }
-    .g-dash-val { font-size:32px; font-weight:800; color:var(--ink); line-height:1; }
-    .g-dash-label { font-size:12px; color:var(--ink-soft); margin-top:6px; }
+    .g-dash-cards { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; }
+    .g-dash-card { background:#fff; border:0.5px solid #ececee; border-radius:14px; padding:12px; }
+    .g-dash-ico { width:30px; height:30px; border-radius:9px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .g-dash-label { font-size:11px; color:#8e8e93; line-height:1.25; font-weight:600; }
+    .g-dash-val { font-size:21px; font-weight:700; color:#1a1a1a; letter-spacing:-.02em; margin-top:9px; line-height:1.1; }
+    .g-dash-sub { font-size:10px; margin-top:3px; font-weight:600; }
+    .g-dash-panel { background:#fff; border:0.5px solid #ececee; border-radius:14px; padding:12px; }
+    .g-dash-ttl { font-size:14px; font-weight:700; color:#1a1a1a; }
+    .g-ag-row { padding:7px 0; }
+    .g-ag-row + .g-ag-row { border-top:0.5px solid #f4f4f5; }
+    .g-ag-hora { font-size:12px; font-weight:700; color:#1a1a1a; flex-shrink:0; }
+    .g-ag-nome { font-size:12px; color:#1a1a1a; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .g-ag-serv { font-size:10px; color:#8e8e93; margin-top:1px; padding-left:41px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .g-nota { border-radius:10px; padding:10px 11px; font-size:12px; color:#3d3d3a; line-height:1.4; display:flex; align-items:flex-start; gap:8px; }
+    .g-nota-txt { flex:1; min-width:0; word-break:break-word; white-space:pre-wrap; }
+    .g-nota-x { background:none; border:none; color:#00000055; cursor:pointer; font-size:16px; line-height:1; padding:0; min-height:0; flex-shrink:0; font-family:inherit; }
+    @media(max-width:400px){
+      .g-dash-val { font-size:19px; }
+    }
 
     .g-topbar { height:52px; display:flex; align-items:center; justify-content:space-between; padding:0 20px; background:#fff; box-shadow:0 4px 16px rgba(0,0,0,0.10); color:#1a1a1a; }
     .g-topbar .brand { font-family:'Nunito',sans-serif; font-weight:800; font-size:18px; }
@@ -1515,31 +1535,151 @@ function renderGestao(empInicial){
     }
   </style>`;
 
+  const NOTA_CORES = { amarelo:'#fef9c3', azul:'#dbeafe', rosa:'#fce7f3', verde:'#dcfce7' };
+
   function dashboardBody(){
-    const hoje = isoData(new Date());
-    const mesStr = hoje.slice(0,7);
-    const ags = agendamentos.filter(a => a.slug === emp.slug);
-    const agHoje    = ags.filter(a => a.data === hoje).length;
-    const agMes     = ags.filter(a => a.data.startsWith(mesStr)).length;
-    const agPassados = ags.filter(a => a.data.startsWith(mesStr) && a.data < hoje).length;
-    const mesFmt = new Date().toLocaleString('pt-BR',{month:'long',year:'numeric'}).replace(/ de /gi,' de ').replace(/^./, c=>c.toUpperCase());
+    const agora    = new Date();
+    const hoje     = isoData(agora);
+    const mesStr   = hoje.slice(0,7);
+    const horaAgora= agora.getHours().toString().padStart(2,'0')+':'+agora.getMinutes().toString().padStart(2,'0');
+    const ontemD   = new Date(agora); ontemD.setDate(ontemD.getDate()-1);
+    const ontem    = isoData(ontemD);
+
+    const ags     = agendamentos.filter(a => a.slug === emp.slug);
+    const agsHoje = ags.filter(a => a.data === hoje).sort((a,b)=>a.hora.localeCompare(b.hora));
+    const agHoje  = agsHoje.length;
+    const agOntem = ags.filter(a => a.data === ontem).length;
+    const deltaAg = agHoje - agOntem;
+
+    // Próximo atendimento
+    const prox = agsHoje.find(a => a.hora >= horaAgora);
+    let proxVal = '--:--', proxSub = 'nada por hoje', proxCor = '#8e8e93';
+    if(prox){
+      proxVal = prox.hora.slice(0,5);
+      const [ph,pm] = prox.hora.split(':').map(Number);
+      const alvo = new Date(agora); alvo.setHours(ph,pm,0,0);
+      const mins = Math.max(0, Math.round((alvo - agora)/60000));
+      const hh = Math.floor(mins/60), mm = mins%60;
+      proxSub = hh ? `em ${hh}h ${mm}min` : `em ${mm}min`;
+      proxCor = '#f59e0b';
+    }
+
+    // Faturamento
+    const somaRec  = d => _gFinLancamentos.filter(l=>l.tipo==='receita' && l.data===d)
+                                          .reduce((s,l)=>s+parseFloat(l.valor||0),0);
+    const fatHoje  = somaRec(hoje);
+    const fatOntem = somaRec(ontem);
+    const pctFat   = fatOntem > 0 ? Math.round(((fatHoje-fatOntem)/fatOntem)*100) : null;
+
+    // Clientes já atendidos no mês
+    const atendidosMes = ags.filter(a => a.data.startsWith(mesStr)
+      && (a.data < hoje || (a.data === hoje && a.hora < horaAgora))).length;
+
+    const saudacao = agora.getHours() < 12 ? 'Bom dia' : agora.getHours() < 18 ? 'Boa tarde' : 'Boa noite';
+    const dataFmt  = agora.toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'})
+                          .replace(/^./, c=>c.toUpperCase());
+    const mesNome  = agora.toLocaleDateString('pt-BR',{month:'long'});
+
+    const ICO_CAL2 = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`;
+    const ICO_CLK  = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>`;
+    const ICO_CASH = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><line x1="6" y1="12" x2="6.01" y2="12"/><line x1="18" y1="12" x2="18.01" y2="12"/></svg>`;
+    const ICO_USRS = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`;
+
+    const card = (icoBg, ico, label, val, sub, subCor) => `
+      <div class="g-dash-card">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div class="g-dash-ico" style="background:${icoBg};">${ico}</div>
+          <div class="g-dash-label">${label}</div>
+        </div>
+        <div class="g-dash-val">${val}</div>
+        <div class="g-dash-sub" style="color:${subCor};">${sub}</div>
+      </div>`;
+
+    // Agenda de hoje (metade da largura)
+    const agendaRows = agsHoje.length
+      ? agsHoje.slice(0,6).map(a=>{
+          const passou = a.hora < horaAgora;
+          const ehProx = prox && a.id === prox.id;
+          return `<div class="g-ag-row" style="${passou?'opacity:.45;':''}">
+            <div style="display:flex;align-items:baseline;gap:7px;">
+              <span class="g-ag-hora">${a.hora.slice(0,5)}</span>
+              <span class="g-ag-nome" style="${ehProx?'font-weight:700;':''}">${escapeHtml(a.nome)}</span>
+            </div>
+            <div class="g-ag-serv">${escapeHtml(a.servicoNome||'')}</div>
+          </div>`;
+        }).join('')
+      : `<div style="font-size:12px;color:#8e8e93;padding:10px 0;">Nenhum agendamento hoje.</div>`;
+
+    // Bloco de notas
+    const notasHtml = _notas.length
+      ? _notas.map(n=>`
+          <div class="g-nota" style="background:${NOTA_CORES[n.cor]||NOTA_CORES.amarelo};">
+            <span class="g-nota-txt">${escapeHtml(n.texto)}</span>
+            <button class="g-nota-x" onclick="removerNota('${n.id}')" title="Excluir">&times;</button>
+          </div>`).join('')
+      : `<div style="font-size:12px;color:#8e8e93;padding:6px 0;">Nenhuma anotação ainda.</div>`;
+
+    // Modal de nova nota
+    const notaModalHtml = (()=>{
+      if(!_notaModal) return '';
+      const m = _notaModal;
+      const swatches = Object.entries(NOTA_CORES).map(([k,hex])=>`
+        <div onclick="setNotaCor('${k}')" style="width:30px;height:30px;border-radius:8px;background:${hex};cursor:pointer;border:2px solid ${m.cor===k?'#1a1a1a':'transparent'};"></div>`).join('');
+      return `
+        <div style="position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px;" onclick="if(event.target===this) fecharNota()">
+          <div style="background:#fff;border-radius:16px;padding:20px;width:100%;max-width:400px;box-shadow:0 8px 32px rgba(0,0,0,0.18);">
+            <div style="font-weight:700;font-size:16px;margin-bottom:14px;">${m.editId?'Editar anotação':'Nova anotação'}</div>
+            <div class="field">
+              <label>Anotação</label>
+              <textarea id="notaTexto" rows="4" style="resize:vertical;min-height:90px;" placeholder="Escreva sua anotação">${escapeHtml(m.texto||'')}</textarea>
+            </div>
+            <div class="field">
+              <label>Cor</label>
+              <div style="display:flex;gap:8px;margin-top:4px;">${swatches}</div>
+            </div>
+            <div class="row" style="margin-top:16px;">
+              <button class="btn ghost" onclick="fecharNota()">Cancelar</button>
+              <button class="btn" onclick="salvarNota()">Salvar</button>
+            </div>
+          </div>
+        </div>`;
+    })();
+
     return `
-      <h2 class="display" style="margin:0 0 4px;">Visão geral</h2>
-      <div style="font-size:13px;color:var(--ink-soft);margin-bottom:24px;">${mesFmt}</div>
-      <div class="g-dash-cards">
-        <div class="g-dash-card">
-          <div class="g-dash-val">${agHoje}</div>
-          <div class="g-dash-label">Agendamentos hoje</div>
-        </div>
-        <div class="g-dash-card">
-          <div class="g-dash-val">${agPassados}</div>
-          <div class="g-dash-label">Atendidos no mês</div>
-        </div>
-        <div class="g-dash-card">
-          <div class="g-dash-val">${agMes}</div>
-          <div class="g-dash-label">Total do mês</div>
-        </div>
+      <div style="margin-bottom:14px;">
+        <div style="font-size:19px;font-weight:800;color:#1a1a1a;letter-spacing:-.02em;">${saudacao}</div>
+        <div style="font-size:12px;color:#8e8e93;margin-top:2px;">${dataFmt}</div>
       </div>
+
+      <div class="g-dash-cards" style="margin-bottom:9px;">
+        ${card('#eff6ff', ICO_CAL2, 'Agendamentos<br>hoje', agHoje,
+               deltaAg===0?'igual a ontem':(deltaAg>0?`+${deltaAg} vs ontem`:`${deltaAg} vs ontem`),
+               deltaAg>0?'#16a34a':(deltaAg<0?'#dc2626':'#8e8e93'))}
+        ${card('#fff7ed', ICO_CLK,  'Próximo<br>atendimento', proxVal, proxSub, proxCor)}
+        ${card('#f0fdf4', ICO_CASH, 'Faturamento<br>hoje', gFinFmtMoeda(fatHoje),
+               pctFat===null?'sem base de ontem':(pctFat>=0?`+${pctFat}% vs ontem`:`${pctFat}% vs ontem`),
+               pctFat===null?'#8e8e93':(pctFat>=0?'#16a34a':'#dc2626'))}
+        ${card('#faf5ff', ICO_USRS, 'Clientes<br>atendidos mês', atendidosMes, mesNome, '#8e8e93')}
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-bottom:9px;align-items:start;">
+        <div class="g-dash-panel">
+          <div class="g-dash-ttl" style="margin-bottom:6px;">Agenda de hoje</div>
+          ${agendaRows}
+          <button onclick="setCorner(null)" style="margin-top:9px;padding:8px 0 0;border:none;border-top:0.5px solid #f4f4f5;background:none;font-family:inherit;font-size:11px;color:#8e8e93;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:3px;width:100%;">Ver completa &#8250;</button>
+        </div>
+        <div></div>
+      </div>
+
+      <div class="g-dash-panel">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <div class="g-dash-ttl">Bloco de notas</div>
+          <button onclick="novaNota()" style="background:none;border:none;font-family:inherit;font-size:11px;color:#3b82f6;font-weight:700;cursor:pointer;padding:0;">+ Nova</button>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;">${notasHtml}</div>
+      </div>
+
+      ${notaModalHtml}
     `;
   }
 
@@ -1563,8 +1703,53 @@ function renderGestao(empInicial){
       data.filter(l=>l.agendamento_id).forEach(l=>_gFinAgLancados.add(l.agendamento_id));
       localStorage.setItem(lsKey, JSON.stringify([..._gFinAgLancados]));
     }
-    if(corner === 'financeiro') draw();
+    if(corner === 'financeiro' || corner === 'dashboard') draw();
   }
+
+  // ── Bloco de notas (dashboard) ──
+
+  async function carregarNotas(){
+    if(_notasCarregando) return;
+    _notasCarregando = true;
+    const { data, error } = await supabaseClient
+      .from('notas')
+      .select('*')
+      .eq('empresa_id', emp.id)
+      .order('criado_em', { ascending: false });
+    _notasCarregando = false;
+    if(!error && data) _notas = data;
+    if(corner === 'dashboard') draw();
+  }
+
+  window.novaNota   = ()=>{ _notaModal = { texto:'', cor:'amarelo' }; draw(); };
+  window.fecharNota = ()=>{ _notaModal = null; draw(); };
+  window.setNotaCor = (cor)=>{
+    if(!_notaModal) return;
+    const el = document.getElementById('notaTexto');
+    if(el) _notaModal.texto = el.value;
+    _notaModal.cor = cor;
+    draw();
+  };
+
+  window.salvarNota = async ()=>{
+    if(!_notaModal) return;
+    const texto = (document.getElementById('notaTexto')?.value || '').trim();
+    if(!texto){ toast('Escreva alguma coisa na anotação.','err'); return; }
+    const cor = _notaModal.cor || 'amarelo';
+    _notaModal = null; draw();
+    const { error } = await supabaseClient.from('notas')
+      .insert({ empresa_id: emp.id, texto, cor });
+    if(error){ toast(friendlyError(error,'Erro ao salvar anotação.'),'err'); return; }
+    toast('Anotação salva!','ok');
+    await carregarNotas();
+  };
+
+  window.removerNota = async (id)=>{
+    const { error } = await supabaseClient.from('notas').delete().eq('id', id);
+    if(error){ toast(friendlyError(error,'Erro ao excluir anotação.'),'err'); return; }
+    _notas = _notas.filter(n=>n.id !== id);
+    draw();
+  };
 
   function gFinFmtMoeda(v){ return 'R$ ' + parseFloat(v||0).toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.'); }
 
@@ -1835,7 +2020,7 @@ function renderGestao(empInicial){
                : corner==='financeiro'   ? financeiroBody()
                : agendamentosBody();
 
-    const cardStyle = (corner==='configurar' || corner==='financeiro') ? 'background:none;box-shadow:none;padding:0;' : '';
+    const cardStyle = (corner==='configurar' || corner==='financeiro' || corner==='dashboard') ? 'background:none;box-shadow:none;padding:0;' : '';
 
     render(`
       ${GESTAO_CSS}
@@ -1861,7 +2046,14 @@ function renderGestao(empInicial){
       corner=c; editandoId=null; novoAgState=null; configurarSub=null; _removendoServicoIdx=null;
       draw(); gFinCarregar(); return;
     }
-    corner=c; editandoId=null; novoAgState=null; configurarSub=null; _removendoServicoIdx=null; _gFinModal=null; draw();
+    if(c==='dashboard' && corner!=='dashboard'){
+      corner=c; editandoId=null; novoAgState=null; configurarSub=null; _removendoServicoIdx=null; _gFinModal=null; _notaModal=null;
+      draw();
+      if(!_gFinLancamentos.length) gFinCarregar();
+      carregarNotas();
+      return;
+    }
+    corner=c; editandoId=null; novoAgState=null; configurarSub=null; _removendoServicoIdx=null; _gFinModal=null; _notaModal=null; draw();
   };
   window.selecionarDiaGestao = (iso)=>{
     if(!iso || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return;
@@ -2220,12 +2412,14 @@ function renderGestao(empInicial){
   };
 
   draw();
+  gFinCarregar();
+  carregarNotas();
   iniciarPolling(()=>{
     // Reaponta para o objeto novo criado pelo loadData()
     const atual = empresas.find(e => e.slug === emp.slug);
     if(atual) emp = atual;
     // Não redesenha se houver formulário aberto (evita apagar campos em edição)
-    const formAberto = editandoId !== null || novoAgState !== null || novoBotaoState !== null || editandoBotaoId !== null || _gFinModal !== null;
+    const formAberto = editandoId !== null || novoAgState !== null || novoBotaoState !== null || editandoBotaoId !== null || _gFinModal !== null || _notaModal !== null;
     if(!formAberto && (corner===null || corner==='dashboard')) draw();
   });
 }
