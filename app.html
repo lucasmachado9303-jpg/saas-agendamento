@@ -1643,7 +1643,7 @@ function renderGestao(empInicial){
             <div style="font-size:13px;font-weight:600;color:#1a1a1a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(a.nome||'')}</div>
             <div style="font-size:11px;color:#aaa;margin-top:2px;">${escapeHtml(svcNome)}${horario?' · '+dataFmt+' '+horario:''}</div>
           </div>
-          <button onclick="gFinAbrirModalPendente('${a.id}')" style="${CS}background:#fff;color:#1a1a1a;border:1px solid #1a1a1a;border-radius:7px;padding:7px 12px;font-size:11px;font-weight:700;flex-shrink:0;">Lancar</button>
+          <button onclick="gFinAbrirModalPendente('${a.id}')" style="${CS}background:#fff;color:#FFA500;border:1px solid #FFA500;border-radius:7px;padding:7px 12px;font-size:11px;font-weight:700;flex-shrink:0;">Lançar</button>
         </div>`;
       }).join('')}`;
 
