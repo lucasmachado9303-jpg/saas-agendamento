@@ -1214,6 +1214,9 @@ function renderGestao(empInicial){
           ${mkItem("configurarIr('personalizar')","#fdf4ff", ICO_LINK,  'Personalize seu link',     'Nome, textos, logo, cor e botões')}
           ${mkItem("configurarIr('mensagens')",  '#fff7ed', ICO_MSG,   'Configurar mensagens',     'Personalize mensagens automáticas', false)}
         </div>
+        <div style="text-align:center;margin-top:40px;">
+          <button onclick="${sairAction}" style="background:none;border:none;font-size:13px;font-weight:500;color:#8e8e93;cursor:pointer;padding:8px 16px;font-family:inherit;">Sair da conta</button>
+        </div>
       `;
     }
     if(configurarSub === 'mensagens'){
@@ -1819,16 +1822,11 @@ function renderGestao(empInicial){
     const exitLabel = isMaster ? 'Voltar' : 'Sair';
     const exitIco   = isMaster ? G_ICO.voltar : G_ICO.sair;
 
-    const sairNavItem = corner==='configurar' ? `
-      <button class="g-bn-item" onclick="${exitAction}" style="color:#e53935;">
-        <span class="g-bn-ico">${G_ICO.sair}</span>
-        <span>SAIR</span>
-      </button>` : '';
     const navItems = GESTAO_NAV.map(n => `
       <button class="g-bn-item ${corner===n.id?'active':''}" onclick="setCorner(${n.id===null?'null':`'${n.id}'`})">
         <span class="g-bn-ico">${n.ico}</span>
         <span>${n.label}</span>
-      </button>`).join('') + sairNavItem;
+      </button>`).join('');
 
     const body = corner==='dashboard'    ? dashboardBody()
                : corner==='configurar'   ? configurarBody()
