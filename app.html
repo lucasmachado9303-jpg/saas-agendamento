@@ -1645,7 +1645,8 @@ function renderGestao(empInicial){
           const ag     = l.agendamento_id ? agendamentos.find(a=>a.id===l.agendamento_id) : null;
           const dataFmt= new Date(l.data+'T00:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
           const horario = ag?.hora ? ' · '+ag.hora.slice(0,5) : '';
-          const meta   = ag ? `${dataFmt}${horario}` : dataFmt;
+          const svcMeta = ag?.servicoNome ? ag.servicoNome+' · ' : '';
+          const meta   = ag ? `${svcMeta}${dataFmt}${horario}` : dataFmt;
           const lid    = escapeHtml(l.id);
           return `<div style="background:#fff;border:0.5px solid #eee;border-left:4px solid ${bordClr};border-radius:10px;padding:11px 12px;margin-bottom:6px;display:flex;align-items:center;gap:10px;">
             <div style="flex:1;min-width:0;">
@@ -1742,8 +1743,7 @@ function renderGestao(empInicial){
     const ag = agendamentos.find(a=>a.id===agId);
     if(!ag) return;
     const svc = emp.servicos.find(s=>s.id===ag.servicoId);
-    const desc = [ag.nome, ag.servicoNome].filter(Boolean).join(' — ');
-    _gFinModal = { tipo:'receita', agId, descricao: desc, valor: svc?.preco ? String(svc.preco) : '' };
+    _gFinModal = { tipo:'receita', agId, descricao: ag.nome||'', valor: svc?.preco ? String(svc.preco) : '' };
     draw();
     setTimeout(()=>document.getElementById('gfin-val')?.focus(), 50);
   };
