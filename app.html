@@ -1023,7 +1023,8 @@ function renderGestao(empInicial){
   let _gFinPeriodo = 'dia'; // 'dia' | 'mes'
   let _gFinData = isoData(new Date()); // ISO date para dia, 'YYYY-MM' para mes
   let _gFinLancamentos = []; // registros de lancamentos_financeiros
-  let _gFinModal = null; // { tipo:'receita'|'despesa', agId?:string, descricao:string, valor:string }
+  let _gFinModal = null; // { tipo, agId?, descricao, valor, editId? }
+  let _gFinFiltro = 'todos'; // 'todos' | 'entradas' | 'saidas'
   let _gFinCarregando = false;
 
   function agendamentosBody(){
@@ -1580,76 +1581,37 @@ function renderGestao(empInicial){
   }
 
   function financeiroBody(){
-    const lancamentos = gFinLancamentosFiltrados();
-    const pendentes   = gFinPendentes();
+    const todosPeriodo = gFinLancamentosFiltrados();
+    const receita = todosPeriodo.filter(l=>l.tipo==='receita').reduce((s,l)=>s+parseFloat(l.valor||0),0);
+    const despesa = todosPeriodo.filter(l=>l.tipo==='despesa').reduce((s,l)=>s+parseFloat(l.valor||0),0);
+    const saldo   = receita - despesa;
+    const pendentes = gFinPendentes();
 
-    const receita  = lancamentos.filter(l=>l.tipo==='receita').reduce((s,l)=>s+parseFloat(l.valor||0),0);
-    const despesa  = lancamentos.filter(l=>l.tipo==='despesa').reduce((s,l)=>s+parseFloat(l.valor||0),0);
-    const saldo    = receita - despesa;
+    const lancamentos = todosPeriodo.filter(l=>{
+      if(_gFinFiltro==='entradas') return l.tipo==='receita';
+      if(_gFinFiltro==='saidas')   return l.tipo==='despesa';
+      return true;
+    });
 
-    const periodoBtns = ['dia','mes'].map(p=>`
-      <button onclick="gFinSetPeriodo('${p}')"
-        style="flex:1;padding:7px;border-radius:6px;border:none;font-family:'Nunito',sans-serif;font-size:13px;font-weight:600;cursor:pointer;
-        background:${_gFinPeriodo===p?'#fff':'transparent'};color:${_gFinPeriodo===p?'#1a1a1a':'#888'};
-        box-shadow:${_gFinPeriodo===p?'0 1px 4px rgba(0,0,0,0.12)':'none'};">
-        ${p==='dia'?'Dia':'Mes'}
-      </button>`).join('');
+    const ICO_UP   = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>`;
+    const ICO_DOWN = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>`;
+    const ICO_LEFT = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;"><polyline points="15 18 9 12 15 6"/></svg>`;
+    const ICO_RIGHT= `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;"><polyline points="9 18 15 12 9 6"/></svg>`;
+    const ICO_EDIT = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
+    const ICO_TRASH= `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>`;
 
-    const pendentesHtml = pendentes.length===0 ? '' : `
-      <div style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.06em;margin:18px 0 8px;">Pendentes de lancamento</div>
-      ${pendentes.map(a=>{
-        const svcNome = a.servicoNome || '';
-        const horario = a.hora ? a.hora.slice(0,5) : '';
-        const dataFmt = new Date(a.data+'T00:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
-        return `<div style="background:#fff8f0;border:1px solid #f0d9bc;border-radius:10px;padding:12px 14px;margin-bottom:6px;display:flex;align-items:center;gap:10px;">
-          <div style="width:8px;height:8px;border-radius:50%;background:#c97b2a;flex-shrink:0;"></div>
-          <div style="flex:1;min-width:0;">
-            <div style="font-size:13px;font-weight:600;color:#1a1a1a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(a.nome||'')}</div>
-            <div style="font-size:12px;color:#a07040;margin-top:1px;">${escapeHtml(svcNome)}${horario?' · '+dataFmt+' '+horario:''}</div>
-          </div>
-          <button onclick="gFinAbrirModalPendente('${a.id}')"
-            style="background:#c97b2a;color:#fff;border:none;border-radius:7px;padding:7px 12px;font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0;font-family:'Nunito',sans-serif;">
-            Lancar
-          </button>
-        </div>`;
-      }).join('')}`;
-
-    const lancamentosHtml = lancamentos.length===0
-      ? `<div style="text-align:center;padding:32px 20px;color:#888;font-size:13px;">Nenhum lancamento neste periodo</div>`
-      : lancamentos.map(l=>{
-          const isIn = l.tipo==='receita';
-          const bg    = isIn ? '#f3f9f5' : '#fdf2f2';
-          const bord  = isIn ? '#c4deca' : '#e8c5c5';
-          const icoBg = isIn ? '#d8eddf' : '#f5d9d8';
-          const icoClr= isIn ? '#2d6a47' : '#a3423a';
-          const valClr= isIn ? '#2d6a47' : '#a3423a';
-          const seta  = isIn
-            ? `<svg viewBox="0 0 24 24" fill="none" stroke="${icoClr}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>`
-            : `<svg viewBox="0 0 24 24" fill="none" stroke="${icoClr}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>`;
-          const linha2 = l.agendamento_id
-            ? (()=>{ const ag=agendamentos.find(a=>a.id===l.agendamento_id); return ag?(ag.servicoNome||'')+(ag.hora?' · '+ag.hora.slice(0,5):''):''; })()
-            : new Date(l.data+'T00:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
-          return `<div style="background:${bg};border:1px solid ${bord};border-radius:10px;padding:12px 14px;margin-bottom:6px;display:flex;align-items:center;gap:10px;">
-            <div style="width:30px;height:30px;border-radius:8px;background:${icoBg};display:flex;align-items:center;justify-content:center;flex-shrink:0;">${seta}</div>
-            <div style="flex:1;min-width:0;">
-              <div style="font-size:13px;font-weight:600;color:#1a1a1a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(l.descricao)}</div>
-              <div style="font-size:12px;color:#888;margin-top:1px;">${escapeHtml(linha2)}</div>
-            </div>
-            <div style="font-size:14px;font-weight:600;color:${valClr};flex-shrink:0;">${isIn?'+':'-'}${gFinFmtMoeda(l.valor)}</div>
-          </div>`;
-        }).join('');
+    const CS = 'font-family:Nunito,sans-serif;cursor:pointer;';
 
     const modalHtml = _gFinModal ? (()=>{
       const m = _gFinModal;
-      const titulo = m.tipo==='receita' ? 'Nova Receita' : 'Nova Despesa';
+      const isEdit = !!m.editId;
+      const titulo = isEdit ? 'Editar lancamento' : (m.tipo==='receita' ? 'Nova Receita' : 'Nova Despesa');
       const corBtn = m.tipo==='receita' ? '#2d6a47' : '#a3423a';
-      const descDefault = m.descricao || '';
-      const valDefault  = m.valor || '';
       return `<div style="position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9000;display:flex;align-items:flex-end;justify-content:center;" onclick="if(event.target===this)gFinFecharModal()">
         <div style="background:#fff;border-radius:18px 18px 0 0;padding:28px 24px 40px;width:100%;max-width:520px;">
-          <h3 style="font-family:'Nunito',sans-serif;font-weight:700;font-size:18px;margin:0 0 20px;">${titulo}</h3>
-          <div class="field"><label>Descricao</label><input id="gfin-desc" type="text" value="${escapeHtml(descDefault)}" placeholder="Ex: Coloracao raiz"></div>
-          <div class="field"><label>Valor (R$)</label><input id="gfin-val" type="number" min="0" step="0.01" value="${escapeHtml(valDefault)}" placeholder="0,00"></div>
+          <h3 style="${CS}font-weight:700;font-size:18px;margin:0 0 20px;">${titulo}</h3>
+          <div class="field"><label>Descricao</label><input id="gfin-desc" type="text" value="${escapeHtml(m.descricao||'')}" placeholder="Ex: Coloracao raiz"></div>
+          <div class="field"><label>Valor (R$)</label><input id="gfin-val" type="number" min="0" step="0.01" value="${escapeHtml(m.valor||'')}" placeholder="0,00"></div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px;">
             <button class="btn ghost" onclick="gFinFecharModal()">Cancelar</button>
             <button class="btn" style="background:${corBtn};" onclick="gFinSalvar()">Salvar</button>
@@ -1658,62 +1620,122 @@ function renderGestao(empInicial){
       </div>`;
     })() : '';
 
+    const pendentesHtml = pendentes.length===0 ? '' : `
+      <div style="font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.06em;margin:16px 0 8px;">Pendentes</div>
+      ${pendentes.map(a=>{
+        const svcNome = a.servicoNome || '';
+        const horario = a.hora ? a.hora.slice(0,5) : '';
+        const dataFmt = new Date(a.data+'T00:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
+        return `<div style="background:#fff8f0;border:1px solid #f0d9bc;border-radius:10px;padding:11px 12px;margin-bottom:6px;display:flex;align-items:center;gap:10px;">
+          <div style="width:7px;height:7px;border-radius:50%;background:#c97b2a;flex-shrink:0;"></div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:13px;font-weight:600;color:#1a1a1a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(a.nome||'')}</div>
+            <div style="font-size:11px;color:#a07040;margin-top:2px;">${escapeHtml(svcNome)}${horario?' · '+dataFmt+' '+horario:''}</div>
+          </div>
+          <button onclick="gFinAbrirModalPendente('${a.id}')" style="${CS}background:#c97b2a;color:#fff;border:none;border-radius:7px;padding:6px 10px;font-size:11px;font-weight:700;flex-shrink:0;">Lancar</button>
+        </div>`;
+      }).join('')}`;
+
+    const lancamentosHtml = lancamentos.length===0
+      ? `<div style="text-align:center;padding:28px 20px;color:#aaa;font-size:13px;">Nenhum lancamento neste periodo</div>`
+      : lancamentos.map(l=>{
+          const isIn  = l.tipo==='receita';
+          const icoBg = isIn ? '#eaf3e0' : '#fdf0ee';
+          const icoClr= isIn ? '#2d6a47' : '#a3423a';
+          const valClr= isIn ? '#2d6a47' : '#a3423a';
+          const ag    = l.agendamento_id ? agendamentos.find(a=>a.id===l.agendamento_id) : null;
+          const meta  = ag ? `${ag.servicoNome||''}${ag.hora?' · '+ag.hora.slice(0,5):''}` : new Date(l.data+'T00:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
+          const badge = ag ? `<span style="background:#f0f0f0;color:#888;border-radius:4px;padding:1px 5px;font-size:10px;font-weight:600;margin-left:4px;">Agendamento</span>` : '';
+          const lid   = escapeHtml(l.id);
+          return `<div style="background:#fff;border:0.5px solid #eee;border-radius:10px;padding:11px 12px;margin-bottom:6px;display:flex;align-items:center;gap:10px;">
+            <div style="width:28px;height:28px;border-radius:7px;background:${icoBg};display:flex;align-items:center;justify-content:center;flex-shrink:0;color:${icoClr};">${isIn?ICO_UP:ICO_DOWN}</div>
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:13px;font-weight:600;color:#1a1a1a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(l.descricao)}</div>
+              <div style="font-size:11px;color:#aaa;margin-top:2px;">${escapeHtml(meta)}${badge}</div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;">
+              <div style="font-size:13px;font-weight:700;color:${valClr};font-variant-numeric:tabular-nums;">${isIn?'+':'-'}${gFinFmtMoeda(l.valor)}</div>
+              <div style="display:flex;gap:3px;">
+                <button onclick="gFinEditarLanc('${lid}')" style="${CS}width:22px;height:22px;border-radius:5px;border:none;background:none;color:#ccc;display:flex;align-items:center;justify-content:center;">${ICO_EDIT}</button>
+                <button onclick="gFinExcluir('${lid}')" style="${CS}width:22px;height:22px;border-radius:5px;border:none;background:none;color:#ccc;display:flex;align-items:center;justify-content:center;">${ICO_TRASH}</button>
+              </div>
+            </div>
+          </div>`;
+        }).join('');
+
+    const filtros = ['todos','entradas','saidas'].map(f=>`
+      <div onclick="gFinSetFiltro('${f}')" style="${CS}padding:5px 14px;border-radius:999px;font-size:12px;font-weight:600;
+        color:${_gFinFiltro===f?'#1a1a1a':'#888'};
+        background:${_gFinFiltro===f?'#fff':'transparent'};
+        box-shadow:${_gFinFiltro===f?'0 1px 4px rgba(0,0,0,0.10)':'none'};">
+        ${f.charAt(0).toUpperCase()+f.slice(1)}
+      </div>`).join('');
+
     return `
       ${modalHtml}
-      <div style="background:#e8e8e8;border-radius:10px;padding:3px;display:flex;margin-bottom:16px;">${periodoBtns}</div>
+      <div style="background:#e8e8e8;border-radius:8px;padding:3px;display:flex;margin-bottom:14px;">
+        ${['dia','mes'].map(p=>`<button onclick="gFinSetPeriodo('${p}')" style="${CS}flex:1;padding:6px;border-radius:6px;border:none;font-size:13px;font-weight:700;
+          background:${_gFinPeriodo===p?'#fff':'transparent'};color:${_gFinPeriodo===p?'#1a1a1a':'#888'};
+          box-shadow:${_gFinPeriodo===p?'0 1px 4px rgba(0,0,0,0.12)':'none'};">${p==='dia'?'Dia':'Mes'}</button>`).join('')}
+      </div>
 
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-        <span style="font-size:13px;color:#555;">${gFinDataLabel()}</span>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <span style="font-size:12px;font-weight:600;color:#555;">${gFinDataLabel()}</span>
         <div style="display:flex;gap:4px;">
-          <button onclick="gFinNavegar(-1)" style="background:none;border:1.5px solid var(--line);border-radius:8px;width:32px;height:32px;cursor:pointer;display:flex;align-items:center;justify-content:center;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;"><polyline points="15 18 9 12 15 6"/></svg>
-          </button>
-          <button onclick="gFinNavegar(1)" style="background:none;border:1.5px solid var(--line);border-radius:8px;width:32px;height:32px;cursor:pointer;display:flex;align-items:center;justify-content:center;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;"><polyline points="9 18 15 12 9 6"/></svg>
-          </button>
+          <button onclick="gFinNavegar(-1)" style="${CS}background:#fff;border:0.5px solid #e0e0e0;border-radius:6px;width:28px;height:28px;display:flex;align-items:center;justify-content:center;">${ICO_LEFT}</button>
+          <button onclick="gFinNavegar(1)"  style="${CS}background:#fff;border:0.5px solid #e0e0e0;border-radius:6px;width:28px;height:28px;display:flex;align-items:center;justify-content:center;">${ICO_RIGHT}</button>
         </div>
       </div>
 
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
-        <div style="background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px;">
-          <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px;">Receita</div>
-          <div style="font-size:22px;font-weight:700;color:#2d6a47;font-variant-numeric:tabular-nums;">${gFinFmtMoeda(receita)}</div>
-          <button onclick="gFinAbrirModal('receita')" style="margin-top:8px;display:inline-flex;align-items:center;gap:4px;background:#eaf3e0;color:#2d6a47;border:none;border-radius:7px;padding:5px 10px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Nunito',sans-serif;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            Receita
-          </button>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:14px;grid-auto-rows:44px;">
+        <div style="background:#fff;border:0.5px solid #eee;border-radius:9px;padding:6px 10px;display:flex;flex-direction:column;justify-content:center;">
+          <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#2d6a47;margin-bottom:1px;">Receitas</div>
+          <div style="font-size:15px;font-weight:700;color:#2d6a47;font-variant-numeric:tabular-nums;">${gFinFmtMoeda(receita)}</div>
         </div>
-        <div style="background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px;">
-          <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px;">Despesas</div>
-          <div style="font-size:22px;font-weight:700;color:#a3423a;font-variant-numeric:tabular-nums;">${gFinFmtMoeda(despesa)}</div>
-          <button onclick="gFinAbrirModal('despesa')" style="margin-top:8px;display:inline-flex;align-items:center;gap:4px;background:#fdf0ee;color:#a3423a;border:none;border-radius:7px;padding:5px 10px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Nunito',sans-serif;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            Despesa
-          </button>
+        <div style="background:#fff;border:0.5px solid #eee;border-radius:9px;padding:6px 10px;display:flex;flex-direction:column;justify-content:center;">
+          <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#a3423a;margin-bottom:1px;">Despesas</div>
+          <div style="font-size:15px;font-weight:700;color:#a3423a;font-variant-numeric:tabular-nums;">${gFinFmtMoeda(despesa)}</div>
         </div>
-      </div>
-
-      <div style="background:#1c1917;border-radius:12px;padding:14px 16px;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;">
-        <div>
-          <div style="font-size:12px;color:rgba(255,255,255,0.5);margin-bottom:3px;">Saldo ${_gFinPeriodo==='dia'?'do dia':'do mes'}</div>
-          <div style="font-size:26px;font-weight:700;color:#fff;font-variant-numeric:tabular-nums;">${gFinFmtMoeda(saldo)}</div>
+        <div style="background:#fff;border:0.5px solid #eee;border-radius:9px;padding:6px 10px;display:flex;flex-direction:column;justify-content:center;">
+          <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#888;margin-bottom:1px;">Saldo ${_gFinPeriodo==='dia'?'do dia':'do mes'}</div>
+          <div style="font-size:15px;font-weight:700;color:#1a1a1a;font-variant-numeric:tabular-nums;">${gFinFmtMoeda(saldo)}</div>
         </div>
-        <div style="font-size:12px;color:${saldo>=0?'#7ed4a4':'#f4a09a'};background:${saldo>=0?'rgba(45,106,71,0.25)':'rgba(163,66,58,0.25)'};padding:5px 10px;border-radius:20px;font-weight:600;">
-          ${saldo>=0?'Positivo':'Negativo'}
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <button onclick="gFinAbrirModal('receita')" style="${CS}flex:1;border:none;border-radius:7px;background:#eaf3e0;color:#2d6a47;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:3px;min-height:0;">+ Receita</button>
+          <button onclick="gFinAbrirModal('despesa')" style="${CS}flex:1;border:none;border-radius:7px;background:#fdf0ee;color:#a3423a;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:3px;min-height:0;">+ Despesa</button>
         </div>
       </div>
 
       ${pendentesHtml}
 
-      <div style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.06em;margin:18px 0 8px;">Lancamentos</div>
+      <div style="font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.06em;margin:16px 0 8px;">Lancamentos</div>
+      <div style="display:inline-flex;background:#f0f0f0;border-radius:999px;padding:3px;gap:2px;margin-bottom:12px;">${filtros}</div>
       ${lancamentosHtml}
     `;
   }
 
+  window.gFinSetFiltro = (f)=>{ _gFinFiltro=f; draw(); };
+
   window.gFinAbrirModal = (tipo)=>{
-    _gFinModal = { tipo, agId: null, descricao: '', valor: '' };
+    _gFinModal = { tipo, agId: null, descricao: '', valor: '', editId: null };
     draw();
     setTimeout(()=>document.getElementById('gfin-desc')?.focus(), 50);
+  };
+
+  window.gFinEditarLanc = (id)=>{
+    const l = _gFinLancamentos.find(x=>x.id===id);
+    if(!l) return;
+    _gFinModal = { tipo: l.tipo, agId: l.agendamento_id||null, descricao: l.descricao, valor: String(l.valor), editId: id };
+    draw();
+    setTimeout(()=>document.getElementById('gfin-desc')?.focus(), 50);
+  };
+
+  window.gFinExcluir = async (id)=>{
+    if(!confirm('Excluir este lancamento?')) return;
+    const { error } = await supabaseClient.from('lancamentos_financeiros').delete().eq('id', id);
+    if(error){ toast('Erro ao excluir.','err'); return; }
+    toast('Lancamento removido.','ok');
+    await gFinCarregar();
   };
 
   window.gFinAbrirModalPendente = (agId)=>{
@@ -1737,10 +1759,15 @@ function renderGestao(empInicial){
     if(isNaN(val)||val<=0){ toast('Informe um valor valido.','err'); return; }
     const m = _gFinModal;
     _gFinModal = null;
-    const dataLanc = _gFinPeriodo==='dia' ? _gFinData : isoData(new Date());
-    const payload = { empresa_id: emp.id, tipo: m.tipo, descricao: desc, valor: val, data: dataLanc };
-    if(m.agId) payload.agendamento_id = m.agId;
-    const { error } = await supabaseClient.from('lancamentos_financeiros').insert(payload);
+    let error;
+    if(m.editId){
+      ({ error } = await supabaseClient.from('lancamentos_financeiros').update({ descricao: desc, valor: val }).eq('id', m.editId));
+    } else {
+      const dataLanc = _gFinPeriodo==='dia' ? _gFinData : isoData(new Date());
+      const payload = { empresa_id: emp.id, tipo: m.tipo, descricao: desc, valor: val, data: dataLanc };
+      if(m.agId) payload.agendamento_id = m.agId;
+      ({ error } = await supabaseClient.from('lancamentos_financeiros').insert(payload));
+    }
     if(error){ toast('Erro ao salvar: '+error.message,'err'); _gFinModal=m; draw(); return; }
     toast('Lancamento salvo!','ok');
     await gFinCarregar();
