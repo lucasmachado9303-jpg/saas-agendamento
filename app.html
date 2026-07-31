@@ -1077,22 +1077,22 @@ function renderGestao(empInicial){
         if(ag){
           const waNum = '55' + ag.telefone.replace(/\D/g,'').replace(/^0/,'');
           const waLink = `https://wa.me/${waNum}`;
-          parts.push(`<div style="padding:16px;margin-bottom:8px;border-radius:12px;border:1.5px solid #e0e0e0;background:var(--card);display:flex;flex-direction:column;gap:12px;">
+          parts.push(`<div style="padding:10px 12px;margin-bottom:6px;border-radius:9px;border:0.5px solid #e0e0e0;background:var(--card);display:flex;flex-direction:column;gap:8px;">
             <div>
-              <div style="font-weight:700;font-size:15px;">${h} — ${escapeHtml(ag.nome)}</div>
-              <div class="muted" style="font-size:13px;margin-top:4px;">${escapeHtml(ag.servicoNome)}</div>
+              <div style="font-weight:700;font-size:13px;">${h} — ${escapeHtml(ag.nome)}</div>
+              <div class="muted" style="font-size:11px;margin-top:2px;">${escapeHtml(ag.servicoNome)}</div>
             </div>
-            <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;">
-              <button class="btn ghost" style="font-size:13px;" onclick="editarAgendamento('${ag.id}')">Editar</button>
-              <button class="btn" style="font-size:13px;background:#e53935;border:none;color:#fff;" onclick="cancelarAgendamento('${ag.id}')">Cancelar</button>
-              <button class="btn" style="font-size:13px;background:#25d366;border:none;color:#fff;" onclick="window.open('${waLink}','_blank','noopener,noreferrer')">WhatsApp</button>
+            <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;">
+              <button style="font-family:inherit;height:28px;border-radius:6px;border:0.5px solid #ccc;background:#f0f0f0;color:#1a1a1a;font-size:11px;font-weight:700;cursor:pointer;" onclick="editarAgendamento('${ag.id}')">Editar</button>
+              <button style="font-family:inherit;height:28px;border-radius:6px;border:none;background:#ffe6e6;color:#e53935;font-size:11px;font-weight:700;cursor:pointer;" onclick="cancelarAgendamento('${ag.id}')">Cancelar</button>
+              <button style="font-family:inherit;height:28px;border-radius:6px;border:none;background:#e6f9ef;color:#1a9f50;font-size:11px;font-weight:700;cursor:pointer;" onclick="window.open('${waLink}','_blank','noopener,noreferrer')">WhatsApp</button>
             </div>
           </div>`); continue;
         }
         if(bloqueado){
-          parts.push(`<div style="padding:16px;margin-bottom:8px;border-radius:12px;border:1.5px solid #e0e0e0;background:var(--card);display:flex;flex-direction:column;gap:12px;opacity:.55;">
-            <div style="font-weight:700;font-size:15px;">${h} — <span class="muted">Bloqueado</span></div>
-            <button class="btn ghost" style="font-size:13px;" onclick="desbloquearHorario('${diaSelecionado}','${h}')">Desbloquear</button>
+          parts.push(`<div style="padding:8px 12px;margin-bottom:6px;border-radius:9px;border:0.5px solid #e0e0e0;background:var(--card);display:flex;align-items:center;justify-content:space-between;opacity:.45;">
+            <span style="font-weight:700;font-size:13px;color:#e53935;">${h} — Bloqueado</span>
+            <button style="font-family:inherit;height:24px;border-radius:5px;border:0.5px solid #ccc;background:#fff;color:#555;font-size:10px;font-weight:600;cursor:pointer;" onclick="desbloquearHorario('${diaSelecionado}','${h}')">Desbloquear</button>
           </div>`); continue;
         }
         if(novoAgState && novoAgState.data===diaSelecionado && novoAgState.hora===h){
@@ -1113,11 +1113,11 @@ function renderGestao(empInicial){
           </div>`); continue;
         }
         // Slot livre
-        parts.push(`<div style="padding:16px;margin-bottom:8px;border-radius:12px;border:1.5px solid #e0e0e0;background:var(--card);display:flex;flex-direction:column;gap:12px;opacity:.45;">
-          <div style="font-weight:700;font-size:15px;">${h} — <span class="muted">Livre</span></div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-            <button class="btn ghost" style="font-size:13px;" onclick="novoAgendamento('${diaSelecionado}','${h}')">Agendar Manual</button>
-            <button class="btn ghost" style="font-size:13px;" onclick="bloquearHorario('${diaSelecionado}','${h}')">Bloquear</button>
+        parts.push(`<div style="padding:8px 12px;margin-bottom:6px;border-radius:9px;border:0.5px solid #e0e0e0;background:var(--card);display:flex;align-items:center;justify-content:space-between;opacity:.45;">
+          <span style="font-weight:700;font-size:13px;color:#aaa;">${h} — Livre</span>
+          <div style="display:flex;gap:4px;">
+            <button style="font-family:inherit;height:24px;border-radius:5px;border:0.5px solid #ccc;background:#fff;color:#555;font-size:10px;font-weight:600;cursor:pointer;" onclick="novoAgendamento('${diaSelecionado}','${h}')">Agendar</button>
+            <button style="font-family:inherit;height:24px;border-radius:5px;border:0.5px solid #ccc;background:#fff;color:#555;font-size:10px;font-weight:600;cursor:pointer;" onclick="bloquearHorario('${diaSelecionado}','${h}')">Bloquear</button>
           </div>
         </div>`);
       }
@@ -1149,13 +1149,13 @@ function renderGestao(empInicial){
     }).join('');
     return `
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
-        <button class="btn ghost" style="padding:10px 14px;font-size:18px;line-height:1;" onclick="selecionarDiaGestao('${isoAddDias(diaSelecionado,-1)}')">&#8592;</button>
+        <button style="background:none;border:none;font-size:22px;font-weight:300;color:#888;cursor:pointer;padding:4px 12px;line-height:1;" onclick="selecionarDiaGestao('${isoAddDias(diaSelecionado,-1)}')">&#8249;</button>
         <div style="position:relative;text-align:center;cursor:pointer;" onclick="document.getElementById('calGestao').showPicker ? document.getElementById('calGestao').showPicker() : document.getElementById('calGestao').click()">
-          <div style="font-family:'Nunito',sans-serif;font-size:17px;font-weight:700;">${dataFmt}</div>
-          <div style="font-size:12px;color:var(--ink-soft);text-transform:capitalize;">${diaNome}${isHoje?' · Hoje':''}</div>
+          <div style="font-family:'Nunito',sans-serif;font-size:14px;font-weight:700;">${dataFmt}</div>
+          <div style="font-size:11px;color:var(--ink-soft);text-transform:capitalize;">${diaNome}${isHoje?' · Hoje':''}</div>
           <input type="date" id="calGestao" value="${diaSelecionado}" style="position:absolute;opacity:0;width:1px;height:1px;top:0;left:50%;" onchange="selecionarDiaGestao(this.value)"/>
         </div>
-        <button class="btn ghost" style="padding:10px 14px;font-size:18px;line-height:1;" onclick="selecionarDiaGestao('${isoAddDias(diaSelecionado,1)}')">&#8594;</button>
+        <button style="background:none;border:none;font-size:22px;font-weight:300;color:#888;cursor:pointer;padding:4px 12px;line-height:1;" onclick="selecionarDiaGestao('${isoAddDias(diaSelecionado,1)}')">&#8250;</button>
       </div>
       <div style="text-align:center;margin-bottom:8px;">
         ${diaNaoTrabalha
