@@ -1626,13 +1626,12 @@ function renderGestao(empInicial){
         const svcNome = a.servicoNome || '';
         const horario = a.hora ? a.hora.slice(0,5) : '';
         const dataFmt = new Date(a.data+'T00:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
-        return `<div style="background:#fff8f0;border:1px solid #f0d9bc;border-radius:10px;padding:11px 12px;margin-bottom:6px;display:flex;align-items:center;gap:10px;">
-          <div style="width:7px;height:7px;border-radius:50%;background:#c97b2a;flex-shrink:0;"></div>
+        return `<div style="background:#fff;border:0.5px solid #eee;border-left:4px solid #FFA500;border-radius:10px;padding:11px 12px;margin-bottom:6px;display:flex;align-items:center;gap:10px;">
           <div style="flex:1;min-width:0;">
             <div style="font-size:13px;font-weight:600;color:#1a1a1a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(a.nome||'')}</div>
-            <div style="font-size:11px;color:#a07040;margin-top:2px;">${escapeHtml(svcNome)}${horario?' · '+dataFmt+' '+horario:''}</div>
+            <div style="font-size:11px;color:#aaa;margin-top:2px;">${escapeHtml(svcNome)}${horario?' · '+dataFmt+' '+horario:''}</div>
           </div>
-          <button onclick="gFinAbrirModalPendente('${a.id}')" style="${CS}background:#c97b2a;color:#fff;border:none;border-radius:7px;padding:6px 10px;font-size:11px;font-weight:700;flex-shrink:0;">Lancar</button>
+          <button onclick="gFinAbrirModalPendente('${a.id}')" style="${CS}background:#1a1a1a;color:#fff;border:none;border-radius:7px;padding:7px 12px;font-size:11px;font-weight:700;flex-shrink:0;">Lancar</button>
         </div>`;
       }).join('')}`;
 
@@ -1656,8 +1655,8 @@ function renderGestao(empInicial){
             <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;">
               <div style="font-size:13px;font-weight:700;color:${valClr};font-variant-numeric:tabular-nums;">${isIn?'+':'-'}${gFinFmtMoeda(l.valor)}</div>
               <div style="display:flex;gap:3px;">
-                <button onclick="gFinEditarLanc('${lid}')" style="${CS}width:26px;height:26px;border-radius:6px;border:none;background:#e8eeff;color:#3949ab;display:flex;align-items:center;justify-content:center;">${ICO_EDIT}</button>
-                <button onclick="gFinExcluir('${lid}')" style="${CS}width:26px;height:26px;border-radius:6px;border:none;background:#ffe6e6;color:#FF0000;display:flex;align-items:center;justify-content:center;">${ICO_TRASH}</button>
+                <button onclick="gFinEditarLanc('${lid}')" style="${CS}width:26px;height:26px;border-radius:6px;border:none;background:none;color:#1a1a1a;display:flex;align-items:center;justify-content:center;">${ICO_EDIT}</button>
+                <button onclick="gFinExcluir('${lid}')" style="${CS}width:26px;height:26px;border-radius:6px;border:none;background:none;color:#1a1a1a;display:flex;align-items:center;justify-content:center;">${ICO_TRASH}</button>
               </div>
             </div>
           </div>`;
