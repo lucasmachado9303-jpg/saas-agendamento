@@ -1453,8 +1453,7 @@ function renderGestao(empInicial){
   const GESTAO_CSS = `<style>
     .g-layout { display:flex; flex-direction:column; min-height:calc(100vh - 52px); }
     .g-content { flex:1; min-width:0; padding-bottom:72px; }
-    .g-dash-cards { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; }
-    .g-dash-card { background:#fff; border:0.5px solid #ececee; border-radius:14px; padding:12px; }
+    .g-dash-card { background:#fff; border:0.5px solid #ececee; border-radius:14px; padding:12px; display:flex; flex-direction:column; justify-content:center; }
     .g-dash-ico { width:30px; height:30px; border-radius:9px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
     .g-dash-label { font-size:11px; color:#8e8e93; line-height:1.25; font-weight:600; }
     .g-dash-val { font-size:21px; font-weight:700; color:#1a1a1a; letter-spacing:-.02em; margin-top:8px; line-height:1.1; }
@@ -1481,9 +1480,16 @@ function renderGestao(empInicial){
     }
     .g-dash-mode .card { flex:1; min-height:0; display:flex; flex-direction:column; }
     .g-dash-root { flex:1; min-height:0; display:flex; flex-direction:column; gap:9px; }
-    .g-dash-agenda { flex:1; min-height:0; display:flex; flex-direction:column; }
+    .g-dash-grid {
+      flex:1; min-height:0; display:grid; gap:9px;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      grid-template-rows:1fr 1fr 1fr 1.2fr;
+      grid-template-areas:"prox agend" "agenda fat" "agenda cli" "notas notas";
+    }
+    .g-dash-agenda { grid-area:agenda; min-height:0; display:flex; flex-direction:column; }
     .g-dash-agenda-list { flex:1; min-height:0; overflow-y:auto; }
-    .g-dash-notas-list { max-height:16dvh; overflow-y:auto; display:flex; flex-direction:column; gap:8px; }
+    .g-dash-notas { grid-area:notas; min-height:0; display:flex; flex-direction:column; }
+    .g-dash-notas-list { flex:1; min-height:0; overflow-y:auto; display:flex; flex-direction:column; gap:8px; }
     @media(min-width:768px){
       .g-dash-mode .container.wide { height:100dvh; padding:24px 16px 16px; }
     }
@@ -1582,8 +1588,8 @@ function renderGestao(empInicial){
     const ICO_CASH = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><line x1="6" y1="12" x2="6.01" y2="12"/><line x1="18" y1="12" x2="18.01" y2="12"/></svg>`;
     const ICO_USRS = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`;
 
-    const card = (icoBg, ico, label, val) => `
-      <div class="g-dash-card">
+    const card = (area, icoBg, ico, label, val) => `
+      <div class="g-dash-card" style="grid-area:${area};">
         <div style="display:flex;align-items:center;gap:8px;">
           <div class="g-dash-ico" style="background:${icoBg};">${ico}</div>
           <div class="g-dash-label">${label}</div>
@@ -1648,25 +1654,26 @@ function renderGestao(empInicial){
           <div style="font-size:12px;color:#8e8e93;margin-top:2px;">${dataFmt}</div>
         </div>
 
-        <div class="g-dash-cards">
-          ${card('#eff6ff', ICO_CAL2, 'Agendamentos<br>hoje', agHoje)}
-          ${card('#fff7ed', ICO_CLK,  'Próximo<br>atendimento', proxVal)}
-          ${card('#f0fdf4', ICO_CASH, 'Faturamento<br>hoje', gFinFmtMoeda(fatHoje))}
-          ${card('#faf5ff', ICO_USRS, 'Clientes atendidos<br>este mês', atendidosMes)}
-        </div>
+        <div class="g-dash-grid">
+          ${card('prox',  '#fff7ed', ICO_CLK,  'Próximo<br>atendimento', proxVal)}
+          ${card('agend', '#eff6ff', ICO_CAL2, 'Agendamentos<br>hoje', agHoje)}
 
-        <div class="g-dash-panel g-dash-agenda">
-          <div class="g-dash-ttl" style="margin-bottom:6px;">Agenda de hoje</div>
-          <div class="g-dash-agenda-list">${agendaRows}</div>
-          <button onclick="setCorner(null)" style="margin-top:8px;padding:8px 0 0;border:none;border-top:0.5px solid #f4f4f5;background:none;font-family:inherit;font-size:11px;color:#8e8e93;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:3px;width:100%;flex-shrink:0;">Ver completa &#8250;</button>
-        </div>
-
-        <div class="g-dash-panel">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-            <div class="g-dash-ttl">Bloco de notas</div>
-            <button onclick="novaNota()" style="background:none;border:none;font-family:inherit;font-size:11px;color:#3b82f6;font-weight:700;cursor:pointer;padding:0;">+ Nova</button>
+          <div class="g-dash-panel g-dash-agenda">
+            <div class="g-dash-ttl" style="margin-bottom:5px;">Agenda de hoje</div>
+            <div class="g-dash-agenda-list">${agendaRows}</div>
+            <button onclick="setCorner(null)" style="margin-top:7px;padding:7px 0 0;border:none;border-top:0.5px solid #f4f4f5;background:none;font-family:inherit;font-size:11px;color:#8e8e93;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:3px;width:100%;flex-shrink:0;">Ver completa &#8250;</button>
           </div>
-          <div class="g-dash-notas-list">${notasHtml}</div>
+
+          ${card('fat', '#f0fdf4', ICO_CASH, 'Faturamento<br>hoje', gFinFmtMoeda(fatHoje))}
+          ${card('cli', '#faf5ff', ICO_USRS, 'Clientes atendidos<br>este mês', atendidosMes)}
+
+          <div class="g-dash-panel g-dash-notas">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:9px;flex-shrink:0;">
+              <div class="g-dash-ttl">Bloco de notas</div>
+              <button onclick="novaNota()" style="background:none;border:none;font-family:inherit;font-size:11px;color:#3b82f6;font-weight:700;cursor:pointer;padding:0;">+ Nova</button>
+            </div>
+            <div class="g-dash-notas-list">${notasHtml}</div>
+          </div>
         </div>
       </div>
 
