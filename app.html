@@ -1282,7 +1282,7 @@ function renderGestao(empInicial){
               <div style="font-size:12px;color:#8e8e93;margin-top:2px;">R$ ${Number(s.preco||0).toLocaleString('pt-BR',{minimumFractionDigits:0})}</div>
             </div>
             ${_removendoServicoIdx===i
-              ? `<button onclick="_removendoServicoIdx=null;draw()" style="background:none;border:none;color:#8e8e93;cursor:pointer;font-size:12px;font-weight:600;padding:0;min-height:0;font-family:inherit;">Cancelar</button>
+              ? `<button onclick="cancelarRemocaoServico()" style="background:none;border:none;color:#8e8e93;cursor:pointer;font-size:12px;font-weight:600;padding:0;min-height:0;font-family:inherit;">Cancelar</button>
                  <button onclick="removeServico(${i})" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:12px;font-weight:700;padding:0;min-height:0;font-family:inherit;">Remover</button>`
               : `<button onclick="editarServico(${i})" style="background:none;border:none;color:#8e8e93;cursor:pointer;padding:4px;min-height:0;" title="Editar">${ICO_EDIT}</button>
                  <button onclick="removeServico(${i})" style="background:none;border:none;color:var(--danger);cursor:pointer;padding:4px;min-height:0;" title="Excluir">${ICO_TRASH}</button>`
@@ -2260,6 +2260,7 @@ function renderGestao(empInicial){
   window.editarServico = (i)=>{ _editandoServicoIdx = i; _removendoServicoIdx = null; draw(); };
   window.abrirNovoServico = ()=>{ _novoServicoForm = true; _editandoServicoIdx = null; draw(); };
   window.cancelarNovoServico = ()=>{ _novoServicoForm = false; draw(); };
+  window.cancelarRemocaoServico = ()=>{ _removendoServicoIdx = null; draw(); };
   window.removeServico = async (i)=>{
     if(_removendoServicoIdx !== i){ _removendoServicoIdx = i; draw(); return; }
     _removendoServicoIdx = null;
