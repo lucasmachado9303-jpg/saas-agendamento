@@ -1284,7 +1284,7 @@ function renderGestao(empInicial){
             ${_removendoServicoIdx===i
               ? `<button onclick="_removendoServicoIdx=null;draw()" style="background:none;border:none;color:#8e8e93;cursor:pointer;font-size:12px;font-weight:600;padding:0;min-height:0;font-family:inherit;">Cancelar</button>
                  <button onclick="removeServico(${i})" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:12px;font-weight:700;padding:0;min-height:0;font-family:inherit;">Remover</button>`
-              : `<button onclick="_editandoServicoIdx=${i};_removendoServicoIdx=null;draw()" style="background:none;border:none;color:#8e8e93;cursor:pointer;padding:4px;min-height:0;" title="Editar">${ICO_EDIT}</button>
+              : `<button onclick="editarServico(${i})" style="background:none;border:none;color:#8e8e93;cursor:pointer;padding:4px;min-height:0;" title="Editar">${ICO_EDIT}</button>
                  <button onclick="removeServico(${i})" style="background:none;border:none;color:var(--danger);cursor:pointer;padding:4px;min-height:0;" title="Excluir">${ICO_TRASH}</button>`
             }
           </div>`;
@@ -1295,7 +1295,7 @@ function renderGestao(empInicial){
           <div class="field" style="margin:0;"><label>Preço (R$)</label><input id="novoServicoPreco" type="number" min="0" step="1" placeholder="0"/></div>
           <div style="display:flex;gap:8px;">
             <button class="btn" style="flex:1;height:36px;" onclick="adicionarServico()">Salvar</button>
-            <button class="btn ghost" style="flex:1;height:36px;" onclick="_novoServicoForm=false;draw()">Cancelar</button>
+            <button class="btn ghost" style="flex:1;height:36px;" onclick="cancelarNovoServico()">Cancelar</button>
           </div>
         </div>` : '';
       const lista = emp.servicos.length ? `
@@ -1309,7 +1309,7 @@ function renderGestao(empInicial){
           <div style="position:absolute;left:0;right:0;text-align:center;font-weight:700;font-size:16px;pointer-events:none;">Serviços</div>
           <div></div>
         </div>
-        ${!_novoServicoForm ? `<button onclick="_novoServicoForm=true;_editandoServicoIdx=null;draw()" style="display:flex;align-items:center;gap:8px;width:100%;background:#fff;border:1.5px solid #c8c8c8;border-radius:12px;padding:12px 14px;font-size:14px;font-weight:700;color:#1a1a1a;cursor:pointer;font-family:inherit;margin-bottom:12px;">
+        ${!_novoServicoForm ? `<button onclick="abrirNovoServico()" style="display:flex;align-items:center;gap:8px;width:100%;background:#fff;border:1.5px solid #c8c8c8;border-radius:12px;padding:12px 14px;font-size:14px;font-weight:700;color:#1a1a1a;cursor:pointer;font-family:inherit;margin-bottom:12px;">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           Novo serviço
         </button>` : ''}
@@ -2257,6 +2257,9 @@ function renderGestao(empInicial){
     draw();
   };
   window.cancelarEdicaoServico = ()=>{ _editandoServicoIdx = null; draw(); };
+  window.editarServico = (i)=>{ _editandoServicoIdx = i; _removendoServicoIdx = null; draw(); };
+  window.abrirNovoServico = ()=>{ _novoServicoForm = true; _editandoServicoIdx = null; draw(); };
+  window.cancelarNovoServico = ()=>{ _novoServicoForm = false; draw(); };
   window.removeServico = async (i)=>{
     if(_removendoServicoIdx !== i){ _removendoServicoIdx = i; draw(); return; }
     _removendoServicoIdx = null;
