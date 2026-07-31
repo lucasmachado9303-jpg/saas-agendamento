@@ -1457,8 +1457,7 @@ function renderGestao(empInicial){
     .g-dash-card { background:#fff; border:0.5px solid #ececee; border-radius:14px; padding:12px; }
     .g-dash-ico { width:30px; height:30px; border-radius:9px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
     .g-dash-label { font-size:11px; color:#8e8e93; line-height:1.25; font-weight:600; }
-    .g-dash-val { font-size:21px; font-weight:700; color:#1a1a1a; letter-spacing:-.02em; margin-top:9px; line-height:1.1; }
-    .g-dash-sub { font-size:10px; margin-top:3px; font-weight:600; }
+    .g-dash-val { font-size:21px; font-weight:700; color:#1a1a1a; letter-spacing:-.02em; margin-top:8px; line-height:1.1; }
     .g-dash-panel { background:#fff; border:0.5px solid #ececee; border-radius:14px; padding:12px; }
     .g-dash-ttl { font-size:14px; font-weight:700; color:#1a1a1a; }
     .g-ag-row { padding:7px 0; }
@@ -1558,34 +1557,17 @@ function renderGestao(empInicial){
     const hoje     = isoData(agora);
     const mesStr   = hoje.slice(0,7);
     const horaAgora= agora.getHours().toString().padStart(2,'0')+':'+agora.getMinutes().toString().padStart(2,'0');
-    const ontemD   = new Date(agora); ontemD.setDate(ontemD.getDate()-1);
-    const ontem    = isoData(ontemD);
-
     const ags     = agendamentos.filter(a => a.slug === emp.slug);
     const agsHoje = ags.filter(a => a.data === hoje).sort((a,b)=>a.hora.localeCompare(b.hora));
     const agHoje  = agsHoje.length;
-    const agOntem = ags.filter(a => a.data === ontem).length;
-    const deltaAg = agHoje - agOntem;
 
     // Próximo atendimento
-    const prox = agsHoje.find(a => a.hora >= horaAgora);
-    let proxVal = '--:--', proxSub = 'nada por hoje', proxCor = '#8e8e93';
-    if(prox){
-      proxVal = prox.hora.slice(0,5);
-      const [ph,pm] = prox.hora.split(':').map(Number);
-      const alvo = new Date(agora); alvo.setHours(ph,pm,0,0);
-      const mins = Math.max(0, Math.round((alvo - agora)/60000));
-      const hh = Math.floor(mins/60), mm = mins%60;
-      proxSub = hh ? `em ${hh}h ${mm}min` : `em ${mm}min`;
-      proxCor = '#f59e0b';
-    }
+    const prox    = agsHoje.find(a => a.hora >= horaAgora);
+    const proxVal = prox ? prox.hora.slice(0,5) : '--:--';
 
-    // Faturamento
-    const somaRec  = d => _gFinLancamentos.filter(l=>l.tipo==='receita' && l.data===d)
-                                          .reduce((s,l)=>s+parseFloat(l.valor||0),0);
-    const fatHoje  = somaRec(hoje);
-    const fatOntem = somaRec(ontem);
-    const pctFat   = fatOntem > 0 ? Math.round(((fatHoje-fatOntem)/fatOntem)*100) : null;
+    // Faturamento de hoje
+    const fatHoje = _gFinLancamentos.filter(l=>l.tipo==='receita' && l.data===hoje)
+                                    .reduce((s,l)=>s+parseFloat(l.valor||0),0);
 
     // Clientes já atendidos no mês
     const atendidosMes = ags.filter(a => a.data.startsWith(mesStr)
@@ -1594,21 +1576,19 @@ function renderGestao(empInicial){
     const saudacao = agora.getHours() < 12 ? 'Bom dia' : agora.getHours() < 18 ? 'Boa tarde' : 'Boa noite';
     const dataFmt  = agora.toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'})
                           .replace(/^./, c=>c.toUpperCase());
-    const mesNome  = agora.toLocaleDateString('pt-BR',{month:'long'});
 
     const ICO_CAL2 = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`;
     const ICO_CLK  = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>`;
     const ICO_CASH = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><line x1="6" y1="12" x2="6.01" y2="12"/><line x1="18" y1="12" x2="18.01" y2="12"/></svg>`;
     const ICO_USRS = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`;
 
-    const card = (icoBg, ico, label, val, sub, subCor) => `
+    const card = (icoBg, ico, label, val) => `
       <div class="g-dash-card">
         <div style="display:flex;align-items:center;gap:8px;">
           <div class="g-dash-ico" style="background:${icoBg};">${ico}</div>
           <div class="g-dash-label">${label}</div>
         </div>
         <div class="g-dash-val">${val}</div>
-        <div class="g-dash-sub" style="color:${subCor};">${sub}</div>
       </div>`;
 
     // Agenda de hoje (metade da largura)
@@ -1664,19 +1644,15 @@ function renderGestao(empInicial){
     return `
       <div class="g-dash-root">
         <div>
-          <div style="font-size:19px;font-weight:800;color:#1a1a1a;letter-spacing:-.02em;">${saudacao}</div>
+          <div style="font-size:19px;font-weight:800;color:#1a1a1a;letter-spacing:-.02em;">${saudacao}, ${escapeHtml(emp.nome)}</div>
           <div style="font-size:12px;color:#8e8e93;margin-top:2px;">${dataFmt}</div>
         </div>
 
         <div class="g-dash-cards">
-          ${card('#eff6ff', ICO_CAL2, 'Agendamentos<br>hoje', agHoje,
-                 deltaAg===0?'igual a ontem':(deltaAg>0?`+${deltaAg} vs ontem`:`${deltaAg} vs ontem`),
-                 deltaAg>0?'#16a34a':(deltaAg<0?'#dc2626':'#8e8e93'))}
-          ${card('#fff7ed', ICO_CLK,  'Próximo<br>atendimento', proxVal, proxSub, proxCor)}
-          ${card('#f0fdf4', ICO_CASH, 'Faturamento<br>hoje', gFinFmtMoeda(fatHoje),
-                 pctFat===null?'sem base de ontem':(pctFat>=0?`+${pctFat}% vs ontem`:`${pctFat}% vs ontem`),
-                 pctFat===null?'#8e8e93':(pctFat>=0?'#16a34a':'#dc2626'))}
-          ${card('#faf5ff', ICO_USRS, 'Clientes<br>atendidos mês', atendidosMes, mesNome, '#8e8e93')}
+          ${card('#eff6ff', ICO_CAL2, 'Agendamentos<br>hoje', agHoje)}
+          ${card('#fff7ed', ICO_CLK,  'Próximo<br>atendimento', proxVal)}
+          ${card('#f0fdf4', ICO_CASH, 'Faturamento<br>hoje', gFinFmtMoeda(fatHoje))}
+          ${card('#faf5ff', ICO_USRS, 'Clientes atendidos<br>este mês', atendidosMes)}
         </div>
 
         <div class="g-dash-panel g-dash-agenda">
