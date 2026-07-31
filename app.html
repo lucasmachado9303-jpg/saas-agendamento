@@ -1045,7 +1045,7 @@ function renderGestao(empInicial){
       for(const h of horarios){
         const ag = agendamentos.find(a=>a.slug===emp.slug && a.data===diaSelecionado && a.hora===h);
         const bloqueado = (emp.bloqueios||[]).some(b=>b.data===diaSelecionado && b.hora===h);
-        const passadoHora = diaSelecionado === isoData(agora) && h < horaAgora;
+        const passadoHora = diaSelecionado < isoData(agora) || (diaSelecionado === isoData(agora) && h < horaAgora);
         if(ag && editandoId===ag.id){ /* renderizado como modal abaixo */ }
         if(ag){
           const waNum = '55' + ag.telefone.replace(/\D/g,'').replace(/^0/,'');
