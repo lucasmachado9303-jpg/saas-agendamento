@@ -1798,11 +1798,14 @@ function renderGestao(empInicial){
 
   function gFinPendentes(){
     const agora = new Date();
+    const hoje = isoData(agora);
+    const horaAgora = agora.getHours().toString().padStart(2,'0')+':'+agora.getMinutes().toString().padStart(2,'0');
     return agendamentos.filter(a=>{
       if(a.slug !== emp.slug) return false;
       if(_gFinAgLancados.has(a.id)) return false;
-      const dt = new Date(a.data+'T'+a.hora);
-      return dt <= agora;
+      if(a.data > hoje) return false;
+      if(a.data === hoje) return a.hora.slice(0,5) <= horaAgora;
+      return true;
     }).sort((a,b)=> (b.data+b.hora).localeCompare(a.data+a.hora));
   }
 
