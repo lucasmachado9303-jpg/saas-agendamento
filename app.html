@@ -559,7 +559,7 @@ async function init(){
   if(modoRecuperacao) return;   // não sobrepõe a tela de redefinir senha
 
   const params = new URLSearchParams(location.search);
-  if(params.get('empresa')) currentRoute.empresa = params.get('empresa');
+  if(params.get('empresa')){ currentRoute.empresa = params.get('empresa'); if(params.get('page')) currentRoute.page = params.get('page'); }
   else if(params.get('master')) currentRoute.master = 1;
   else {
     // URL limpa: /slug → Vercel reescreve para /app.html?empresa=slug,
@@ -2058,7 +2058,9 @@ function renderGestao(empInicial){
       carregarNotas();
       return;
     }
-    corner=c; editandoId=null; novoAgState=null; configurarSub=null; _removendoServicoIdx=null; _gFinModal=null; _notaModal=null; draw();
+    corner=c; editandoId=null; novoAgState=null; configurarSub=null; _removendoServicoIdx=null; _gFinModal=null; _notaModal=null;
+    draw();
+    loadData().then(()=>{ const a=empresas.find(e=>e.slug===emp.slug); if(a) emp=a; draw(); });
   };
   window.selecionarDiaGestao = (iso)=>{
     if(!iso || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return;
