@@ -1689,20 +1689,20 @@ function renderGestao(empInicial){
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:14px;grid-auto-rows:44px;">
         <div style="background:#fff;border:0.5px solid #eee;border-radius:9px;padding:6px 10px;display:flex;flex-direction:column;justify-content:center;">
-          <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#2d6a47;margin-bottom:1px;">Receitas</div>
-          <div style="font-size:15px;font-weight:700;color:#2d6a47;font-variant-numeric:tabular-nums;">${gFinFmtMoeda(receita)}</div>
+          <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#008000;margin-bottom:1px;">Receitas</div>
+          <div style="font-size:15px;font-weight:700;color:#008000;font-variant-numeric:tabular-nums;">${gFinFmtMoeda(receita)}</div>
         </div>
         <div style="background:#fff;border:0.5px solid #eee;border-radius:9px;padding:6px 10px;display:flex;flex-direction:column;justify-content:center;">
-          <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#a3423a;margin-bottom:1px;">Despesas</div>
-          <div style="font-size:15px;font-weight:700;color:#a3423a;font-variant-numeric:tabular-nums;">${gFinFmtMoeda(despesa)}</div>
+          <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#FF0000;margin-bottom:1px;">Despesas</div>
+          <div style="font-size:15px;font-weight:700;color:#FF0000;font-variant-numeric:tabular-nums;">${gFinFmtMoeda(despesa)}</div>
         </div>
         <div style="background:#fff;border:0.5px solid #eee;border-radius:9px;padding:6px 10px;display:flex;flex-direction:column;justify-content:center;">
-          <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#888;margin-bottom:1px;">Saldo ${_gFinPeriodo==='dia'?'do dia':'do mes'}</div>
+          <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#1a1a1a;margin-bottom:1px;">Saldo ${_gFinPeriodo==='dia'?'do dia':'do mes'}</div>
           <div style="font-size:15px;font-weight:700;color:#1a1a1a;font-variant-numeric:tabular-nums;">${gFinFmtMoeda(saldo)}</div>
         </div>
         <div style="display:flex;flex-direction:column;gap:6px;">
-          <button onclick="gFinAbrirModal('receita')" style="${CS}flex:1;border:none;border-radius:7px;background:#eaf3e0;color:#2d6a47;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:3px;min-height:0;">+ Receita</button>
-          <button onclick="gFinAbrirModal('despesa')" style="${CS}flex:1;border:none;border-radius:7px;background:#fdf0ee;color:#a3423a;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:3px;min-height:0;">+ Despesa</button>
+          <button onclick="gFinAbrirModal('receita')" style="${CS}flex:1;border:none;border-radius:7px;background:#008000;color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:3px;min-height:0;">+ Receita</button>
+          <button onclick="gFinAbrirModal('despesa')" style="${CS}flex:1;border:none;border-radius:7px;background:#FF0000;color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:3px;min-height:0;">+ Despesa</button>
         </div>
       </div>
 
