@@ -1608,10 +1608,14 @@ function renderGestao(empInicial){
       const isEdit = !!m.editId;
       const titulo = isEdit ? 'Editar lançamento' : (m.tipo==='receita' ? 'Nova Receita' : 'Nova Despesa');
       const corBtn = m.tipo==='receita' ? '#2d6a47' : '#a3423a';
+      const agModal = m.agId ? agendamentos.find(a=>a.id===m.agId) : null;
+      const svcModal = agModal?.servicoNome || '';
+      const svcHtml = svcModal ? `<div class="field"><label>Serviço</label><div style="padding:12px 14px;border-radius:10px;border:1.5px solid #e0e0e0;background:#f7f7f7;font-size:15px;color:#555;">${escapeHtml(svcModal)}</div></div>` : '';
       return `<div style="position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9000;display:flex;align-items:flex-end;justify-content:center;" onclick="if(event.target===this)gFinFecharModal()">
         <div style="background:#fff;border-radius:18px 18px 0 0;padding:28px 24px 40px;width:100%;max-width:520px;">
           <h3 style="${CS}font-weight:700;font-size:18px;margin:0 0 20px;">${titulo}</h3>
           <div class="field"><label>Descrição</label><input id="gfin-desc" type="text" value="${escapeHtml(m.descricao||'')}" placeholder="Ex: Coloracao raiz"></div>
+          ${svcHtml}
           <div class="field"><label>Valor (R$)</label><input id="gfin-val" type="number" min="0" step="0.01" value="${escapeHtml(m.valor||'')}" placeholder="0,00"></div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px;">
             <button class="btn ghost" onclick="gFinFecharModal()">Cancelar</button>
