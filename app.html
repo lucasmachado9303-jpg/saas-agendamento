@@ -1026,6 +1026,7 @@ function renderGestao(empInicial){
   let _gFinModal = null; // { tipo, agId?, descricao, valor, editId? }
   let _gFinFiltro = 'todos'; // 'todos' | 'entradas' | 'saidas'
   let _gFinCarregando = false;
+  let _gFinAgLancados = new Set(); // IDs de agendamentos já lançados — nunca removido ao excluir lançamento
 
   function agendamentosBody(){
     if(diaSelecionado===null){
@@ -1523,7 +1524,14 @@ function renderGestao(empInicial){
       .order('data', { ascending: false })
       .order('criado_em', { ascending: false });
     _gFinCarregando = false;
-    if(!error && data){ _gFinLancamentos = data; }
+    if(!error && data){
+      _gFinLancamentos = data;
+      const lsKey = 'gfin_lancados_'+emp.id;
+      const saved = JSON.parse(localStorage.getItem(lsKey)||'[]');
+      saved.forEach(id=>_gFinAgLancados.add(id));
+      data.filter(l=>l.agendamento_id).forEach(l=>_gFinAgLancados.add(l.agendamento_id));
+      localStorage.setItem(lsKey, JSON.stringify([..._gFinAgLancados]));
+    }
     if(corner === 'financeiro') draw();
   }
 
@@ -1572,10 +1580,9 @@ function renderGestao(empInicial){
 
   function gFinPendentes(){
     const agora = new Date();
-    const lancadosAgIds = new Set(_gFinLancamentos.filter(l=>l.agendamento_id).map(l=>l.agendamento_id));
     return agendamentos.filter(a=>{
       if(a.slug !== emp.slug) return false;
-      if(lancadosAgIds.has(a.id)) return false;
+      if(_gFinAgLancados.has(a.id)) return false;
       const dt = new Date(a.data+'T'+a.hora);
       return dt <= agora;
     }).sort((a,b)=> (b.data+b.hora).localeCompare(a.data+a.hora));
@@ -1771,6 +1778,10 @@ function renderGestao(empInicial){
       const payload = { empresa_id: emp.id, tipo: m.tipo, descricao: desc, valor: val, data: dataLanc };
       if(m.agId) payload.agendamento_id = m.agId;
       ({ error } = await supabaseClient.from('lancamentos_financeiros').insert(payload));
+      if(!error && m.agId){
+        _gFinAgLancados.add(m.agId);
+        localStorage.setItem('gfin_lancados_'+emp.id, JSON.stringify([..._gFinAgLancados]));
+      }
     }
     if(error){ toast('Erro ao salvar: '+error.message,'err'); _gFinModal=m; draw(); return; }
     toast('Lancamento salvo!','ok');
