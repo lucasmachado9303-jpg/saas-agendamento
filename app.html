@@ -1483,8 +1483,8 @@ function renderGestao(empInicial){
     .g-dash-grid {
       flex:1; min-height:0; display:grid; gap:9px;
       grid-template-columns:repeat(2,minmax(0,1fr));
-      grid-template-rows:1fr 1fr 1fr 1.2fr;
-      grid-template-areas:"prox agend" "agenda fat" "agenda cli" "notas notas";
+      grid-template-rows:auto auto auto auto 1fr;
+      grid-template-areas:"prox agend" "agenda fat" "agenda cli" "agenda fatmes" "notas notas";
     }
     .g-dash-agenda { grid-area:agenda; min-height:0; display:flex; flex-direction:column; }
     .g-dash-agenda-list { flex:1; min-height:0; overflow-y:auto; }
@@ -1574,6 +1574,9 @@ function renderGestao(empInicial){
     // Faturamento de hoje
     const fatHoje = _gFinLancamentos.filter(l=>l.tipo==='receita' && l.data===hoje)
                                     .reduce((s,l)=>s+parseFloat(l.valor||0),0);
+
+    const fatMes = _gFinLancamentos.filter(l=>l.tipo==='receita' && l.data.startsWith(mesStr))
+                                   .reduce((s,l)=>s+parseFloat(l.valor||0),0);
 
     // Clientes já atendidos no mês
     const atendidosMes = ags.filter(a => a.data.startsWith(mesStr)
@@ -1666,6 +1669,7 @@ function renderGestao(empInicial){
 
           ${card('fat', '#f0fdf4', ICO_CASH, 'Faturamento<br>hoje', gFinFmtMoeda(fatHoje))}
           ${card('cli', '#faf5ff', ICO_USRS, 'Clientes atendidos<br>este mês', atendidosMes)}
+          ${card('fatmes', '#ecfdf5', ICO_CASH, 'Faturamento<br>este mês', gFinFmtMoeda(fatMes))}
 
           <div class="g-dash-panel g-dash-notas">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:9px;flex-shrink:0;">
