@@ -1212,7 +1212,7 @@ function renderGestao(empInicial){
         <div style="font-size:22px;font-weight:700;color:#1a1a1a;margin-bottom:20px;padding:0 4px;">Configurações</div>
         <div style="background:#fff;border-radius:22px;box-shadow:0 2px 16px rgba(0,0,0,0.06);overflow:hidden;">
           ${mkItem("configurarIr('servicos')",   '#eff6ff', ICO_BRIEF, 'Serviços oferecidos',      'Configure os serviços disponíveis')}
-          ${mkItem("configurarIr('horarios')",   '#f0fdf4', ICO_CAL,   'Horários de agendamento',  'Defina dias e horários de atendimento')}
+          ${mkItem("configurarIr('horarios')",   '#f0fdf4', ICO_CAL,   'Horários de agendamento',  'Defina dias e horários de agendamento')}
           ${mkItem("configurarIr('personalizar')","#fdf4ff", ICO_LINK,  'Personalize seu link',     'Nome, textos, logo, cor e botões')}
           ${mkItem("configurarIr('mensagens')",  '#fff7ed', ICO_MSG,   'Configurar mensagens',     'Personalize mensagens automáticas', false)}
         </div>
@@ -1223,7 +1223,7 @@ function renderGestao(empInicial){
     }
     if(configurarSub === 'mensagens'){
       return `
-        <div style="display:grid;grid-template-columns:44px 1fr 44px;align-items:center;margin-bottom:16px;">
+        <div style="display:grid;grid-template-columns:auto 1fr auto;align-items:center;margin-bottom:16px;">
           <button onclick="configurarIr(null)" style="background:none;border:none;font-size:14px;font-weight:600;color:#555;cursor:pointer;padding:0;font-family:inherit;display:flex;align-items:center;gap:4px;">&#8249; Voltar</button>
           <div style="text-align:center;font-weight:700;font-size:16px;">Configurar mensagens</div>
           <div></div>
@@ -1237,7 +1237,7 @@ function renderGestao(empInicial){
 
     if(configurarSub === 'servicos'){
       return `
-        <div style="display:grid;grid-template-columns:44px 1fr 44px;align-items:center;margin-bottom:16px;">
+        <div style="display:grid;grid-template-columns:auto 1fr auto;align-items:center;margin-bottom:16px;">
           <button onclick="configurarIr(null)" style="background:none;border:none;font-size:14px;font-weight:600;color:#555;cursor:pointer;padding:0;font-family:inherit;display:flex;align-items:center;gap:4px;">&#8249; Voltar</button>
           <div style="text-align:center;font-weight:700;font-size:16px;">Serviços</div>
           <div></div>
@@ -1273,7 +1273,7 @@ function renderGestao(empInicial){
         : [0,1,2,3,4,5,6];
       const lista = horariosDoMes(emp, '_uni_');
       return `
-        <div style="display:grid;grid-template-columns:44px 1fr 44px;align-items:center;margin-bottom:16px;">
+        <div style="display:grid;grid-template-columns:auto 1fr auto;align-items:center;margin-bottom:16px;">
           <button onclick="configurarIr(null)" style="background:none;border:none;font-size:14px;font-weight:600;color:#555;cursor:pointer;padding:0;font-family:inherit;display:flex;align-items:center;gap:4px;">&#8249; Voltar</button>
           <div style="text-align:center;font-weight:700;font-size:16px;">Horários</div>
           <div></div>
@@ -1309,7 +1309,7 @@ function renderGestao(empInicial){
 
     if(configurarSub === 'personalizar'){
       return `
-        <div style="display:grid;grid-template-columns:44px 1fr 44px;align-items:center;margin-bottom:16px;">
+        <div style="display:grid;grid-template-columns:auto 1fr auto;align-items:center;margin-bottom:16px;">
           <button onclick="voltarDePersonalizar()" style="background:none;border:none;font-size:14px;font-weight:600;color:#555;cursor:pointer;padding:0;font-family:inherit;display:flex;align-items:center;gap:4px;">&#8249; Voltar</button>
           <div style="text-align:center;font-weight:700;font-size:16px;">Personalize seu link</div>
           <div></div>
