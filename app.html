@@ -300,6 +300,9 @@ async function loadData(){
       logo:                 e.logo                  || '',
       corPrincipal:         sanitizeCor(e.cor_principal || '#3d1f3a'),
       textoDestaque:        e.texto_destaque        || '',
+      // Mensagens de lembrete
+      msgConfirmacao:       e.msg_confirmacao       || '',
+      msgLembrete:          e.msg_lembrete          || '',
       // Relações
       servicos:             [],
       horariosPorMes:       {},
@@ -365,15 +368,17 @@ async function loadData(){
       agendamentos = (rAg.data || []).map(a => {
         const emp = empresas.find(e => e.id === a.empresa_id);
         return {
-          id:          a.id,
-          slug:        emp ? emp.slug : '',
-          servicoId:   a.servico_id,
-          servicoNome: a.servico_nome,
-          data:        a.data,
-          hora:        a.hora,
-          nome:        a.nome_cliente,
-          telefone:    a.telefone,
-          criadoEm:    a.criado_em
+          id:                  a.id,
+          slug:                emp ? emp.slug : '',
+          servicoId:           a.servico_id,
+          servicoNome:         a.servico_nome,
+          data:                a.data,
+          hora:                a.hora,
+          nome:                a.nome_cliente,
+          telefone:            a.telefone,
+          criadoEm:            a.criado_em,
+          confirmacaoEnviada:  a.confirmacao_enviada || false,
+          lembreteEnviado:     a.lembrete_enviado    || false
         };
       });
     } else {
@@ -1018,7 +1023,6 @@ function renderGestao(empInicial){
   let novoAgState = null;
   let configurarSub = null; // null | 'servicos' | 'horarios' | 'personalizar' | 'mensagens'
   let _waMenuId = null; // id do agendamento com dropdown WA aberto
-  const _waSent = new Set(); // 'agId_confirmacao' | 'agId_lembrete'
   let personalizarDirty = false;
   let mesHorario = mesKey(new Date());
   let novoBotaoState = null;
@@ -1096,8 +1100,8 @@ function renderGestao(empInicial){
                 <button class="ag-btn ag-btn-wa" style="width:100%;" onclick="toggleWaMenu('${ag.id}')">${ICO_WAG} WhatsApp</button>
                 ${_waMenuId === ag.id ? `<div style="position:absolute;top:calc(100% + 4px);right:0;min-width:130px;background:#fff;border:0.5px solid #d1d5db;border-radius:9px;overflow:hidden;z-index:50;box-shadow:0 4px 12px rgba(0,0,0,.10);">
                   <button class="ag-wa-dd-item" onclick="waAcao('${ag.id}','conversar','${emp.id}')">Conversar</button>
-                  <button class="ag-wa-dd-item" onclick="waAcao('${ag.id}','confirmacao','${emp.id}')">Confirmacao ${_waSent.has(ag.id+'_confirmacao') ? '<span style="color:#22c55e">&#10003;</span>' : ''}</button>
-                  <button class="ag-wa-dd-item" onclick="waAcao('${ag.id}','lembrete','${emp.id}')">Lembrete ${_waSent.has(ag.id+'_lembrete') ? '<span style="color:#22c55e">&#10003;</span>' : ''}</button>
+                  <button class="ag-wa-dd-item" onclick="waAcao('${ag.id}','confirmacao','${emp.id}')">Confirmacao ${ag.confirmacaoEnviada ? '<span style="color:#22c55e">&#10003;</span>' : ''}</button>
+                  <button class="ag-wa-dd-item" onclick="waAcao('${ag.id}','lembrete','${emp.id}')">Lembrete ${ag.lembreteEnviado ? '<span style="color:#22c55e">&#10003;</span>' : ''}</button>
                 </div>` : ''}
               </div>
             </div>
@@ -1276,8 +1280,8 @@ function renderGestao(empInicial){
       `;
     }
     if(configurarSub === 'mensagens'){
-      const msgConfirm = localStorage.getItem(`msg_${emp.id}_confirmacao`) || 'Ola, {nome}! Confirmando seu agendamento de {servico} hoje as {hora}. Te esperamos!';
-      const msgLembrete = localStorage.getItem(`msg_${emp.id}_lembrete`) || 'Ola, {nome}! Lembrando do seu agendamento de {servico} amanha as {hora}. Ate la!';
+      const msgConfirm = emp.msgConfirmacao || 'Ola, {nome}! Confirmando seu agendamento de {servico} hoje as {hora}. Te esperamos!';
+      const msgLembrete = emp.msgLembrete || 'Ola, {nome}! Lembrando do seu agendamento de {servico} amanha as {hora}. Ate la!';
       return `
         <div style="position:relative;display:flex;align-items:center;margin-bottom:16px;min-height:36px;">
           <button onclick="configurarIr(null)" style="background:none;border:none;font-size:14px;font-weight:600;color:#555;cursor:pointer;padding:0;font-family:inherit;display:flex;align-items:center;gap:4px;">&#8249; Voltar</button>
@@ -2338,10 +2342,11 @@ function renderGestao(empInicial){
     if(tipo === 'conversar'){
       link = `https://wa.me/${waNum}`;
     } else {
+      const empObj = empresas.find(e=>e.id===empId);
       const defaultMsg = tipo === 'confirmacao'
         ? 'Ola, {nome}! Confirmando seu agendamento de {servico} hoje as {hora}. Te esperamos!'
         : 'Ola, {nome}! Lembrando do seu agendamento de {servico} amanha as {hora}. Ate la!';
-      const tmpl = localStorage.getItem(`msg_${empId}_${tipo}`) || defaultMsg;
+      const tmpl = (tipo === 'confirmacao' ? empObj?.msgConfirmacao : empObj?.msgLembrete) || defaultMsg;
       const dataFmt = ag.data ? new Date(ag.data+'T00:00:00').toLocaleDateString('pt-BR') : '';
       const msg = tmpl
         .replace(/{nome}/g, ag.nome||'')
@@ -2349,18 +2354,26 @@ function renderGestao(empInicial){
         .replace(/{servico}/g, ag.servicoNome||'')
         .replace(/{data}/g, dataFmt);
       link = `https://wa.me/${waNum}?text=${encodeURIComponent(msg)}`;
-      _waSent.add(`${agId}_${tipo}`);
+      const campo = tipo === 'confirmacao' ? 'confirmacao_enviada' : 'lembrete_enviado';
+      supabaseClient.from('agendamentos').update({ [campo]: true }).eq('id', agId);
+      if(tipo === 'confirmacao') ag.confirmacaoEnviada = true;
+      else ag.lembreteEnviado = true;
     }
     _waMenuId = null;
     draw();
     window.open(link, '_blank', 'noopener,noreferrer');
   };
-  window.salvarMensagens = (empId)=>{
+  window.salvarMensagens = async (empId)=>{
     const c = document.getElementById('msgConfirmacao');
     const l = document.getElementById('msgLembrete');
     if(!c || !l) return;
-    localStorage.setItem(`msg_${empId}_confirmacao`, c.value);
-    localStorage.setItem(`msg_${empId}_lembrete`, l.value);
+    const { error } = await supabaseClient.from('empresas').update({
+      msg_confirmacao: c.value,
+      msg_lembrete:    l.value
+    }).eq('id', empId);
+    if(error){ toast('Erro ao salvar. Tente novamente.','err'); return; }
+    const empObj = empresas.find(e=>e.id===empId);
+    if(empObj){ empObj.msgConfirmacao = c.value; empObj.msgLembrete = l.value; }
     toast('Mensagens salvas!','ok');
   };
   window.toggleLinkMenu = ()=>{ _linkMenuAberto = !_linkMenuAberto; draw(); };
