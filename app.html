@@ -2564,6 +2564,7 @@ window.gestaoLogout = async (slug)=>{
   await supabaseClient.auth.signOut();
   currentUser = null; currentProfile = null;
   _limparEstado();
+  await loadData();
   goto({empresa: slug});
 };
 window.masterRedefinirSenha = async ()=>{
