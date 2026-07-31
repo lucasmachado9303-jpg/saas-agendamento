@@ -1098,11 +1098,11 @@ function renderGestao(empInicial){
           </div>`); continue;
         }
         // Slot livre
-        parts.push(`<div style="padding:8px 12px;margin-bottom:6px;border-radius:9px;border:0.5px solid #e0e0e0;background:var(--card);display:flex;align-items:center;justify-content:space-between;opacity:.45;">
-          <span style="font-weight:700;font-size:13px;color:#aaa;">${h} — Livre</span>
+        parts.push(`<div style="padding:10px 12px;margin-bottom:6px;border-radius:9px;border:0.5px solid #e0e0e0;background:var(--card);display:flex;align-items:center;justify-content:space-between;">
+          <span style="font-weight:700;font-size:15px;color:#1a1a1a;">${h} — <span style="color:#aaa;font-weight:400;">Livre</span></span>
           <div style="display:flex;gap:4px;">
-            <button style="font-family:inherit;height:24px;border-radius:5px;border:0.5px solid #ccc;background:#fff;color:#555;font-size:10px;font-weight:600;cursor:pointer;" onclick="novoAgendamento('${diaSelecionado}','${h}')">Agendar</button>
-            <button style="font-family:inherit;height:24px;border-radius:5px;border:0.5px solid #ccc;background:#fff;color:#555;font-size:10px;font-weight:600;cursor:pointer;" onclick="bloquearHorario('${diaSelecionado}','${h}')">Bloquear</button>
+            <button style="font-family:inherit;height:28px;border-radius:6px;border:0.5px solid #ccc;background:#fff;color:#555;font-size:11px;font-weight:600;cursor:pointer;" onclick="novoAgendamento('${diaSelecionado}','${h}')">Agendar</button>
+            <button style="font-family:inherit;height:28px;border-radius:6px;border:0.5px solid #ccc;background:#fff;color:#555;font-size:11px;font-weight:600;cursor:pointer;" onclick="bloquearHorario('${diaSelecionado}','${h}')">Bloquear</button>
           </div>
         </div>`);
       }
