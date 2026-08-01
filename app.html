@@ -2949,44 +2949,43 @@ function renderOnboarding(emp, onConcluir) {
 
   function drawStep4() {
     const logoPreview = obLogo
-      ? `<img src="${escapeAttr(obLogo)}" style="width:64px;height:64px;object-fit:cover;border-radius:50%;border:2px solid #e0e0e0;flex-shrink:0;"/>`
-      : `<div style="width:64px;height:64px;border-radius:50%;background:#f0f0f0;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#aaa;font-size:11px;text-align:center;">Sem logo</div>`;
+      ? `<img src="${escapeAttr(obLogo)}" style="width:90px;height:90px;object-fit:cover;border-radius:50%;display:block;margin-bottom:10px;border:2px solid #e0e0e0;"/>`
+      : `<div style="width:90px;height:90px;border-radius:50%;background:#f0f0f0;display:flex;align-items:center;justify-content:center;margin-bottom:10px;color:#aaa;font-size:12px;text-align:center;">Sem logo</div>`;
     const fundoPreview = obFundo
-      ? `<img src="${escapeAttr(obFundo)}" style="width:72px;height:52px;object-fit:cover;border-radius:8px;border:1.5px solid #e0e0e0;flex-shrink:0;"/>`
-      : `<div style="width:72px;height:52px;border-radius:8px;background:#f0f0f0;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#aaa;font-size:11px;text-align:center;">Sem fundo</div>`;
-    const CORES = [
-      '#3d1f3a','#1a1a2e','#0f3460','#264653',
-      '#2d6a4f','#533483','#b5179e','#c1121f',
-      '#e76f51','#f4a261','#457b9d','#1a1a1a'
-    ];
-    const swatches = CORES.map(c => `
-      <div onclick="obCorChange('${c}')" style="width:36px;height:36px;border-radius:10px;background:${c};cursor:pointer;border:3px solid ${obCor===c?'#1a1a1a':'transparent'};box-sizing:border-box;transition:border .1s;"></div>`
+      ? `<img src="${escapeAttr(obFundo)}" style="width:100%;height:110px;object-fit:cover;border-radius:10px;display:block;margin-bottom:10px;border:1.5px solid #e0e0e0;"/>`
+      : `<div style="width:100%;height:110px;border-radius:10px;background:#f0f0f0;display:flex;align-items:center;justify-content:center;margin-bottom:10px;color:#aaa;font-size:13px;">Sem imagem de fundo</div>`;
+    const CORES_OB = ['#3d1f3a','#1a1a2e','#0f3460','#264653','#2d6a4f','#533483','#b5179e','#c1121f','#e76f51','#f4a261','#457b9d','#1a1a1a'];
+    const swatches = CORES_OB.map(c =>
+      `<div onclick="obCorChange('${c}')" style="width:34px;height:34px;border-radius:9px;background:${c};cursor:pointer;border:3px solid ${obCor===c?'#1a1a1a':'transparent'};box-sizing:border-box;"></div>`
     ).join('');
     return `
-      <div style="font-size:20px;font-weight:800;color:#1a1a1a;margin-bottom:16px;letter-spacing:-.3px;">Personalize sua página</div>
-      <div style="display:flex;gap:12px;align-items:center;margin-bottom:14px;">
+      <div style="font-size:22px;font-weight:800;color:#1a1a1a;margin-bottom:6px;letter-spacing:-.3px;">Personalize sua página</div>
+      <div style="font-size:14px;color:#888;margin-bottom:20px;">Deixe sua página com a sua identidade.</div>
+      <div class="field">
+        <label>Logo</label>
         ${logoPreview}
-        <div style="flex:1;">
-          <div style="font-size:13px;font-weight:600;color:#1a1a1a;margin-bottom:6px;">Logo</div>
-          <button class="btn ghost" style="width:100%;height:36px;font-size:13px;" onclick="obUpload('logo')">Enviar logo</button>
-        </div>
+        <button class="btn ghost" style="width:100%;" onclick="obUpload('logo')">Enviar logo</button>
+      </div>
+      <div class="field">
+        <label>Imagem de fundo</label>
         ${fundoPreview}
-        <div style="flex:1;">
-          <div style="font-size:13px;font-weight:600;color:#1a1a1a;margin-bottom:6px;">Fundo</div>
-          <button class="btn ghost" style="width:100%;height:36px;font-size:13px;" onclick="obUpload('background')">Enviar fundo</button>
-        </div>
+        <button class="btn ghost" style="width:100%;" onclick="obUpload('background')">Enviar imagem de fundo</button>
       </div>
-      <div class="field" style="margin-bottom:12px;">
+      <div class="field">
         <label>Descrição</label>
-        <textarea id="obDescInput" rows="2" placeholder="Fale sobre seu trabalho..." style="resize:none;">${escapeHtml(obDescricao)}</textarea>
+        <textarea id="obDescInput" rows="3" placeholder="Fale um pouco sobre seu trabalho..." style="resize:none;">${escapeHtml(obDescricao)}</textarea>
       </div>
-      <div class="field" style="margin-bottom:12px;">
+      <div class="field">
         <label>Texto em destaque</label>
         <input id="obDestaqueInput" type="text" value="${escapeAttr(obDestaque)}" placeholder="Ex: Atendimento premium"/>
       </div>
-      <div style="margin-bottom:4px;">
-        <div style="font-size:13px;font-weight:600;color:#1a1a1a;margin-bottom:10px;">Cor principal</div>
-        <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px;">${swatches}</div>
+      <div class="field">
+        <label>Cor principal</label>
+        <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:10px;">${swatches}</div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <input type="color" value="${escapeAttr(obCor)}" style="width:40px;height:40px;border:1.5px solid #d0d0d0;border-radius:9px;cursor:pointer;padding:3px;background:#fff;" oninput="obCorChange(this.value)"/>
+          <span style="font-size:13px;color:#888;">Ou escolha outra cor</span>
+        </div>
       </div>
     `;
   }
@@ -3625,6 +3624,18 @@ function renderMasterPanel(){
         <div class="field"><label>WhatsApp</label><input id="novoWhats" type="tel" inputmode="numeric" maxlength="16" placeholder="(xx) xxxxx-xxxx" oninput="maskTel(this)"/></div>
         <div class="field"><label>E-mail do gestor</label><input type="email" id="novoEmail" placeholder="gestor@email.com"/></div>
         <div class="field"><label>Senha temporária</label><input type="password" id="novaSenha" placeholder="Mínimo 6 caracteres"/></div>
+        <div class="field">
+          <label>Cor principal</label>
+          <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:10px;" id="masterCorSwatches">
+            ${['#3d1f3a','#1a1a2e','#0f3460','#264653','#2d6a4f','#533483','#b5179e','#c1121f','#e76f51','#f4a261','#457b9d','#1a1a1a'].map(c=>
+              `<div class="master-cor-sw" data-cor="${c}" onclick="masterSwatchCor('${c}')" style="width:34px;height:34px;border-radius:9px;background:${c};cursor:pointer;border:3px solid ${c==='#3d1f3a'?'#1a1a1a':'transparent'};box-sizing:border-box;"></div>`
+            ).join('')}
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <input type="color" id="novaCor" value="#3d1f3a" style="width:40px;height:40px;border:1.5px solid #d0d0d0;border-radius:9px;cursor:pointer;padding:3px;background:#fff;" oninput="masterSwatchCor(this.value,true)"/>
+            <span style="font-size:13px;color:#888;">Ou escolha outra cor</span>
+          </div>
+        </div>
         <button class="btn" style="width:100%;" onclick="masterCriar()">Criar empresa</button>
       </div>
     ` : '';
@@ -3798,6 +3809,16 @@ function renderMasterPanel(){
       });
   };
 
+  window.masterSwatchCor = (c, viaInput=false) => {
+    if(!viaInput){
+      const inp = document.getElementById('novaCor');
+      if(inp) inp.value = c;
+    }
+    document.querySelectorAll('.master-cor-sw').forEach(el => {
+      el.style.borderColor = el.dataset.cor === c ? '#1a1a1a' : 'transparent';
+    });
+  };
+
   window.masterCriar = async ()=>{
     const nome  = document.getElementById('novoNome').value.trim();
     const email = document.getElementById('novoEmail').value.trim();
@@ -3822,6 +3843,7 @@ function renderMasterPanel(){
     const nova = defaultEmpresa();
     nova.slug = s2; nova.nome = nome;
     nova.whatsapp = document.getElementById('novoWhats').value.trim();
+    nova.corPrincipal = sanitizeCor(document.getElementById('novaCor')?.value || '#3d1f3a');
     empresas.push(nova);
     await saveEmpresas();
 
