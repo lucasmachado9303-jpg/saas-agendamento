@@ -134,76 +134,65 @@ nav{
 .hero-cta-row{display:flex;flex-direction:column;align-items:flex-start;gap:14px;}
 .risk-copy{font-size:13px;color:var(--muted);letter-spacing:0.01em;}
 
-/* PHONE */
+/* PHONE MOCKUP */
 .phone-wrap{
-  display:flex;justify-content:center;
+  display:flex;justify-content:center;align-items:center;
   animation:heroUp 0.9s cubic-bezier(0.22,1,0.36,1) 0.15s both;
 }
 .phone{
   width:272px;height:548px;
   background:#0E0D0C;
-  border-radius:40px;
-  border:2px solid rgba(240,235,227,0.14);
+  border-radius:44px;
+  border:2px solid rgba(255,255,255,0.12);
   overflow:hidden;position:relative;
-  box-shadow:0 32px 64px rgba(0,0,0,0.55),0 8px 16px rgba(0,0,0,0.3);
+  box-shadow:
+    0 0 0 1px rgba(0,0,0,0.6),
+    0 32px 64px rgba(0,0,0,0.6),
+    0 8px 24px rgba(0,0,0,0.35),
+    inset 0 1px 0 rgba(255,255,255,0.08);
+  animation:phonefloat 5s ease-in-out infinite;
 }
-.phone-inner{position:absolute;inset:0;display:flex;flex-direction:column;overflow:hidden;}
-.phone-status{
-  height:30px;display:flex;align-items:center;justify-content:flex-end;
-  padding:0 20px;font-size:11px;color:rgba(240,235,227,0.35);
-  flex-shrink:0;
+@keyframes phonefloat{
+  0%,100%{transform:translateY(0);}
+  50%{transform:translateY(-5px);}
 }
-.phone-header{
-  padding:14px 18px 12px;
-  border-bottom:1px solid rgba(240,235,227,0.07);
-  flex-shrink:0;
+.phone-notch{
+  position:absolute;top:12px;left:50%;transform:translateX(-50%);
+  width:90px;height:26px;
+  background:#000;
+  border-radius:20px;
+  z-index:10;
+  display:flex;align-items:center;justify-content:flex-end;
+  padding-right:10px;gap:5px;
 }
-.phone-biz-name{
-  font-family:'Bricolage Grotesque',system-ui,sans-serif;
-  font-weight:700;font-size:15px;color:var(--cream);letter-spacing:-0.02em;
+.phone-notch::after{
+  content:'';
+  width:10px;height:10px;
+  border-radius:50%;
+  background:#1a1a1a;
+  border:1.5px solid #2a2a2a;
 }
-.phone-biz-meta{font-size:11px;color:rgba(240,235,227,0.38);margin-top:2px;}
-.phone-label{
-  font-size:10px;font-weight:600;letter-spacing:0.08em;
-  text-transform:uppercase;color:rgba(240,235,227,0.3);
-  padding:12px 18px 6px;flex-shrink:0;
+.phone-screen{
+  position:absolute;inset:0;
+  border-radius:42px;
+  overflow:hidden;
 }
-.phone-svc{
-  margin:3px 10px;padding:9px 12px;
-  border-radius:8px;
-  display:flex;justify-content:space-between;align-items:center;
-  flex-shrink:0;
+.phone-slide{
+  position:absolute;inset:0;
+  opacity:0;
+  transform:translateY(8px) scale(0.98);
+  transition:opacity 0.6s ease, transform 0.6s cubic-bezier(0.22,1,0.36,1);
+  will-change:opacity,transform;
 }
-.phone-svc.inactive{background:rgba(240,235,227,0.03);}
-.phone-svc.active{
-  background:rgba(232,149,42,0.11);
-  outline:1px solid rgba(232,149,42,0.28);
+.phone-slide.active{
+  opacity:1;
+  transform:translateY(0) scale(1);
 }
-.svc-n{font-size:12px;font-weight:500;color:var(--cream);}
-.svc-m{font-size:10px;color:rgba(240,235,227,0.38);margin-top:1px;}
-.svc-p{font-size:12px;font-weight:700;color:var(--gold);}
-.phone-slots{
-  padding:4px 10px;display:flex;flex-wrap:wrap;gap:6px;flex-shrink:0;
-}
-.slot{
-  padding:6px 11px;border-radius:6px;
-  font-size:11px;font-weight:600;
-  background:rgba(240,235,227,0.05);
-  color:rgba(240,235,227,0.55);
-}
-.slot.picked{background:var(--gold);color:#000;}
-.phone-btn{
-  margin:10px 10px 0;padding:13px;
-  border-radius:10px;
-  background:var(--gold);color:#000;
-  font-size:13px;font-weight:800;
-  text-align:center;letter-spacing:-0.01em;
-  flex-shrink:0;
-}
-.phone-tag{
-  margin:8px 10px 0;
-  font-size:10px;text-align:center;
-  color:rgba(240,235,227,0.3);
+.phone-slide img{
+  width:100%;height:100%;
+  object-fit:cover;
+  object-position:top center;
+  display:block;
 }
 
 /* PAIN */
@@ -352,36 +341,14 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
       </div>
     </div>
     <div class="phone-wrap">
-      <div class="phone">
-        <div class="phone-inner">
-          <div class="phone-status">9:41</div>
-          <div class="phone-header">
-            <div class="phone-biz-name">Studio Bella</div>
-            <div class="phone-biz-meta">Salao de Beleza &middot; Maringa, PR</div>
-          </div>
-          <div class="phone-label">Escolha um servico</div>
-          <div class="phone-svc inactive">
-            <div><div class="svc-n">Corte de cabelo</div><div class="svc-m">45 min</div></div>
-            <div class="svc-p">R$50</div>
-          </div>
-          <div class="phone-svc active">
-            <div><div class="svc-n">Escova progressiva</div><div class="svc-m">90 min</div></div>
-            <div class="svc-p">R$180</div>
-          </div>
-          <div class="phone-svc inactive">
-            <div><div class="svc-n">Manicure</div><div class="svc-m">60 min</div></div>
-            <div class="svc-p">R$40</div>
-          </div>
-          <div class="phone-label">Horarios de hoje</div>
-          <div class="phone-slots">
-            <div class="slot">10:00</div>
-            <div class="slot">11:30</div>
-            <div class="slot picked">14:00</div>
-            <div class="slot">15:30</div>
-            <div class="slot">17:00</div>
-          </div>
-          <div class="phone-btn">Confirmar agendamento</div>
-          <div class="phone-tag">studiobella.agenplus.com.br</div>
+      <div class="phone" id="phoneMockup">
+        <div class="phone-notch"></div>
+        <div class="phone-screen">
+          <div class="phone-slide active" id="slide-0"><img src="/assets/imagens/passo-1-inicio.jpg" alt="Passo 1"/></div>
+          <div class="phone-slide" id="slide-1"><img src="/assets/imagens/passo-2-servico.jpg" alt="Passo 2"/></div>
+          <div class="phone-slide" id="slide-2"><img src="/assets/imagens/passo-3-horario.jpg" alt="Passo 3"/></div>
+          <div class="phone-slide" id="slide-3"><img src="/assets/imagens/passo-4-dados.jpg" alt="Passo 4"/></div>
+          <div class="phone-slide" id="slide-4"><img src="/assets/imagens/passo-5-confirmacao.jpg" alt="Passo 5"/></div>
         </div>
       </div>
     </div>
@@ -469,5 +436,26 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
   <p class="footer-cr">&copy; 2025 AgenPlus</p>
 </footer>
 
+<script>
+(function(){
+  var images=[
+    '/assets/imagens/passo-1-inicio.jpg',
+    '/assets/imagens/passo-2-servico.jpg',
+    '/assets/imagens/passo-3-horario.jpg',
+    '/assets/imagens/passo-4-dados.jpg',
+    '/assets/imagens/passo-5-confirmacao.jpg'
+  ];
+  images.forEach(function(src){var i=new Image();i.src=src;});
+
+  var slides=document.querySelectorAll('.phone-slide');
+  var current=0;
+  function next(){
+    slides[current].classList.remove('active');
+    current=(current+1)%slides.length;
+    slides[current].classList.add('active');
+  }
+  setInterval(next,2500);
+})();
+</script>
 </body>
 </html>
