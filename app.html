@@ -563,6 +563,14 @@ function pararPolling(){
 async function init(){
   render(`<div class="loading-wrap"><div class="spinner spinner-dark" style="width:28px;height:28px;"></div><div>Carregando…</div></div>`);
 
+  // Estabelece sessao a partir de tokens no hash (redirect cross-domain)
+  const _hp = new URLSearchParams(location.hash.slice(1));
+  const _at = _hp.get('access_token'), _rt = _hp.get('refresh_token');
+  if(_at && _rt){
+    await supabaseClient.auth.setSession({ access_token: _at, refresh_token: _rt });
+    history.replaceState(null, '', location.pathname + location.search);
+  }
+
   // Escuta mudanças de auth (inclui PASSWORD_RECOVERY vindo do e-mail)
   supabaseClient.auth.onAuthStateChange(async (event, session) => {
     if (event === 'PASSWORD_RECOVERY') {
