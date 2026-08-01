@@ -565,10 +565,16 @@ async function init(){
 
   // Estabelece sessao a partir de tokens no hash (redirect cross-domain)
   const _hp = new URLSearchParams(location.hash.slice(1));
-  const _at = _hp.get('access_token'), _rt = _hp.get('refresh_token');
+  const _at = _hp.get('access_token'), _rt = _hp.get('refresh_token'), _htype = _hp.get('type');
   if(_at && _rt){
     await supabaseClient.auth.setSession({ access_token: _at, refresh_token: _rt });
     history.replaceState(null, '', location.pathname + location.search);
+  }
+
+  // Confirmacao de email de cadastro
+  if(_htype === 'signup' && _at && _rt){
+    await finalizarCadastro();
+    return;
   }
 
   // Escuta mudanças de auth (inclui PASSWORD_RECOVERY vindo do e-mail)
@@ -645,6 +651,8 @@ async function init(){
       const cleanPath = currentRoute.page ? '/' + currentRoute.page : '/';
       history.replaceState(currentRoute, '', cleanPath);
     }
+  } else if(path === 'cadastro'){
+    renderCadastro(); return;
   } else if(path === 'master'){
     currentRoute.master = 1;
   } else if(path === 'login'){
@@ -2823,6 +2831,114 @@ function renderMaster(){
 }
 
 // ---------- LOGIN UNIFICADO ----------
+function renderCadastro(){
+  render(`
+    <div class="login-wrap">
+      <div class="login-card">
+        <div class="login-brand">AGENDA+</div>
+        <h1 class="login-title">Criar sua conta</h1>
+        <p style="font-size:14px;color:#8e8e93;margin-bottom:24px;text-align:center;">Preencha os dados abaixo para começar.</p>
+        <div class="field"><label>Nome da empresa</label><input id="cad-nome" placeholder="Ex: Studio Bella" autocomplete="organization"/></div>
+        <div class="field"><label>WhatsApp <span style="font-weight:400;color:#aaa;">(opcional)</span></label><input id="cad-whats" type="tel" inputmode="numeric" maxlength="16" placeholder="(xx) xxxxx-xxxx" onkeydown="if(event.key.length===1&&!/\d/.test(event.key))event.preventDefault()" oninput="maskTel(this)"/></div>
+        <div class="field"><label>E-mail</label><input id="cad-email" type="email" placeholder="seu@email.com" autocomplete="email"/></div>
+        <div class="field"><label>Senha</label><input id="cad-senha" type="password" placeholder="Mínimo 6 caracteres" autocomplete="new-password"/></div>
+        <button class="btn" style="width:100%;margin-top:4px;" onclick="tentarCadastro()">Criar conta</button>
+        <div style="text-align:center;margin-top:16px;font-size:13px;color:#8e8e93;">
+          Já tem conta? <a href="/login" style="color:var(--brand);font-weight:600;text-decoration:none;">Entrar</a>
+        </div>
+      </div>
+    </div>
+  `);
+}
+
+function renderVerificarEmail(email){
+  render(`
+    <div class="login-wrap">
+      <div class="login-card">
+        <div class="login-brand">AGENDA+</div>
+        <div style="text-align:center;margin-bottom:8px;">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 7 10-7"/></svg>
+        </div>
+        <h1 class="login-title">Verifique seu email</h1>
+        <p style="font-size:14px;color:#8e8e93;text-align:center;line-height:1.6;">
+          Enviamos um link de confirmação para<br/>
+          <strong style="color:#1a1a1a;">${escapeHtml(email)}</strong><br/><br/>
+          Clique no link para ativar sua conta. Verifique também a caixa de spam.
+        </p>
+        <div style="text-align:center;margin-top:24px;font-size:13px;color:#8e8e93;">
+          <a href="/login" style="color:var(--brand);font-weight:600;text-decoration:none;">Voltar para o login</a>
+        </div>
+      </div>
+    </div>
+  `);
+}
+
+async function finalizarCadastro(){
+  render(`<div class="loading-wrap"><div class="spinner spinner-dark" style="width:28px;height:28px;"></div><div>Configurando sua conta...</div></div>`);
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if(!session){ renderLoginUnificado(); return; }
+
+  let resp, result;
+  try {
+    resp = await fetch('/api/cadastro', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + session.access_token, 'Content-Type': 'application/json' }
+    });
+    result = await resp.json();
+  } catch(e) {
+    toast('Erro de conexão ao configurar sua conta. Tente novamente.', 'err', 8000);
+    renderLoginUnificado(); return;
+  }
+
+  if(!resp.ok){
+    toast(result.error || 'Erro ao configurar sua conta.', 'err', 8000);
+    renderLoginUnificado(); return;
+  }
+
+  const slug = result.slug;
+  const hash = `access_token=${session.access_token}&refresh_token=${session.refresh_token}&token_type=bearer&type=bearer`;
+  location.replace(`https://${slug}.agenplus.com.br/gestao#${hash}`);
+}
+
+window.tentarCadastro = async ()=>{
+  const nome    = (document.getElementById('cad-nome')?.value  || '').trim();
+  const whats   = (document.getElementById('cad-whats')?.value || '').trim();
+  const email   = (document.getElementById('cad-email')?.value || '').trim();
+  const senha   = (document.getElementById('cad-senha')?.value || '');
+
+  if(!nome)  { toast('Digite o nome da empresa.','err'); return; }
+  if(!email) { toast('Digite seu e-mail.','err'); return; }
+  if(senha.length < 6){ toast('A senha deve ter pelo menos 6 caracteres.','err'); return; }
+
+  if(whats){
+    let wd = whats.replace(/\D/g,'');
+    if(wd.startsWith('55') && wd.length > 11) wd = wd.slice(2);
+    if(wd.startsWith('0')) wd = wd.slice(1);
+    if(wd.length < 10 || wd.length > 11){ toast('WhatsApp inválido. Use o formato (xx) xxxxx-xxxx.','err'); return; }
+  }
+
+  const btn = document.querySelector('.login-card .btn');
+  if(btn){ btn.disabled = true; btn.textContent = 'Criando conta...'; }
+
+  const { error } = await supabaseClient.auth.signUp({
+    email, password: senha,
+    options: {
+      data: { nome_empresa: nome, whatsapp: whats },
+      emailRedirectTo: 'https://agenplus.com.br/login'
+    }
+  });
+
+  if(error){
+    if(btn){ btn.disabled = false; btn.textContent = 'Criar conta'; }
+    const msg = error.message.includes('already registered')
+      ? 'Este e-mail já está cadastrado. Use outro ou entre com sua conta.'
+      : error.message;
+    toast(msg, 'err', 6000); return;
+  }
+
+  renderVerificarEmail(email);
+};
+
 function renderLoginUnificado(){
   applyAccent('#1c1917');
   mostrarBannerPWA();
