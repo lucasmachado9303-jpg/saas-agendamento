@@ -86,26 +86,52 @@ module.exports = async function handler(req, res) {
   const empCriada = (await empInsert.json())[0];
   if (!empCriada?.id) return res.status(500).json({ error: 'Empresa criada sem ID' });
 
-  // Cria o perfil do gestor
-  const profileInsert = await fetch(`${SUPABASE_URL}/rest/v1/profiles`, {
-    method: 'POST',
+  // Atualiza ou cria o perfil do gestor
+  // Usa PATCH primeiro (caso trigger ja tenha criado uma linha vazia)
+  const profileData = { nome: nomeEmpresa, email: user.email, role: 'owner_empresa', empresa_id: empCriada.id, status: 'ativo' };
+  let profileOk = false;
+
+  const profilePatch = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${user.id}`, {
+    method: 'PATCH',
     headers: {
       'Authorization': `Bearer ${SERVICE_KEY}`, 'apikey': SERVICE_KEY,
       'Content-Type': 'application/json', 'Prefer': 'return=minimal'
     },
-    body: JSON.stringify({
-      id: user.id, nome: nomeEmpresa, email: user.email,
-      role: 'owner_empresa', empresa_id: empCriada.id, status: 'ativo'
-    })
+    body: JSON.stringify(profileData)
   });
-  if (!profileInsert.ok) {
-    // Rollback empresa
+
+  if (profilePatch.ok) {
+    // Verifica se o PATCH realmente atualizou algo (linha pode nao existir)
+    const count = profilePatch.headers.get('content-range');
+    if (!count || count === '*/0') {
+      // Nenhuma linha atualizada — faz INSERT
+      const profilePost = await fetch(`${SUPABASE_URL}/rest/v1/profiles`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${SERVICE_KEY}`, 'apikey': SERVICE_KEY,
+          'Content-Type': 'application/json', 'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify({ id: user.id, ...profileData })
+      });
+      profileOk = profilePost.ok;
+      if (!profileOk) {
+        const err = await profilePost.text();
+        await fetch(`${SUPABASE_URL}/rest/v1/empresas?id=eq.${empCriada.id}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${SERVICE_KEY}`, 'apikey': SERVICE_KEY }
+        });
+        return res.status(500).json({ error: 'Erro ao criar perfil: ' + err });
+      }
+    } else {
+      profileOk = true;
+    }
+  } else {
+    const err = await profilePatch.text();
     await fetch(`${SUPABASE_URL}/rest/v1/empresas?id=eq.${empCriada.id}`, {
       method: 'DELETE',
       headers: { 'Authorization': `Bearer ${SERVICE_KEY}`, 'apikey': SERVICE_KEY }
     });
-    const err = await profileInsert.text();
-    return res.status(500).json({ error: 'Erro ao criar perfil: ' + err });
+    return res.status(500).json({ error: 'Erro ao atualizar perfil: ' + err });
   }
 
   return res.status(200).json({ slug });
