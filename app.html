@@ -565,16 +565,10 @@ async function init(){
 
   // Estabelece sessao a partir de tokens no hash (redirect cross-domain)
   const _hp = new URLSearchParams(location.hash.slice(1));
-  const _at = _hp.get('access_token'), _rt = _hp.get('refresh_token'), _htype = _hp.get('type');
+  const _at = _hp.get('access_token'), _rt = _hp.get('refresh_token');
   if(_at && _rt){
     await supabaseClient.auth.setSession({ access_token: _at, refresh_token: _rt });
     history.replaceState(null, '', location.pathname + location.search);
-  }
-
-  // Confirmacao de email de cadastro
-  if(_htype === 'signup' && _at && _rt){
-    await finalizarCadastro();
-    return;
   }
 
   // Escuta mudanças de auth (inclui PASSWORD_RECOVERY vindo do e-mail)
@@ -2868,60 +2862,11 @@ function renderCadastro(){
   `);
 }
 
-function renderVerificarEmail(email){
-  render(`
-    <div class="login-wrap">
-      <div class="login-card">
-        <div class="login-brand">AGENDA+</div>
-        <div style="text-align:center;margin-bottom:8px;">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 7 10-7"/></svg>
-        </div>
-        <h1 class="login-title">Verifique seu email</h1>
-        <p style="font-size:14px;color:#8e8e93;text-align:center;line-height:1.6;">
-          Enviamos um link de confirmação para<br/>
-          <strong style="color:#1a1a1a;">${escapeHtml(email)}</strong><br/><br/>
-          Clique no link para ativar sua conta. Verifique também a caixa de spam.
-        </p>
-        <div style="text-align:center;margin-top:24px;font-size:13px;color:#8e8e93;">
-          <a href="/login" style="color:var(--brand);font-weight:600;text-decoration:none;">Voltar para o login</a>
-        </div>
-      </div>
-    </div>
-  `);
-}
-
-async function finalizarCadastro(){
-  render(`<div class="loading-wrap"><div class="spinner spinner-dark" style="width:28px;height:28px;"></div><div>Configurando sua conta...</div></div>`);
-  const { data: { session } } = await supabaseClient.auth.getSession();
-  if(!session){ renderLoginUnificado(); return; }
-
-  let resp, result;
-  try {
-    resp = await fetch('/api/cadastro', {
-      method: 'POST',
-      headers: { 'Authorization': 'Bearer ' + session.access_token, 'Content-Type': 'application/json' }
-    });
-    result = await resp.json();
-  } catch(e) {
-    toast('Erro de conexão ao configurar sua conta. Tente novamente.', 'err', 8000);
-    renderLoginUnificado(); return;
-  }
-
-  if(!resp.ok){
-    toast(result.error || 'Erro ao configurar sua conta.', 'err', 8000);
-    renderLoginUnificado(); return;
-  }
-
-  const slug = result.slug;
-  const hash = `access_token=${session.access_token}&refresh_token=${session.refresh_token}&token_type=bearer&type=bearer`;
-  location.replace(`https://${slug}.agenplus.com.br/gestao#${hash}`);
-}
-
 window.tentarCadastro = async ()=>{
-  const nome    = (document.getElementById('cad-nome')?.value  || '').trim();
-  const whats   = (document.getElementById('cad-whats')?.value || '').trim();
-  const email   = (document.getElementById('cad-email')?.value || '').trim();
-  const senha   = (document.getElementById('cad-senha')?.value || '');
+  const nome  = (document.getElementById('cad-nome')?.value  || '').trim();
+  const whats = (document.getElementById('cad-whats')?.value || '').trim();
+  const email = (document.getElementById('cad-email')?.value || '').trim();
+  const senha = (document.getElementById('cad-senha')?.value || '');
 
   if(!nome)  { toast('Digite o nome da empresa.','err'); return; }
   if(!email) { toast('Digite seu e-mail.','err'); return; }
@@ -2934,15 +2879,12 @@ window.tentarCadastro = async ()=>{
     if(wd.length < 10 || wd.length > 11){ toast('WhatsApp inválido. Use o formato (xx) xxxxx-xxxx.','err'); return; }
   }
 
-  const btn = document.querySelector('.login-card .btn');
+  const btn = document.querySelector('.card .btn');
   if(btn){ btn.disabled = true; btn.textContent = 'Criando conta...'; }
 
-  const { error } = await supabaseClient.auth.signUp({
+  const { data, error } = await supabaseClient.auth.signUp({
     email, password: senha,
-    options: {
-      data: { nome_empresa: nome, whatsapp: whats },
-      emailRedirectTo: 'https://agenplus.com.br/login'
-    }
+    options: { data: { nome_empresa: nome, whatsapp: whats } }
   });
 
   if(error){
@@ -2953,7 +2895,31 @@ window.tentarCadastro = async ()=>{
     toast(msg, 'err', 6000); return;
   }
 
-  renderVerificarEmail(email);
+  // Sem confirmacao de email: usuario ja esta logado, cria empresa direto
+  render(`<div class="loading-wrap"><div class="spinner spinner-dark" style="width:28px;height:28px;"></div><div>Configurando sua conta...</div></div>`);
+
+  const session = data.session;
+  if(!session){ toast('Erro ao obter sessão. Tente fazer login.','err',6000); renderLoginUnificado(); return; }
+
+  let resp, result;
+  try {
+    resp = await fetch('/api/cadastro', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + session.access_token, 'Content-Type': 'application/json' }
+    });
+    result = await resp.json();
+  } catch(e) {
+    toast('Erro de conexão ao configurar sua conta. Tente novamente.','err',8000);
+    renderLoginUnificado(); return;
+  }
+
+  if(!resp.ok){
+    toast(result.error || 'Erro ao configurar sua conta.','err',8000);
+    renderLoginUnificado(); return;
+  }
+
+  const hash = `access_token=${session.access_token}&refresh_token=${session.refresh_token}&token_type=bearer&type=bearer`;
+  location.replace(`https://${result.slug}.agenplus.com.br/gestao#${hash}`);
 };
 
 function renderLoginUnificado(){
