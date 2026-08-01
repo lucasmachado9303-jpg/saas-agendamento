@@ -3617,7 +3617,7 @@ function renderMasterPanel(){
     draw();
   };
   carregarFinanceiro().then(draw);
-  iniciarPolling(()=>{ if(!editingSlug) carregarFinanceiro().then(()=>{ if(!editingSlug) draw(); }); });
+  iniciarPolling(()=>{ if(!editingSlug && masterDrawerMode === null) carregarFinanceiro().then(()=>{ if(!editingSlug && masterDrawerMode === null) draw(); }); });
 }
 
 function _limparEstado(){
