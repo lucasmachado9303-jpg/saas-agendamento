@@ -3072,79 +3072,125 @@ function renderMasterPanel(){
     { id:'financeiro', label:'Financeiro', ico: M_ICO.financeiro },
   ];
 
+  let masterDrawerMode = null; // null | 'criar' | 'editar'
+
   const SIDEBAR_CSS = `
     <style>
-      .master-layout { display:flex; flex-direction:column; min-height:calc(100vh - 52px); }
-      .master-content { flex:1; padding:24px; padding-bottom:72px; }
-      .dash-cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:14px; margin-bottom:28px; }
-      .dash-card { background:var(--paper); border:1.5px solid var(--line); border-radius:12px; padding:18px 16px; }
-      .dash-card-val { font-size:28px; font-weight:800; color:var(--ink); line-height:1; }
-      .dash-card-label { font-size:12px; color:var(--ink-soft); margin-top:6px; }
+      .ml { display:flex; flex-direction:column; min-height:100vh; }
+      .ml-content { flex:1; padding:24px 20px 80px; max-width:700px; margin:0 auto; width:100%; }
       .fin-status { display:inline-block; padding:3px 10px; border-radius:20px; font-size:12px; font-weight:600; }
 
-      .master-topbar { height:52px; display:flex; align-items:center; justify-content:space-between; padding:0 20px; background:#1c1917; color:#fff; }
-      .master-topbar .brand { font-family:'Nunito',sans-serif; font-weight:800; font-size:18px; }
+      /* Topbar */
+      .m-topbar { height:52px; display:flex; align-items:center; justify-content:space-between; padding:0 20px; background:#111; color:#fff; position:sticky; top:0; z-index:200; }
+      .m-topbar-brand { font-family:'Nunito',sans-serif; font-weight:900; font-size:17px; letter-spacing:-.02em; }
+      .m-topbar-user { font-size:12px; color:rgba(255,255,255,.45); }
 
-      .master-bottom-nav {
-        position:fixed; bottom:0; left:0; right:0; height:60px; z-index:300;
-        background:#1c1917; border-top:1px solid rgba(255,255,255,0.1);
-        display:flex; align-items:stretch;
-      }
-      .master-bn-item {
-        flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
-        gap:4px; border:none; background:none; cursor:pointer;
-        color:rgba(255,255,255,0.5); transition:color .15s;
-        font-size:11px; font-weight:600; font-family:'Nunito',sans-serif;
-        padding:0;
-      }
-      .master-bn-item:hover { color:rgba(255,255,255,0.8); }
-      .master-bn-item.active { color:#fff; }
-      .master-bn-ico { width:22px; height:22px; opacity:0.5; transition:opacity .15s; }
-      .master-bn-item.active .master-bn-ico { opacity:1; }
+      /* Bottom nav mobile */
+      .m-nav { position:fixed; bottom:0; left:0; right:0; height:60px; background:#111; border-top:1px solid rgba(255,255,255,.08); display:flex; z-index:200; }
+      .m-nb { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; border:none; background:none; color:rgba(255,255,255,.38); cursor:pointer; font-size:10px; font-weight:700; font-family:inherit; letter-spacing:.02em; transition:color .12s; }
+      .m-nb svg { width:20px; height:20px; }
+      .m-nb.on { color:#fff; }
 
+      /* Desktop sidebar */
       @media(min-width:768px){
-        .master-layout { flex-direction:row; }
-        .master-content { padding-bottom:24px; }
-        .master-bottom-nav {
-          position:sticky; top:52px; height:calc(100vh - 52px);
-          flex-direction:column; width:140px; border-top:none;
-          border-right:1px solid rgba(255,255,255,0.1);
-        }
-        .master-bn-item {
-          flex:none; flex-direction:row; justify-content:flex-start;
-          gap:10px; padding:14px 18px; font-size:13px;
-        }
-        .master-bn-item.active { background:rgba(255,255,255,0.1); }
-        .master-bn-ico { width:18px; height:18px; }
+        .ml { flex-direction:row; }
+        .ml-content { padding-bottom:24px; }
+        .m-nav { position:sticky; top:52px; height:calc(100vh - 52px); width:150px; flex-direction:column; border-top:none; border-right:1px solid rgba(255,255,255,.08); }
+        .m-nb { flex:none; flex-direction:row; justify-content:flex-start; gap:10px; padding:13px 18px; font-size:12px; border-radius:0; }
+        .m-nb.on { background:rgba(255,255,255,.09); color:#fff; }
       }
+
+      /* Stat strip */
+      .m-stats { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:24px; }
+      .m-stat { background:var(--paper); border:1px solid var(--line); border-radius:12px; padding:14px 16px; }
+      .m-stat-val { font-size:24px; font-weight:800; line-height:1; color:var(--ink); }
+      .m-stat-label { font-size:11px; color:var(--ink-soft); margin-top:5px; text-transform:uppercase; letter-spacing:.04em; }
+
+      /* Section header */
+      .m-sh { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; gap:12px; }
+      .m-sh-title { font-size:16px; font-weight:800; color:var(--ink); }
+      .m-sh-sub { font-size:13px; color:var(--ink-soft); margin-top:1px; }
+
+      /* Add button */
+      .m-add { display:inline-flex; align-items:center; gap:6px; padding:9px 16px; background:#111; color:#fff; border:none; border-radius:10px; font-size:13px; font-weight:700; font-family:inherit; cursor:pointer; white-space:nowrap; flex-shrink:0; }
+      .m-add:hover { opacity:.85; }
+      .m-add svg { width:15px; height:15px; }
+
+      /* Search */
+      .m-search { width:100%; padding:10px 14px; border:1.5px solid var(--line); border-radius:10px; font-size:14px; background:var(--paper); outline:none; font-family:inherit; color:var(--ink); margin-bottom:14px; }
+      .m-search:focus { border-color:#888; }
+
+      /* Empresa card */
+      .m-ec { background:var(--paper); border:1px solid var(--line); border-radius:14px; display:flex; align-items:center; padding:14px 16px; gap:12px; transition:border-color .15s; }
+      .m-ec:hover { border-color:#bbb; }
+      .m-ec-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+      .m-ec-body { flex:1; min-width:0; }
+      .m-ec-name { font-size:14px; font-weight:700; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+      .m-ec-link { font-size:12px; color:var(--ink-soft); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+      .m-ec-acts { display:flex; align-items:center; gap:2px; flex-shrink:0; }
+      .m-ib { width:34px; height:34px; display:flex; align-items:center; justify-content:center; border:none; background:none; cursor:pointer; border-radius:8px; color:var(--ink-soft); transition:background .12s, color .12s; }
+      .m-ib:hover { background:var(--line); color:var(--ink); }
+      .m-ib svg { width:16px; height:16px; }
+
+      /* Financeiro card */
+      .m-fc { background:var(--paper); border:1px solid var(--line); border-radius:14px; padding:14px 18px; display:flex; align-items:center; gap:12px; }
+      .m-fc-body { flex:1; min-width:0; }
+      .m-fc-name { font-size:14px; font-weight:700; color:var(--ink); }
+      .m-fc-sub { font-size:12px; color:var(--ink-soft); margin-top:3px; }
+      .m-fc-acts { display:flex; gap:8px; align-items:center; flex-shrink:0; }
+
+      /* Alert row */
+      .m-alert-row { display:flex; align-items:center; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--line); }
+      .m-alert-row:last-child { border-bottom:none; }
+
+      /* Fin filter tabs */
+      .m-tabs { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:16px; }
+      .m-tab { padding:6px 14px; border-radius:20px; border:1.5px solid var(--line); font-size:13px; cursor:pointer; background:var(--paper); color:var(--ink); font-family:inherit; font-weight:600; transition:background .12s, color .12s; }
+      .m-tab.on { background:#111; color:#fff; border-color:#111; }
+
+      /* Drawer */
+      .m-overlay { position:fixed; inset:0; background:rgba(0,0,0,.3); z-index:400; }
+      .m-drawer { position:fixed; top:0; right:0; bottom:0; width:min(440px,100vw); background:#fff; z-index:401; overflow-y:auto; display:flex; flex-direction:column; box-shadow:-8px 0 40px rgba(0,0,0,.12); }
+      .m-dh { display:flex; align-items:center; justify-content:space-between; padding:18px 22px 16px; border-bottom:1px solid #f0f0f0; position:sticky; top:0; background:#fff; z-index:1; }
+      .m-dh-title { font-size:16px; font-weight:800; color:#111; }
+      .m-dclose { width:32px; height:32px; display:flex; align-items:center; justify-content:center; border:none; background:#f5f5f5; border-radius:8px; cursor:pointer; color:#555; }
+      .m-dclose:hover { background:#eee; }
+      .m-dclose svg { width:16px; height:16px; }
+      .m-dbody { padding:22px; flex:1; }
+      .m-dfoot { padding:16px 22px; border-top:1px solid #f0f0f0; display:flex; flex-direction:column; gap:8px; }
+
+      /* Color swatches in drawer */
+      .m-swatches { display:grid; grid-template-columns:repeat(6,1fr); gap:8px; margin-bottom:10px; }
+      .m-sw { width:100%; aspect-ratio:1; border-radius:8px; cursor:pointer; border:3px solid transparent; box-sizing:border-box; transition:border-color .1s; }
     </style>
   `;
 
-  function drawMasterShell(conteudo){
+  function drawMasterShell(conteudo, drawer=''){
     const navItems = MASTER_NAV.map(n=>`
-      <button class="master-bn-item ${masterAba===n.id?'active':''}" onclick="masterIrAba('${n.id}')">
-        <span class="master-bn-ico">${n.ico}</span>
-        <span>${n.label}</span>
+      <button class="m-nb ${masterAba===n.id?'on':''}" onclick="masterIrAba('${n.id}')">
+        ${n.ico}<span>${n.label}</span>
       </button>`).join('');
 
     render(`
       ${SIDEBAR_CSS}
-      <div style="position:sticky;top:0;z-index:300;">
+      <div class="m-topbar">
+        <span class="m-topbar-brand">Agenda+</span>
+        <span class="m-topbar-user">master</span>
       </div>
-      <div class="master-layout">
-        <nav class="master-bottom-nav">
+      <div class="ml">
+        <nav class="m-nav">
           ${navItems}
-          <button class="master-bn-item" onclick="masterLogout()">
-            <span class="master-bn-ico">${M_ICO.sair}</span>
-            <span>Sair</span>
+          <button class="m-nb" onclick="masterLogout()" style="margin-top:auto;">
+            ${M_ICO.sair}<span>Sair</span>
           </button>
         </nav>
-        <div class="master-content">
-          ${conteudo}
-        </div>
+        <div class="ml-content">${conteudo}</div>
       </div>
+      ${drawer ? `<div class="m-overlay" onclick="masterFecharDrawer()"></div>${drawer}` : ''}
     `);
   }
+
+  window.masterFecharDrawer = () => { masterDrawerMode = null; editingSlug = null; masterShowForm = false; draw(); };
 
   function draw(){
     if(masterAba === 'dashboard') drawDashboard();
@@ -3189,59 +3235,33 @@ function renderMasterPanel(){
     });
 
     const listaAlertas = alertas.length ? alertas.map(a=>`
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line);">
+      <div class="m-alert-row">
         <span style="font-size:14px;font-weight:600;">${escapeHtml(a.nome)}</span>
         <span class="fin-status" style="color:${a.info.cor};background:${a.info.bg};">${a.info.label}</span>
       </div>
     `).join('') : `<p class="muted">Nenhum alerta no momento.</p>`;
 
     drawMasterShell(`
-      <h2 class="display" style="margin:0 0 20px;">Visão geral</h2>
-      <div class="dash-cards">
-        <div class="dash-card">
-          <div class="dash-card-val">${total}</div>
-          <div class="dash-card-label">Total de empresas</div>
-        </div>
-        <div class="dash-card">
-          <div class="dash-card-val" style="color:#2e7d32;">${ativas}</div>
-          <div class="dash-card-label">Ativas</div>
-        </div>
-        <div class="dash-card">
-          <div class="dash-card-val" style="color:#c62828;">${bloqueadas}</div>
-          <div class="dash-card-label">Bloqueadas</div>
-        </div>
-        <div class="dash-card">
-          <div class="dash-card-val" style="color:#2e7d32;">${pagas}</div>
-          <div class="dash-card-label">Pagas este mês</div>
-        </div>
-        <div class="dash-card">
-          <div class="dash-card-val" style="color:#c62828;">${vencidas}</div>
-          <div class="dash-card-label">Inadimplentes</div>
-        </div>
-        <div class="dash-card">
-          <div class="dash-card-val" style="color:#e65100;">${vencendo}</div>
-          <div class="dash-card-label">Vencendo em breve</div>
+      <div class="m-sh" style="margin-bottom:20px;">
+        <div>
+          <div class="m-sh-title">Visão geral</div>
+          <div class="m-sh-sub">${total} empresa${total!==1?'s':''} cadastrada${total!==1?'s':''}</div>
         </div>
       </div>
-      <div class="dash-cards">
-        <div class="dash-card">
-          <div class="dash-card-val">${fmt(fatEsperado)}</div>
-          <div class="dash-card-label">Faturamento esperado</div>
-        </div>
-        <div class="dash-card">
-          <div class="dash-card-val" style="color:#2e7d32;">${fmt(fatConfirmado)}</div>
-          <div class="dash-card-label">Confirmado</div>
-        </div>
-        <div class="dash-card">
-          <div class="dash-card-val" style="color:#c62828;">${fmt(fatAberto)}</div>
-          <div class="dash-card-label">Em aberto</div>
-        </div>
+      <div class="m-stats">
+        <div class="m-stat"><div class="m-stat-val">${ativas}</div><div class="m-stat-label">Ativas</div></div>
+        <div class="m-stat"><div class="m-stat-val" style="color:#c62828;">${vencidas}</div><div class="m-stat-label">Inadimpl.</div></div>
+        <div class="m-stat"><div class="m-stat-val" style="color:#e65100;">${vencendo}</div><div class="m-stat-label">A vencer</div></div>
+      </div>
+      <div class="m-stats" style="margin-bottom:${alertas.length?'20px':'0'};">
+        <div class="m-stat"><div class="m-stat-val" style="font-size:18px;">${fmt(fatEsperado)}</div><div class="m-stat-label">Esperado</div></div>
+        <div class="m-stat"><div class="m-stat-val" style="font-size:18px;color:#2e7d32;">${fmt(fatConfirmado)}</div><div class="m-stat-label">Confirmado</div></div>
+        <div class="m-stat"><div class="m-stat-val" style="font-size:18px;color:#c62828;">${fmt(fatAberto)}</div><div class="m-stat-label">Em aberto</div></div>
       </div>
       ${alertas.length ? `
-        <div class="card">
-          <h3 class="display" style="margin:0 0 4px;">Atenção necessária</h3>
-          <div style="font-size:13px;color:var(--ink-soft);margin-bottom:16px;">${alertas.length} empresa(s) precisam de ação</div>
-          ${listaAlertas}
+        <div style="background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:16px 18px;">
+          <div style="font-size:13px;font-weight:700;color:#c62828;margin-bottom:12px;">${alertas.length} empresa${alertas.length!==1?'s':''} precisam de atenção</div>
+          ${listaAlertas.replace(/class="m-alert-row"/g,'class="m-alert-row"')}
         </div>
       ` : ''}
     `);
@@ -3249,140 +3269,135 @@ function renderMasterPanel(){
 
   function drawEmpresas(){
     const editing = editingSlug ? empresas.find(e=>e.slug===editingSlug) : null;
-    const form = editing ? `
-      <div class="card" style="margin-bottom:24px;">
-        <h3 class="display">Editar empresa</h3>
-        <div class="field"><label>Nome</label><input value="${escapeAttr(editing.nome)}" onchange="masterUpd('nome',this.value)"/></div>
-        <div class="field"><label>WhatsApp</label><input type="tel" inputmode="numeric" maxlength="16" value="${escapeAttr(fmtTelStr(editing.whatsapp))}" oninput="maskTel(this);masterUpd('whatsapp',this.value)"/></div>
-        <div class="field">
-          <label>Link público</label>
-          <div style="display:flex;gap:8px;align-items:center;">
-            <span style="font-size:14px;color:var(--ink-soft);white-space:nowrap;">https://</span>
-            <input id="masterSlugInput" value="${escapeAttr(editing.slug)}" placeholder="seu-link" style="flex:1;" oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9-]/g,'')"/>
-            <span style="font-size:14px;color:var(--ink-soft);white-space:nowrap;">.agenplus.com.br</span>
-          </div>
-          <div style="font-size:11px;color:var(--ink-soft);margin-top:4px;">Atenção: alterar o link quebra o endereço antigo.</div>
-        </div>
-        <div class="field">
-          <label>E-mail do gestor</label>
-          <input readonly value="${escapeAttr(editing.gestorEmail||'Não cadastrado')}" style="background:#f5f5f5;color:var(--ink-soft);" onclick="this.select()"/>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px;">
-          <button class="btn ghost" onclick="masterSalvarEdicao()">Salvar</button>
-          <button class="btn ghost" onclick="masterToggleBloqueio()">${editing.bloqueada?'Desbloquear':'Bloquear'}</button>
-          <button class="btn ghost" onclick="masterRedefinirSenha()">Redefinir senha</button>
-          <button class="btn danger" onclick="masterExcluir('${editing.slug}')">Excluir empresa</button>
-        </div>
-      </div>
-    ` : masterShowForm ? `
-      <div class="card" style="margin-bottom:24px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
-          <h3 class="display" style="margin:0;">Nova empresa</h3>
-          <button class="icon-btn" style="font-size:22px;color:var(--ink-soft);" onclick="masterShowForm=false; drawMaster();">×</button>
-        </div>
-        <div class="field"><label>Nome da empresa</label><input id="novoNome" placeholder="Ex: Studio Bella"/></div>
-        <div class="field"><label>WhatsApp</label><input id="novoWhats" type="tel" inputmode="numeric" maxlength="16" placeholder="(xx) xxxxx-xxxx" oninput="maskTel(this)"/></div>
-        <div class="field"><label>E-mail do gestor</label><input type="email" id="novoEmail" placeholder="gestor@email.com"/></div>
-        <div class="field"><label>Senha temporária</label><input type="password" id="novaSenha" placeholder="Mínimo 6 caracteres"/></div>
-        <div class="field">
-          <label>Cor principal</label>
-          <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:10px;" id="masterCorSwatches">
-            ${['#3d1f3a','#1a1a2e','#0f3460','#264653','#2d6a4f','#533483','#b5179e','#c1121f','#e76f51','#f4a261','#457b9d','#1a1a1a'].map(c=>
-              `<div class="master-cor-sw" data-cor="${c}" onclick="masterSwatchCor('${c}')" style="width:34px;height:34px;border-radius:9px;background:${c};cursor:pointer;border:3px solid ${c==='#3d1f3a'?'#1a1a1a':'transparent'};box-sizing:border-box;"></div>`
-            ).join('')}
-          </div>
-          <div style="display:flex;align-items:center;gap:10px;">
-            <input type="color" id="novaCor" value="#3d1f3a" style="width:40px;height:40px;border:1.5px solid #d0d0d0;border-radius:9px;cursor:pointer;padding:3px;background:#fff;" oninput="masterSwatchCor(this.value,true)"/>
-            <span style="font-size:13px;color:#888;">Ou escolha outra cor</span>
-          </div>
-        </div>
-        <button class="btn" style="width:100%;" onclick="masterCriar()">Criar empresa</button>
-      </div>
-    ` : '';
 
     const listaFiltrada = masterSearch
       ? empresas.filter(e => e.nome.toLowerCase().includes(masterSearch.toLowerCase()))
       : empresas;
 
-    const lista = listaFiltrada.length ? `<div style="display:flex;flex-direction:column;gap:10px;">${listaFiltrada.map(e=>{
-      const link = location.origin + '/' + e.slug;
-      return `
-      <div style="background:var(--paper);border:1.5px solid var(--line);border-radius:12px;padding:16px;">
-        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:12px;">
-          <div style="min-width:0;flex:1;">
-            <div style="font-size:15px;font-weight:700;color:var(--ink);margin-bottom:4px;">${escapeHtml(e.nome)}</div>
-            <div style="font-size:12px;color:var(--ink-soft);word-break:break-all;">${escapeHtml(link)}</div>
-          </div>
-          <span class="chip ${e.bloqueada?'blocked':'ok'}" style="flex-shrink:0;">${e.bloqueada?'Bloqueada':'Ativa'}</span>
+    const ICO_EXT = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>`;
+    const ICO_COPY = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
+    const ICO_EDIT = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
+
+    const lista = listaFiltrada.length
+      ? `<div style="display:flex;flex-direction:column;gap:8px;">${listaFiltrada.map(e=>{
+          const link = `https://${e.slug}.agenplus.com.br`;
+          return `<div class="m-ec">
+            <div class="m-ec-dot" style="background:${e.bloqueada?'#ef4444':'#22c55e'};"></div>
+            <div class="m-ec-body">
+              <div class="m-ec-name">${escapeHtml(e.nome)}</div>
+              <div class="m-ec-link">${escapeHtml(link)}</div>
+            </div>
+            <div class="m-ec-acts">
+              <button class="m-ib" title="Abrir página" onclick="goto({empresa:'${e.slug}'})"> ${ICO_EXT}</button>
+              <button class="m-ib" title="Copiar link" onclick="navigator.clipboard.writeText('${escapeAttr(link)}').then(()=>toast('Link copiado!','ok'))">${ICO_COPY}</button>
+              <button class="m-ib" title="Editar" onclick="masterEditarEmpresa('${e.slug}')">${ICO_EDIT}</button>
+            </div>
+          </div>`;
+        }).join('')}</div>`
+      : `<p class="muted">${masterSearch ? 'Nenhuma empresa encontrada.' : 'Nenhuma empresa cadastrada ainda.'}</p>`;
+
+    // Drawer de criar
+    const drawerCriar = `
+      <div class="m-drawer">
+        <div class="m-dh">
+          <span class="m-dh-title">Nova empresa</span>
+          <button class="m-dclose" onclick="masterFecharDrawer()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-          <button class="btn ghost" style="padding:0 12px;font-size:13px;height:40px;" onclick="goto({empresa:'${e.slug}'})">Visualizar</button>
-          <button class="btn ghost" style="padding:0 12px;font-size:13px;height:40px;" onclick="goto({empresa:'${e.slug}', page:'gestao'})">Ver gestão</button>
-          <button class="btn ghost" style="padding:0 12px;font-size:13px;height:40px;" onclick="navigator.clipboard.writeText('${escapeAttr(link)}').then(()=>toast('Link copiado!','ok'))">Copiar link</button>
-          <button class="btn ghost" style="padding:0 12px;font-size:13px;height:40px;" onclick="masterEditarEmpresa('${e.slug}')">Editar</button>
+        <div class="m-dbody">
+          <div class="field"><label>Nome da empresa</label><input id="novoNome" placeholder="Ex: Studio Bella"/></div>
+          <div class="field"><label>WhatsApp</label><input id="novoWhats" type="tel" inputmode="numeric" maxlength="16" placeholder="(xx) xxxxx-xxxx" oninput="maskTel(this)"/></div>
+          <div class="field"><label>E-mail do gestor</label><input type="email" id="novoEmail" placeholder="gestor@email.com"/></div>
+          <div class="field"><label>Senha temporária</label><input type="password" id="novaSenha" placeholder="Mínimo 6 caracteres"/></div>
+          <div class="field">
+            <label>Cor principal</label>
+            <div class="m-swatches" id="masterCorSwatches">
+              ${['#3d1f3a','#1a1a2e','#0f3460','#264653','#2d6a4f','#533483','#b5179e','#c1121f','#e76f51','#f4a261','#457b9d','#1a1a1a'].map(c=>
+                `<div class="m-sw master-cor-sw" data-cor="${c}" onclick="masterSwatchCor('${c}')" style="background:${c};border-color:${c==='#3d1f3a'?'#1a1a1a':'transparent'};"></div>`
+              ).join('')}
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <input type="color" id="novaCor" value="#3d1f3a" style="width:38px;height:38px;border:1.5px solid #d0d0d0;border-radius:8px;cursor:pointer;padding:3px;background:#fff;" oninput="masterSwatchCor(this.value,true)"/>
+              <span style="font-size:13px;color:#888;">Personalizar cor</span>
+            </div>
+          </div>
+        </div>
+        <div class="m-dfoot">
+          <button class="btn" style="width:100%;" onclick="masterCriar()">Criar empresa</button>
+          <button class="btn ghost" style="width:100%;" onclick="masterFecharDrawer()">Cancelar</button>
         </div>
       </div>`;
-    }).join('')}</div>` : `<p class="muted">${masterSearch ? 'Nenhuma empresa encontrada.' : 'Nenhuma empresa cadastrada ainda.'}</p>`;
+
+    // Drawer de editar
+    const drawerEditar = editing ? `
+      <div class="m-drawer">
+        <div class="m-dh">
+          <span class="m-dh-title">${escapeHtml(editing.nome)}</span>
+          <button class="m-dclose" onclick="masterFecharDrawer()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        </div>
+        <div class="m-dbody">
+          <div class="field"><label>Nome</label><input value="${escapeAttr(editing.nome)}" onchange="masterUpd('nome',this.value)"/></div>
+          <div class="field"><label>WhatsApp</label><input type="tel" inputmode="numeric" maxlength="16" value="${escapeAttr(fmtTelStr(editing.whatsapp))}" oninput="maskTel(this);masterUpd('whatsapp',this.value)"/></div>
+          <div class="field">
+            <label>Link público</label>
+            <div style="display:flex;gap:6px;align-items:center;">
+              <span style="font-size:13px;color:var(--ink-soft);white-space:nowrap;">https://</span>
+              <input id="masterSlugInput" value="${escapeAttr(editing.slug)}" placeholder="seu-link" style="flex:1;" oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9-]/g,'')"/>
+              <span style="font-size:13px;color:var(--ink-soft);white-space:nowrap;">.agenplus.com.br</span>
+            </div>
+            <div style="font-size:11px;color:var(--ink-soft);margin-top:4px;">Alterar o link quebra o endereço antigo.</div>
+          </div>
+          <div class="field">
+            <label>E-mail do gestor</label>
+            <input readonly value="${escapeAttr(editing.gestorEmail||'Não cadastrado')}" style="background:#f5f5f5;color:var(--ink-soft);" onclick="this.select()"/>
+          </div>
+        </div>
+        <div class="m-dfoot">
+          <button class="btn" style="width:100%;" onclick="masterSalvarEdicao()">Salvar alterações</button>
+          <button class="btn ghost" style="width:100%;" onclick="masterToggleBloqueio()">${editing.bloqueada?'Desbloquear empresa':'Bloquear empresa'}</button>
+          <button class="btn ghost" style="width:100%;" onclick="masterRedefinirSenha()">Redefinir senha do gestor</button>
+          <button class="btn danger" style="width:100%;" onclick="masterExcluir('${editing.slug}')">Excluir empresa</button>
+        </div>
+      </div>` : '';
+
+    const drawer = masterDrawerMode === 'criar' ? drawerCriar : (masterDrawerMode === 'editar' ? drawerEditar : '');
 
     drawMasterShell(`
-      ${form}
-      <div class="card">
-        ${!editing ? `
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:24px;flex-wrap:wrap;">
-            <div>
-              <h3 class="display" style="margin:0;">Empresas cadastradas</h3>
-              <div style="font-size:13px;color:var(--ink-soft);margin-top:2px;">${empresas.length} ${empresas.length === 1 ? 'empresa' : 'empresas'}</div>
-            </div>
-            ${!masterShowForm ? `<button class="btn" style="white-space:nowrap;" onclick="masterShowForm=true; drawMaster();">+ Cadastrar nova empresa</button>` : ''}
-          </div>
-          <div class="field" style="margin-bottom:20px;">
-            <input placeholder="Buscar empresa..." value="${escapeAttr(masterSearch)}" oninput="masterSearch=this.value; drawMaster()" style="background:#f5f5f5;border-color:#e0e0e0;"/>
-          </div>
-          ${lista}
-        ` : lista}
+      <div class="m-sh">
+        <div>
+          <div class="m-sh-title">Empresas</div>
+          <div class="m-sh-sub">${empresas.length} cadastrada${empresas.length!==1?'s':''}</div>
+        </div>
+        <button class="m-add" onclick="masterDrawerMode='criar'; drawMaster();">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Nova empresa
+        </button>
       </div>
-    `);
+      <input class="m-search" placeholder="Buscar empresa..." value="${escapeAttr(masterSearch)}" oninput="masterSearch=this.value; drawMaster()"/>
+      ${lista}
+    `, drawer);
   }
 
   function drawFinanceiro(){
     const hoje = new Date();
     const mesAtual = hoje.toLocaleString('pt-BR',{month:'long', year:'numeric'}).replace(' De ', ' de ');
 
-    const formFin = _finForm ? `
-      <div class="card" style="margin-bottom:20px;">
-        <h3 class="display" style="margin:0 0 16px;">${_finForm.mode==='configurar'?'Configurar plano':'Editar plano'}</h3>
-        <div class="field"><label>Valor mensal (R$)</label><input type="number" id="finFormValor" value="${_finForm.valor||''}" min="0" step="0.01" placeholder="Ex: 99.90"/></div>
-        <div class="field"><label>Dia de vencimento (1 a 28)</label><input type="number" id="finFormDia" value="${_finForm.dia||''}" min="1" max="28" placeholder="Ex: 10"/></div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
-          <button class="btn ghost" onclick="finCancelarForm()">Cancelar</button>
-          <button class="btn" onclick="finSalvarForm()">Salvar</button>
-        </div>
-      </div>
-    ` : '';
-
-    const rows = empresas.map(e => {
-      const reg = financeiroData.find(f=>f.empresa_id===e.id);
-      return { e, reg };
-    });
+    const rows = empresas.map(e => ({ e, reg: financeiroData.find(f=>f.empresa_id===e.id) }));
 
     const filtroFin = _filtroFin;
     const filtrados = rows.filter(({reg}) => {
       if(filtroFin === 'todos') return true;
       if(!reg) return filtroFin === 'sem-dados';
       const info = finStatusInfo(reg);
-      if(filtroFin === 'pagos') return info.label === 'Pago';
+      if(filtroFin === 'pagos')    return info.label === 'Pago';
       if(filtroFin === 'vencidos') return info.label === 'Vencido';
       if(filtroFin === 'a-vencer') return info.label.startsWith('Vence');
       return true;
     });
 
     const tabBtns = ['todos','pagos','vencidos','a-vencer'].map(f => `
-      <button onclick="_filtroFin='${f}'; drawMaster();"
-        style="padding:6px 14px;border-radius:20px;border:1.5px solid var(--line);font-size:13px;cursor:pointer;
-        background:${filtroFin===f?'#1c1917':'var(--paper)'};color:${filtroFin===f?'#fff':'var(--ink)'};">
+      <button class="m-tab ${filtroFin===f?'on':''}" onclick="_filtroFin='${f}'; drawMaster();">
         ${{todos:'Todos',pagos:'Pagos',vencidos:'Vencidos','a-vencer':'A vencer'}[f]}
-      </button>
-    `).join('');
+      </button>`).join('');
 
     const listaFin = filtrados.length ? filtrados.map(({e, reg}) => {
       const info = finStatusInfo(reg);
@@ -3391,52 +3406,58 @@ function renderMasterPanel(){
       const pagoEm = reg?.pago_em ? new Date(reg.pago_em).toLocaleDateString('pt-BR') : null;
       const podeMarcar = reg && info.label !== 'Pago';
       return `
-        <div style="background:var(--paper);border:1.5px solid var(--line);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:10px;">
-          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;">
-            <div>
-              <div style="font-size:15px;font-weight:700;color:var(--ink);">${escapeHtml(e.nome)}</div>
-              <div style="font-size:13px;color:var(--ink-soft);margin-top:2px;">Vencimento: ${diaVenc} · ${valor}/mês</div>
-              ${pagoEm ? `<div style="font-size:12px;color:#2e7d32;margin-top:2px;">Pago em ${pagoEm}</div>` : ''}
-            </div>
-            <span class="fin-status" style="color:${info.cor};background:${info.bg};flex-shrink:0;">${info.label}</span>
+        <div class="m-fc">
+          <div class="m-fc-body">
+            <div class="m-fc-name">${escapeHtml(e.nome)}</div>
+            <div class="m-fc-sub">${diaVenc} · ${valor}/mês${pagoEm ? ` · pago em ${pagoEm}` : ''}</div>
           </div>
-          <div style="display:grid;grid-template-columns:${reg?'1fr 1fr':'1fr'};gap:8px;">
-            ${!reg ? `<button class="btn" style="font-size:13px;height:40px;" onclick="finConfigurar('${e.id}')">Configurar plano</button>` : `
-              ${podeMarcar ? `<button class="btn" style="font-size:13px;height:40px;background:#2e7d32;border-color:#2e7d32;" onclick="finMarcarPago('${reg.id}')">✓ Marcar como pago</button>` : `<button class="btn ghost" style="font-size:13px;height:40px;" disabled>Pago ✓</button>`}
-              <button class="btn ghost" style="font-size:13px;height:40px;" onclick="finEditar('${e.id}','${reg.id}',${reg.valor},${reg.dia_vencimento})">Editar plano</button>
-            `}
+          <span class="fin-status" style="color:${info.cor};background:${info.bg};flex-shrink:0;">${info.label}</span>
+          <div class="m-fc-acts">
+            ${!reg
+              ? `<button class="btn" style="font-size:12px;height:34px;padding:0 12px;" onclick="finConfigurar('${e.id}')">Configurar</button>`
+              : `${podeMarcar ? `<button class="btn" style="font-size:12px;height:34px;padding:0 12px;background:#166534;border-color:#166534;" onclick="finMarcarPago('${reg.id}')">Pago</button>` : `<button class="btn ghost" style="font-size:12px;height:34px;padding:0 12px;" disabled>Pago</button>`}
+                 <button class="m-ib" title="Editar plano" onclick="finEditar('${e.id}','${reg.id}',${reg.valor},${reg.dia_vencimento})">
+                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                 </button>`
+            }
           </div>
-        </div>
-      `;
+        </div>`;
     }).join('') : `<p class="muted">Nenhuma empresa nesta categoria.</p>`;
 
+    const drawerFin = _finForm ? `
+      <div class="m-drawer">
+        <div class="m-dh">
+          <span class="m-dh-title">${_finForm.mode==='configurar'?'Configurar plano':'Editar plano'}</span>
+          <button class="m-dclose" onclick="finCancelarForm()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        </div>
+        <div class="m-dbody">
+          <div class="field"><label>Valor mensal (R$)</label><input type="number" id="finFormValor" value="${_finForm.valor||''}" min="0" step="0.01" placeholder="Ex: 99.90"/></div>
+          <div class="field"><label>Dia de vencimento (1 a 28)</label><input type="number" id="finFormDia" value="${_finForm.dia||''}" min="1" max="28" placeholder="Ex: 10"/></div>
+        </div>
+        <div class="m-dfoot">
+          <button class="btn" style="width:100%;" onclick="finSalvarForm()">Salvar</button>
+          <button class="btn ghost" style="width:100%;" onclick="finCancelarForm()">Cancelar</button>
+        </div>
+      </div>` : '';
+
     drawMasterShell(`
-      ${formFin}
-      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px;">
+      <div class="m-sh" style="margin-bottom:16px;">
         <div>
-          <h2 class="display" style="margin:0;">Financeiro</h2>
-          <div style="font-size:13px;color:var(--ink-soft);margin-top:2px;text-transform:capitalize;">${mesAtual}</div>
+          <div class="m-sh-title">Financeiro</div>
+          <div class="m-sh-sub" style="text-transform:capitalize;">${mesAtual}</div>
         </div>
       </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;">${tabBtns}</div>
-      <div style="display:flex;flex-direction:column;gap:10px;">${listaFin}</div>
-    `);
+      <div class="m-tabs">${tabBtns}</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">${listaFin}</div>
+    `, drawerFin);
   }
 
   window.drawMaster = draw;
   window.masterIrAba = (aba) => { masterAba = aba; draw(); };
 
-  window.finConfigurar = (empresaId) => {
-    _finForm = { mode:'configurar', empresaId, regId:null, valor:'', dia:'' };
-    draw();
-  };
-
-  window.finEditar = (empresaId, regId, valorAtual, diaAtual) => {
-    _finForm = { mode:'editar', empresaId, regId, valor:valorAtual, dia:diaAtual };
-    draw();
-  };
-
   window.finCancelarForm = () => { _finForm = null; draw(); };
+  window.finConfigurar = (empresaId) => { _finForm = { mode:'configurar', empresaId, regId:null, valor:'', dia:'' }; draw(); };
+  window.finEditar = (empresaId, regId, valorAtual, diaAtual) => { _finForm = { mode:'editar', empresaId, regId, valor:valorAtual, dia:diaAtual }; draw(); };
 
   window.finSalvarForm = async () => {
     const valorEl = document.getElementById('finFormValor');
@@ -3511,7 +3532,7 @@ function renderMasterPanel(){
     if(!empCriada?.id){
       empresas = empresas.filter(e=>e.slug!==s2);
       toast('Não foi possível criar a empresa. Verifique sua conexão e tente novamente.','err',6000);
-      masterShowForm = false; draw(); return;
+      masterShowForm = false; masterDrawerMode = null; draw(); return;
     }
 
     // 2. Cria o usuário gestor via API segura
@@ -3536,7 +3557,7 @@ function renderMasterPanel(){
       toast('Empresa criada, mas não foi possível contatar a API. Crie o usuário manualmente no Supabase.','err',8000);
     }
 
-    masterShowForm = false;
+    masterShowForm = false; masterDrawerMode = null;
     if(apiOk){
       toast(`"${nome}" criada! Gestor: ${email}. Compartilhe a senha por canal seguro.`,'ok',8000);
     }
@@ -3544,6 +3565,7 @@ function renderMasterPanel(){
   };
   window.masterEditarEmpresa = async (slug) => {
     editingSlug = slug;
+    masterDrawerMode = 'editar';
     draw();
     const emp = empresas.find(e => e.slug === slug);
     if(emp && !emp.gestorEmail){
@@ -3590,7 +3612,7 @@ function renderMasterPanel(){
       toast('Link alterado com sucesso!','ok');
     }
 
-    editingSlug = null; draw();
+    editingSlug = null; masterDrawerMode = null; draw();
   };
   window.masterUpd = async (field,val)=>{
     const e = empresas.find(x=>x.slug===editingSlug);
