@@ -2780,11 +2780,18 @@ function renderGestao(empInicial){
   };
 
   window.abrirOnboarding = () => {
+    pararPolling();
     renderOnboarding(emp, async () => {
       await loadData();
       emp = empresas.find(e => e.slug === emp.slug) || emp;
       corner = null;
       draw();
+      iniciarPolling(()=>{
+        const atual = empresas.find(e => e.slug === emp.slug);
+        if(atual) emp = atual;
+        const formAberto = editandoId !== null || novoAgState !== null || novoBotaoState !== null || editandoBotaoId !== null || _gFinModal !== null || _notaModal !== null;
+        if(!formAberto && (corner===null || corner==='dashboard')) draw();
+      });
     });
   };
 
@@ -2924,38 +2931,44 @@ function renderOnboarding(emp, onConcluir) {
 
   function drawStep4() {
     const logoPreview = obLogo
-      ? `<img src="${escapeAttr(obLogo)}" style="width:80px;height:80px;object-fit:cover;border-radius:50%;display:block;margin-bottom:10px;border:2px solid #e0e0e0;"/>`
-      : `<div style="width:80px;height:80px;border-radius:50%;background:#f0f0f0;display:flex;align-items:center;justify-content:center;margin-bottom:10px;color:#aaa;font-size:12px;text-align:center;">Sem logo</div>`;
+      ? `<img src="${escapeAttr(obLogo)}" style="width:64px;height:64px;object-fit:cover;border-radius:50%;border:2px solid #e0e0e0;flex-shrink:0;"/>`
+      : `<div style="width:64px;height:64px;border-radius:50%;background:#f0f0f0;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#aaa;font-size:11px;text-align:center;">Sem logo</div>`;
     const fundoPreview = obFundo
-      ? `<img src="${escapeAttr(obFundo)}" style="width:100%;height:100px;object-fit:cover;border-radius:10px;display:block;margin-bottom:10px;border:1.5px solid #e0e0e0;"/>`
-      : `<div style="width:100%;height:100px;border-radius:10px;background:#f0f0f0;display:flex;align-items:center;justify-content:center;margin-bottom:10px;color:#aaa;font-size:13px;">Sem imagem de fundo</div>`;
+      ? `<img src="${escapeAttr(obFundo)}" style="width:72px;height:52px;object-fit:cover;border-radius:8px;border:1.5px solid #e0e0e0;flex-shrink:0;"/>`
+      : `<div style="width:72px;height:52px;border-radius:8px;background:#f0f0f0;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#aaa;font-size:11px;text-align:center;">Sem fundo</div>`;
+    const CORES = [
+      '#3d1f3a','#1a1a2e','#0f3460','#264653',
+      '#2d6a4f','#533483','#b5179e','#c1121f',
+      '#e76f51','#f4a261','#457b9d','#1a1a1a'
+    ];
+    const swatches = CORES.map(c => `
+      <div onclick="obCorChange('${c}')" style="width:36px;height:36px;border-radius:10px;background:${c};cursor:pointer;border:3px solid ${obCor===c?'#1a1a1a':'transparent'};box-sizing:border-box;transition:border .1s;"></div>`
+    ).join('');
     return `
-      <div style="font-size:22px;font-weight:800;color:#1a1a1a;margin-bottom:6px;letter-spacing:-.3px;">Personalize sua página</div>
-      <div style="font-size:14px;color:#888;margin-bottom:20px;">Deixe sua página com a sua identidade.</div>
-      <div class="field">
-        <label>Logo</label>
+      <div style="font-size:20px;font-weight:800;color:#1a1a1a;margin-bottom:16px;letter-spacing:-.3px;">Personalize sua página</div>
+      <div style="display:flex;gap:12px;align-items:center;margin-bottom:14px;">
         ${logoPreview}
-        <button class="btn ghost" style="width:100%;" onclick="obUpload('logo')">Enviar logo</button>
-      </div>
-      <div class="field">
-        <label>Imagem de fundo</label>
+        <div style="flex:1;">
+          <div style="font-size:13px;font-weight:600;color:#1a1a1a;margin-bottom:6px;">Logo</div>
+          <button class="btn ghost" style="width:100%;height:36px;font-size:13px;" onclick="obUpload('logo')">Enviar logo</button>
+        </div>
         ${fundoPreview}
-        <button class="btn ghost" style="width:100%;" onclick="obUpload('background')">Enviar imagem de fundo</button>
+        <div style="flex:1;">
+          <div style="font-size:13px;font-weight:600;color:#1a1a1a;margin-bottom:6px;">Fundo</div>
+          <button class="btn ghost" style="width:100%;height:36px;font-size:13px;" onclick="obUpload('background')">Enviar fundo</button>
+        </div>
       </div>
-      <div class="field">
+      <div class="field" style="margin-bottom:12px;">
         <label>Descrição</label>
-        <textarea id="obDescInput" rows="3" placeholder="Fale um pouco sobre seu trabalho..." style="resize:none;">${escapeHtml(obDescricao)}</textarea>
+        <textarea id="obDescInput" rows="2" placeholder="Fale sobre seu trabalho..." style="resize:none;">${escapeHtml(obDescricao)}</textarea>
       </div>
-      <div class="field">
+      <div class="field" style="margin-bottom:12px;">
         <label>Texto em destaque</label>
         <input id="obDestaqueInput" type="text" value="${escapeAttr(obDestaque)}" placeholder="Ex: Atendimento premium"/>
       </div>
-      <div class="field">
-        <label>Cor principal</label>
-        <div style="display:flex;align-items:center;gap:12px;">
-          <input type="color" id="obCorInput" value="${escapeAttr(obCor)}" style="width:44px;height:44px;border:none;background:none;cursor:pointer;padding:0;" oninput="obCorChange(this.value)"/>
-          <span id="obCorLabel" style="font-size:14px;color:#1a1a1a;font-weight:500;">${obCor}</span>
-        </div>
+      <div style="margin-bottom:4px;">
+        <div style="font-size:13px;font-weight:600;color:#1a1a1a;margin-bottom:10px;">Cor principal</div>
+        <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px;">${swatches}</div>
       </div>
     `;
   }
@@ -3017,8 +3030,8 @@ function renderOnboarding(emp, onConcluir) {
       `<div style="flex:1;height:3px;border-radius:2px;background:${i<=step?'#1a1a1a':'#e0e0e0'};transition:background .2s;"></div>`
     ).join('');
     render(`
-      <div style="min-height:100vh;background:#f5f5f5;">
-        <div style="position:sticky;top:0;z-index:10;background:#fff;border-bottom:1px solid #ebebeb;">
+      <div style="position:fixed;inset:0;background:#f5f5f5;display:flex;flex-direction:column;overflow:hidden;">
+        <div style="background:#fff;border-bottom:1px solid #ebebeb;flex-shrink:0;">
           <div style="display:flex;align-items:center;padding:14px 20px 10px;">
             <button onclick="obSair()" style="background:none;border:none;padding:0;cursor:pointer;display:flex;align-items:center;gap:6px;color:#888;font-size:13px;font-weight:600;font-family:inherit;min-height:0;">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -3029,10 +3042,10 @@ function renderOnboarding(emp, onConcluir) {
           </div>
           <div style="display:flex;gap:4px;padding:0 20px 12px;">${progresso}</div>
         </div>
-        <div style="padding:24px 20px 140px;">
+        <div style="flex:1;overflow-y:auto;padding:20px 20px 0;">
           ${renderStep()}
         </div>
-        <div style="position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #ebebeb;padding:14px 20px;padding-bottom:max(14px,env(safe-area-inset-bottom));display:flex;gap:10px;">
+        <div style="background:#fff;border-top:1px solid #ebebeb;padding:14px 20px;padding-bottom:max(14px,env(safe-area-inset-bottom));display:flex;gap:10px;flex-shrink:0;">
           ${step > 1 ? `<button class="btn ghost" onclick="obVoltar()" style="flex:0 0 auto;min-width:90px;height:50px;">Voltar</button>` : ''}
           <button class="btn" onclick="obAvancar()" style="flex:1;height:50px;font-size:16px;font-weight:700;background:#1a1a1a;border-color:#1a1a1a;color:#fff;${obSalvando?'opacity:.6;pointer-events:none;':''}">${step < 5 ? 'Continuar' : obSalvando ? 'Salvando...' : 'Concluir'}</button>
         </div>
@@ -3181,8 +3194,7 @@ function renderOnboarding(emp, onConcluir) {
 
   window.obCorChange = (val) => {
     obCor = val;
-    const el = document.getElementById('obCorLabel');
-    if(el) el.textContent = val;
+    draw();
   };
 
   window.obUpload = (tipo) => {
