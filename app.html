@@ -560,6 +560,7 @@ function pararPolling(){
 }
 
 // ---------- INIT ----------
+let _appInitialized = false;
 async function init(){
   render(`<div class="loading-wrap"><div class="spinner spinner-dark" style="width:28px;height:28px;"></div><div>Carregando…</div></div>`);
 
@@ -589,7 +590,7 @@ async function init(){
       currentProfile = null;
     }
 
-    if (event === 'SIGNED_IN' && currentUser && currentProfile && location.pathname !== '/cadastro' && location.pathname !== '/login') {
+    if (event === 'SIGNED_IN' && !_appInitialized && currentUser && currentProfile && location.pathname !== '/cadastro' && location.pathname !== '/login') {
       await loadData();
       const _goto = localStorage.getItem('ob_goto');
       if (_goto) {
@@ -668,6 +669,7 @@ async function init(){
     }
   }
   route();
+  _appInitialized = true;
 }
 
 function route(){
