@@ -3081,11 +3081,11 @@ function renderMasterPanel(){
       .fin-status { display:inline-block; padding:3px 10px; border-radius:20px; font-size:12px; font-weight:600; }
 
       /* Bottom nav mobile */
-      .m-nav { position:fixed; bottom:0; left:0; right:0; height:60px; background:#fff; box-shadow:0 -4px 16px rgba(0,0,0,.10); display:flex; z-index:200; }
+      .m-nav { position:fixed; bottom:0; left:0; right:0; height:60px; background:#fff; box-shadow:0 -4px 16px rgba(0,0,0,.10); display:flex; align-items:stretch; z-index:200; }
       .m-nb { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; border:none; background:none; color:#bbb; cursor:pointer; font-size:11px; font-weight:600; font-family:inherit; transition:color .15s; padding:0; }
       .m-nb:hover { color:#888; }
-      .m-nb svg { width:22px; height:22px; }
       .m-nb.on { color:#1a1a1a; }
+      .m-nb-ico { width:22px; height:22px; }
 
       /* Desktop sidebar */
       @media(min-width:768px){
@@ -3093,8 +3093,8 @@ function renderMasterPanel(){
         .ml-content { padding-bottom:24px; }
         .m-nav { position:sticky; top:0; height:100vh; width:140px; flex-direction:column; box-shadow:none; border-right:1px solid var(--line); }
         .m-nb { flex:none; flex-direction:row; justify-content:flex-start; gap:10px; padding:14px 18px; font-size:13px; }
-        .m-nb svg { width:18px; height:18px; }
         .m-nb.on { background:#f5f5f5; color:#1a1a1a; }
+        .m-nb-ico { width:18px; height:18px; }
       }
 
       /* Stat strip */
@@ -3165,7 +3165,7 @@ function renderMasterPanel(){
   function drawMasterShell(conteudo, drawer=''){
     const navItems = MASTER_NAV.map(n=>`
       <button class="m-nb ${masterAba===n.id?'on':''}" onclick="masterIrAba('${n.id}')">
-        ${n.ico}<span>${n.label}</span>
+        <span class="m-nb-ico">${n.ico}</span><span>${n.label}</span>
       </button>`).join('');
 
     render(`
@@ -3174,7 +3174,7 @@ function renderMasterPanel(){
         <nav class="m-nav">
           ${navItems}
           <button class="m-nb" onclick="masterLogout()" style="margin-top:auto;">
-            ${M_ICO.sair}<span>Sair</span>
+            <span class="m-nb-ico">${M_ICO.sair}</span><span>Sair</span>
           </button>
         </nav>
         <div class="ml-content">${conteudo}</div>
