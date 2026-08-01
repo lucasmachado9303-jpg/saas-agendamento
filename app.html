@@ -628,12 +628,14 @@ async function init(){
     currentRoute.empresa = subSlug;
     // _p vem do redirect do index.html quando o rewrite do Vercel não pega
     const _pParam = new URLSearchParams(location.search).get('_p') || '';
-    const subPage = _pParam || path;
+    const subPage = _pParam || (path === 'app.html' ? '' : path);
     if(subPage === 'gestao')      currentRoute.page = 'gestao';
     else if(subPage === 'agendar')     currentRoute.page = 'agendar';
     else if(subPage === 'confirmacao') currentRoute.page = 'confirmacao';
-    if(_pParam && currentRoute.page){
-      history.replaceState(currentRoute, '', '/' + currentRoute.page);
+    // Limpa /app.html da URL para ficar estetico
+    if(path === 'app.html' || _pParam){
+      const cleanPath = currentRoute.page ? '/' + currentRoute.page : '/';
+      history.replaceState(currentRoute, '', cleanPath);
     }
   } else if(path === 'master'){
     currentRoute.master = 1;
