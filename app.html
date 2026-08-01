@@ -2882,42 +2882,34 @@ window.tentarCadastro = async ()=>{
   const btn = document.querySelector('.card .btn');
   if(btn){ btn.disabled = true; btn.textContent = 'Criando conta...'; }
 
-  const { data, error } = await supabaseClient.auth.signUp({
-    email, password: senha,
-    options: { data: { nome_empresa: nome, whatsapp: whats } }
-  });
-
-  if(error){
-    if(btn){ btn.disabled = false; btn.textContent = 'Criar conta'; }
-    const msg = error.message.includes('already registered')
-      ? 'Este e-mail já está cadastrado. Use outro ou entre com sua conta.'
-      : error.message;
-    toast(msg, 'err', 6000); return;
-  }
-
-  // Sem confirmacao de email: usuario ja esta logado, cria empresa direto
-  render(`<div class="loading-wrap"><div class="spinner spinner-dark" style="width:28px;height:28px;"></div><div>Configurando sua conta...</div></div>`);
-
-  const session = data.session;
-  if(!session){ toast('Erro ao obter sessão. Tente fazer login.','err',6000); renderLoginUnificado(); return; }
+  render(`<div class="loading-wrap"><div class="spinner spinner-dark" style="width:28px;height:28px;"></div><div>Criando sua conta...</div></div>`);
 
   let resp, result;
   try {
     resp = await fetch('/api/cadastro', {
       method: 'POST',
-      headers: { 'Authorization': 'Bearer ' + session.access_token, 'Content-Type': 'application/json' }
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nome_empresa: nome, email, password: senha, whatsapp: whats })
     });
     result = await resp.json();
   } catch(e) {
-    toast('Erro de conexão ao configurar sua conta. Tente novamente.','err',8000);
-    renderLoginUnificado(); return;
+    toast('Erro de conexão. Tente novamente.','err',8000);
+    renderCadastro(); return;
   }
 
   if(!resp.ok){
-    toast(result.error || 'Erro ao configurar sua conta.','err',8000);
+    toast(result.error || 'Erro ao criar conta.','err',6000);
+    renderCadastro(); return;
+  }
+
+  // Faz login com as credenciais recem criadas
+  const { data: loginData, error: loginError } = await supabaseClient.auth.signInWithPassword({ email, password: senha });
+  if(loginError || !loginData?.session){
+    toast('Conta criada! Faça login para continuar.','ok',5000);
     renderLoginUnificado(); return;
   }
 
+  const session = loginData.session;
   const hash = `access_token=${session.access_token}&refresh_token=${session.refresh_token}&token_type=bearer&type=bearer`;
   location.replace(`https://${result.slug}.agenplus.com.br/gestao#${hash}`);
 };
