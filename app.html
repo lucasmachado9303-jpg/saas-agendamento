@@ -626,9 +626,15 @@ async function init(){
   if(subSlug){
     // Subdomínio: helloah.agenplus.com.br
     currentRoute.empresa = subSlug;
-    if(path === 'gestao')      currentRoute.page = 'gestao';
-    else if(path === 'agendar')     currentRoute.page = 'agendar';
-    else if(path === 'confirmacao') currentRoute.page = 'confirmacao';
+    // _p vem do redirect do index.html quando o rewrite do Vercel não pega
+    const _pParam = new URLSearchParams(location.search).get('_p') || '';
+    const subPage = _pParam || path;
+    if(subPage === 'gestao')      currentRoute.page = 'gestao';
+    else if(subPage === 'agendar')     currentRoute.page = 'agendar';
+    else if(subPage === 'confirmacao') currentRoute.page = 'confirmacao';
+    if(_pParam && currentRoute.page){
+      history.replaceState(currentRoute, '', '/' + currentRoute.page);
+    }
   } else if(path === 'master'){
     currentRoute.master = 1;
   } else if(path === 'login'){
