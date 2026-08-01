@@ -589,7 +589,7 @@ async function init(){
       currentProfile = null;
     }
 
-    if (event === 'SIGNED_IN' && currentUser && currentProfile) {
+    if (event === 'SIGNED_IN' && currentUser && currentProfile && location.pathname !== '/cadastro') {
       await loadData();
       const _goto = localStorage.getItem('ob_goto');
       if (_goto) {
