@@ -443,13 +443,37 @@ let currentRoute = { master:null, empresa:null, page:"" };
 function getParams(){
   return currentRoute;
 }
+function slugDoSubdominio(){
+  const parts = location.hostname.split('.');
+  // helloah.agenplus.com.br → 4 partes, agenplus.com.br → 3 partes
+  if(parts.length >= 4 && parts[0] !== 'www') return parts[0];
+  // suporte a localhost (ex: helloah.localhost para testes)
+  if(parts.length === 2 && parts[1] === 'localhost') return parts[0];
+  return null;
+}
+
 function goto(params){
   pararPolling();
   currentRoute = { master:null, empresa:null, page:"", ...params };
-  const qs = params.master ? '?master=1'
-    : params.empresa ? ('?' + new URLSearchParams({ empresa: params.empresa, ...(params.page ? { page: params.page } : {}) }).toString())
-    : '';
-  history.pushState(currentRoute, '', qs || location.pathname);
+  const subSlug = slugDoSubdominio();
+
+  if(params.master){
+    if(subSlug){
+      location.href = 'https://agenplus.com.br/master';
+      return;
+    }
+    history.pushState(currentRoute, '', '/master');
+  } else if(params.empresa){
+    const slug = params.empresa;
+    const path = params.page ? `/${params.page}` : '/';
+    if(subSlug !== slug){
+      location.href = `https://${slug}.agenplus.com.br${path}`;
+      return;
+    }
+    history.pushState(currentRoute, '', path);
+  } else {
+    history.pushState(currentRoute, '', '/');
+  }
   route();
 }
 window.addEventListener('popstate', e => {
@@ -551,17 +575,14 @@ async function init(){
     }
 
     if (event === 'SIGNED_IN' && currentUser && currentProfile) {
+      await loadData();
       const _goto = localStorage.getItem('ob_goto');
       if (_goto) {
         localStorage.removeItem('ob_goto');
         try {
-          await loadData();
-          const t = JSON.parse(_goto);
-          currentRoute = { master: null, empresa: null, page: '', ...t };
-          route(); return;
+          goto(JSON.parse(_goto)); return;
         } catch(e){}
       }
-      await loadData();
       if (currentProfile.role === 'master') {
         goto({ master: 1 });
       } else if (currentProfile.role === 'owner_empresa') {
@@ -592,14 +613,24 @@ async function init(){
     } catch(e){}
   }
 
-  const params = new URLSearchParams(location.search);
-  if(params.get('empresa')){ currentRoute.empresa = params.get('empresa'); if(params.get('page')) currentRoute.page = params.get('page'); }
-  else if(params.get('master')) currentRoute.master = 1;
-  else {
-    // URL limpa: /slug → Vercel reescreve para /app.html?empresa=slug,
-    // mas o browser ainda vê /slug no pathname.
-    const slug = location.pathname.replace(/^\/+|\/+$/g, '');
-    if(slug && slug !== 'app.html') currentRoute.empresa = slug;
+  const subSlug = slugDoSubdominio();
+  const path = location.pathname.replace(/^\/+|\/+$/g, ''); // ex: 'gestao', 'master', 'login', ''
+
+  if(subSlug){
+    // Subdomínio: helloah.agenplus.com.br
+    currentRoute.empresa = subSlug;
+    if(path === 'gestao')      currentRoute.page = 'gestao';
+    else if(path === 'agendar')     currentRoute.page = 'agendar';
+    else if(path === 'confirmacao') currentRoute.page = 'confirmacao';
+  } else if(path === 'master'){
+    currentRoute.master = 1;
+  } else if(path === 'login'){
+    renderLoginUnificado(); return;
+  } else {
+    // Fallback: suporte a query params antigos (compatibilidade)
+    const params = new URLSearchParams(location.search);
+    if(params.get('empresa')){ currentRoute.empresa = params.get('empresa'); if(params.get('page')) currentRoute.page = params.get('page'); }
+    else if(params.get('master')) currentRoute.master = 1;
   }
   route();
 }
@@ -1196,11 +1227,8 @@ async function tentarLoginGestao(slug){
   renderGestao(empAtualizado || emp);
 }
 window.loginComGoogle = async (slug)=>{
-  const destino = slug
-    ? { empresa: slug, page: 'gestao' }
-    : { master: 1 };
-  localStorage.setItem('ob_goto', JSON.stringify(destino));
-  const redirectTo = location.origin + '/app.html';
+  if(slug) localStorage.setItem('ob_goto', JSON.stringify({ empresa: slug, page: 'gestao' }));
+  const redirectTo = 'https://agenplus.com.br/app.html';
   const { error } = await supabaseClient.auth.signInWithOAuth({
     provider: 'google',
     options: { redirectTo }
@@ -2878,6 +2906,73 @@ window.tentarLoginMaster = async ()=>{
   currentUser    = data.user;
   currentProfile = profile;
   renderMasterPanel();
+};
+
+// ---------- LOGIN UNIFICADO ----------
+function renderLoginUnificado(){
+  applyAccent('#1c1917');
+  mostrarBannerPWA();
+  render(`
+    <div class="container">
+      <div class="card">
+        <div class="eyebrow" style="color:#1a1a1a;">Agenda+</div>
+        <h2 class="display">Entrar</h2>
+        <button onclick="loginComGoogle(null)" style="display:flex;align-items:center;justify-content:center;gap:10px;width:100%;background:#fff;border:1.5px solid #e5e5ea;border-radius:10px;padding:13px 16px;font-size:15px;font-weight:600;color:#1a1a1a;cursor:pointer;font-family:inherit;box-shadow:0 1px 4px rgba(0,0,0,.08);">
+          <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.08 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-3.58-13.46-8.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/><path fill="none" d="M0 0h48v48H0z"/></svg>
+          Entrar com Google
+        </button>
+        <div style="display:flex;align-items:center;gap:10px;margin:20px 0 4px;">
+          <div style="flex:1;height:1px;background:#e5e5ea;"></div>
+          <span style="font-size:11px;color:#c7c7cc;white-space:nowrap;">ou use email e senha</span>
+          <div style="flex:1;height:1px;background:#e5e5ea;"></div>
+        </div>
+        <div class="field" style="margin-top:12px;">
+          <label style="color:#c7c7cc;">E-mail</label>
+          <input type="email" id="loginEmail" placeholder="seu@email.com" style="border-color:#e5e5ea;color:#8e8e93;"
+            onkeyup="if(event.key==='Enter') document.getElementById('loginSenha').focus()"/>
+        </div>
+        <div class="field">
+          <label style="color:#c7c7cc;">Senha</label>
+          <input type="password" id="loginSenha" placeholder="Sua senha" style="border-color:#e5e5ea;color:#8e8e93;"
+            onkeyup="checkCapsLock(event,'cLU'); if(event.key==='Enter') tentarLoginUnificado()"/>
+          <div id="cLU" style="display:none;align-items:center;gap:5px;color:var(--danger);font-size:12px;margin-top:6px;"><strong>!</strong> Caps Lock ativado</div>
+        </div>
+        <button class="btn ghost" style="width:100%;color:#8e8e93;border-color:#e5e5ea;" onclick="tentarLoginUnificado()">Entrar com email</button>
+        <div style="text-align:center;margin-top:12px;">
+          <button class="icon-btn" style="color:#c7c7cc;font-size:12px;" onclick="recuperarSenha(null)">Esqueci minha senha</button>
+        </div>
+      </div>
+    </div>
+  `);
+}
+window.tentarLoginUnificado = async ()=>{
+  const email = (document.getElementById('loginEmail').value || '').trim();
+  const senha = document.getElementById('loginSenha').value;
+  if(!email || !senha){ toast('Preencha e-mail e senha.','err'); return; }
+
+  const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password: senha });
+  if(error){ toast('E-mail ou senha incorretos.','err'); return; }
+
+  const { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', data.user.id).single();
+  if(!profile || profile.status !== 'ativo'){
+    await supabaseClient.auth.signOut();
+    toast('Conta bloqueada. Entre em contato com o administrador.','err');
+    return;
+  }
+
+  currentUser    = data.user;
+  currentProfile = profile;
+  await loadData();
+
+  if(profile.role === 'master'){
+    goto({ master: 1 });
+  } else if(profile.role === 'owner_empresa'){
+    const emp = empresas.find(e => e.id === profile.empresa_id);
+    if(emp) goto({ empresa: emp.slug, page: 'gestao' });
+    else toast('Empresa não encontrada.','err');
+  } else {
+    toast('Acesso não autorizado.','err');
+  }
 };
 
 // ---------- TELA: REDEFINIR SENHA ----------

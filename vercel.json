@@ -1,5 +1,14 @@
 {
   "rewrites": [
-    { "source": "/:slug", "destination": "/app.html?empresa=:slug" }
+    { "source": "/login",       "destination": "/app.html" },
+    { "source": "/master",      "destination": "/app.html" },
+    { "source": "/gestao",      "destination": "/app.html" },
+    { "source": "/agendar",     "destination": "/app.html" },
+    { "source": "/confirmacao", "destination": "/app.html" },
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "(?<slug>[^.]+)\\.agenplus\\.com\\.br" }],
+      "destination": "/app.html"
+    }
   ]
 }
