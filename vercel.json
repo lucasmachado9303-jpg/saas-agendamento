@@ -1,10 +1,7 @@
 {
   "rewrites": [
-    { "source": "/login",       "destination": "/app.html" },
-    { "source": "/master",      "destination": "/app.html" },
-    { "source": "/gestao",      "destination": "/app.html" },
-    { "source": "/agendar",     "destination": "/app.html" },
-    { "source": "/confirmacao", "destination": "/app.html" },
+    { "source": "/login",  "destination": "/app.html" },
+    { "source": "/master", "destination": "/app.html" },
     {
       "source": "/",
       "has": [{ "type": "host", "value": "(?<slug>(?!www)[^.]+)\\.agenplus\\.com\\.br" }],
