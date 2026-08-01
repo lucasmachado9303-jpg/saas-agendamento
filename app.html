@@ -469,7 +469,7 @@ function goto(params){
     if(subSlug !== slug){
       // Usuarios autenticados ficam em agenplus.com.br para preservar sessao
       if(currentProfile?.role === 'master' || currentProfile?.role === 'owner_empresa'){
-        const qs = params.page ? `/?empresa=${slug}&page=${params.page}` : `/?empresa=${slug}`;
+        const qs = params.page ? `/app.html?empresa=${slug}&page=${params.page}` : `/app.html?empresa=${slug}`;
         history.pushState(currentRoute, '', qs);
       } else {
         location.href = `https://${slug}.agenplus.com.br${path}`;
@@ -2874,7 +2874,7 @@ window.tentarLoginUnificado = async ()=>{
     location.replace('/master');
   } else if(profile.role === 'owner_empresa'){
     const emp = empresas.find(e => e.id === profile.empresa_id);
-    if(emp) location.replace(`/?empresa=${emp.slug}&page=gestao`);
+    if(emp) location.replace(`/app.html?empresa=${emp.slug}&page=gestao`);
     else toast('Empresa não encontrada.','err');
   } else {
     toast('Acesso não autorizado.','err');
