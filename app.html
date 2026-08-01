@@ -303,7 +303,6 @@ async function loadData(){
       // Mensagens de lembrete
       msgConfirmacao:       e.msg_confirmacao       || '',
       msgLembrete:          e.msg_lembrete          || '',
-      onboarding_concluido: e.onboarding_concluido  || false,
       // Relações
       servicos:             [],
       horariosPorMes:       {},
@@ -461,8 +460,7 @@ function defaultEmpresa(){
   return {
     slug:"", nome:"", fotoUrl:"", whatsapp:"", bloqueada:false,
     descricao:"", logo:"", corPrincipal:"#3d1f3a", textoDestaque:"",
-    servicos:[], horariosPorMes:{}, bloqueios:[], botoes:[],
-    onboarding_concluido: false
+    servicos:[], horariosPorMes:{}, bloqueios:[], botoes:[]
   };
 }
 
