@@ -67,9 +67,9 @@ module.exports = async function handler(req, res) {
 
   // Cria a empresa
   const empresaBody = {
-    slug, nome: nomeEmpresa, whatsapp, bloqueada: false,
-    fotoUrl: '', descricao: '', logo: '', corPrincipal: '#3d1f3a',
-    textoDestaque: '', servicos: [], horariosPorMes: {}, bloqueios: [], botoes: []
+    slug, nome: nomeEmpresa, whatsapp: whatsapp || null, bloqueada: false,
+    foto_url: null, descricao: null, logo: null,
+    cor_principal: '#3d1f3a', texto_destaque: null
   };
   const empInsert = await fetch(`${SUPABASE_URL}/rest/v1/empresas`, {
     method: 'POST',
