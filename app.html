@@ -2828,34 +2828,38 @@ function renderMaster(){
 function renderCadastro(){
   applyAccent('#1c1917');
   render(`
-    <div class="container">
-      <div class="card">
-        <div class="eyebrow" style="color:#1a1a1a;">Agenda+</div>
-        <h2 class="display">Criar conta</h2>
-        <div class="field" style="margin-top:20px;">
-          <label style="color:#c7c7cc;">Nome da empresa</label>
-          <input id="cad-nome" placeholder="Ex: Studio Bella" autocomplete="organization" style="border-color:#e5e5ea;color:#8e8e93;"
-            onkeyup="if(event.key==='Enter') document.getElementById('cad-email').focus()"/>
+    <div style="min-height:100vh;background:#0A0A09;padding:16px 20px;">
+      <div style="width:100%;max-width:400px;margin:0 auto;">
+        <div style="text-align:center;margin-bottom:16px;padding-top:8px;">
+          <img src="/logoagen+.png" alt="agen+" style="height:100px;width:auto;"/>
         </div>
-        <div class="field">
-          <label style="color:#c7c7cc;">WhatsApp <span style="font-weight:400;">(opcional)</span></label>
-          <input id="cad-whats" type="tel" inputmode="numeric" maxlength="16" placeholder="(xx) xxxxx-xxxx" style="border-color:#e5e5ea;color:#8e8e93;"
-            onkeydown="if(event.key.length===1&&!/[0-9]/.test(event.key))event.preventDefault()"
-            oninput="maskTel(this)"/>
-        </div>
-        <div class="field">
-          <label style="color:#c7c7cc;">E-mail</label>
-          <input id="cad-email" type="email" placeholder="seu@email.com" autocomplete="email" style="border-color:#e5e5ea;color:#8e8e93;"
-            onkeyup="if(event.key==='Enter') document.getElementById('cad-senha').focus()"/>
-        </div>
-        <div class="field">
-          <label style="color:#c7c7cc;">Senha</label>
-          <input id="cad-senha" type="password" placeholder="Mínimo 6 caracteres" autocomplete="new-password" style="border-color:#e5e5ea;color:#8e8e93;"
-            onkeyup="if(event.key==='Enter') tentarCadastro()"/>
-        </div>
-        <button class="btn ghost" style="width:100%;color:#8e8e93;border-color:#e5e5ea;" onclick="tentarCadastro()">Criar conta</button>
-        <div style="text-align:center;margin-top:12px;">
-          <a href="/login" style="font-size:12px;color:#c7c7cc;text-decoration:none;">Já tem conta? Entrar</a>
+        <div class="card">
+          <h2 class="display" style="margin-bottom:20px;">Criar conta</h2>
+          <div class="field" style="margin-top:20px;">
+            <label style="color:#c7c7cc;">Nome da empresa</label>
+            <input id="cad-nome" placeholder="Ex: Studio Bella" autocomplete="organization" style="border-color:#e5e5ea;color:#8e8e93;"
+              onkeyup="if(event.key==='Enter') document.getElementById('cad-email').focus()"/>
+          </div>
+          <div class="field">
+            <label style="color:#c7c7cc;">WhatsApp <span style="font-weight:400;">(opcional)</span></label>
+            <input id="cad-whats" type="tel" inputmode="numeric" maxlength="16" placeholder="(xx) xxxxx-xxxx" style="border-color:#e5e5ea;color:#8e8e93;"
+              onkeydown="if(event.key.length===1&&!/[0-9]/.test(event.key))event.preventDefault()"
+              oninput="maskTel(this)"/>
+          </div>
+          <div class="field">
+            <label style="color:#c7c7cc;">E-mail</label>
+            <input id="cad-email" type="email" placeholder="seu@email.com" autocomplete="email" style="border-color:#e5e5ea;color:#8e8e93;"
+              onkeyup="if(event.key==='Enter') document.getElementById('cad-senha').focus()"/>
+          </div>
+          <div class="field">
+            <label style="color:#c7c7cc;">Senha</label>
+            <input id="cad-senha" type="password" placeholder="Mínimo 6 caracteres" autocomplete="new-password" style="border-color:#e5e5ea;color:#8e8e93;"
+              onkeyup="if(event.key==='Enter') tentarCadastro()"/>
+          </div>
+          <button class="btn ghost" style="width:100%;color:#8e8e93;border-color:#e5e5ea;" onclick="tentarCadastro()">Criar conta</button>
+          <div style="text-align:center;margin-top:12px;">
+            <a href="/login" style="font-size:12px;color:#c7c7cc;text-decoration:none;">Já tem conta? Entrar</a>
+          </div>
         </div>
       </div>
     </div>
