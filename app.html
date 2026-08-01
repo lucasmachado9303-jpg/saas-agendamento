@@ -469,7 +469,7 @@ function goto(params){
     if(subSlug !== slug){
       // Usuarios autenticados ficam em agenplus.com.br para preservar sessao
       if(currentProfile?.role === 'master' || currentProfile?.role === 'owner_empresa'){
-        const qs = params.page ? `?empresa=${slug}&page=${params.page}` : `?empresa=${slug}`;
+        const qs = params.page ? `/?empresa=${slug}&page=${params.page}` : `/?empresa=${slug}`;
         history.pushState(currentRoute, '', qs);
       } else {
         location.href = `https://${slug}.agenplus.com.br${path}`;
@@ -642,8 +642,13 @@ async function init(){
   } else if(path === 'login'){
     renderLoginUnificado(); return;
   } else {
-    // Sem rota especifica: auto-rota por sessao ou vai pro login
-    if(currentProfile?.role === 'master'){
+    const qp = new URLSearchParams(location.search);
+    const qEmpresa = qp.get('empresa');
+    const qPage = qp.get('page');
+    if(qEmpresa && currentUser){
+      currentRoute.empresa = qEmpresa;
+      if(qPage) currentRoute.page = qPage;
+    } else if(currentProfile?.role === 'master'){
       currentRoute.master = 1;
     } else if(currentProfile?.role === 'owner_empresa'){
       const emp = empresas.find(e => e.id === currentProfile.empresa_id);
