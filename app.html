@@ -3253,8 +3253,9 @@ function renderMasterPanel(){
         <div class="field">
           <label>Link público</label>
           <div style="display:flex;gap:8px;align-items:center;">
-            <span style="font-size:14px;color:var(--ink-soft);white-space:nowrap;">${escapeHtml(location.origin)}/</span>
+            <span style="font-size:14px;color:var(--ink-soft);white-space:nowrap;">https://</span>
             <input id="masterSlugInput" value="${escapeAttr(editing.slug)}" placeholder="seu-link" style="flex:1;" oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9-]/g,'')"/>
+            <span style="font-size:14px;color:var(--ink-soft);white-space:nowrap;">.agenplus.com.br</span>
           </div>
           <div style="font-size:11px;color:var(--ink-soft);margin-top:4px;">Atenção: alterar o link quebra o endereço antigo.</div>
         </div>
