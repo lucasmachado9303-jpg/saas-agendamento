@@ -2874,8 +2874,13 @@ window.tentarLoginUnificado = async ()=>{
     location.replace('/master');
   } else if(profile.role === 'owner_empresa'){
     const emp = empresas.find(e => e.id === profile.empresa_id);
-    if(emp) location.replace(`/app.html?empresa=${emp.slug}&page=gestao`);
-    else toast('Empresa não encontrada.','err');
+    if(emp){
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      const hash = `access_token=${session.access_token}&refresh_token=${session.refresh_token}&token_type=bearer&type=bearer`;
+      location.replace(`https://${emp.slug}.agenplus.com.br/gestao#${hash}`);
+    } else {
+      toast('Empresa não encontrada.','err');
+    }
   } else {
     toast('Acesso não autorizado.','err');
   }
