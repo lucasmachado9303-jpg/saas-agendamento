@@ -3182,7 +3182,7 @@ function renderMasterPanel(){
         <button class="m-back" onclick="masterFecharDrawer()">${ICO_BACK} Voltar</button>
         <div class="m-form-title">Nova empresa</div>
         <div class="field"><label>Nome da empresa</label><input id="novoNome" placeholder="Ex: Studio Bella"/></div>
-        <div class="field"><label>WhatsApp</label><input id="novoWhats" type="tel" inputmode="numeric" maxlength="16" placeholder="(xx) xxxxx-xxxx" oninput="maskTel(this)"/></div>
+        <div class="field"><label>WhatsApp</label><input id="novoWhats" type="tel" inputmode="numeric" maxlength="16" placeholder="(xx) xxxxx-xxxx" onkeydown="if(event.key.length===1&&!/\d/.test(event.key))event.preventDefault()" oninput="maskTel(this)"/></div>
         <div class="field"><label>E-mail do gestor</label><input type="email" id="novoEmail" placeholder="gestor@email.com"/></div>
         <div class="field"><label>Senha temporária</label><input type="password" id="novaSenha" placeholder="Mínimo 6 caracteres"/></div>
         <div class="field">
@@ -3211,7 +3211,7 @@ function renderMasterPanel(){
         <button class="m-back" onclick="masterFecharDrawer()">${ICO_BACK} Voltar</button>
         <div class="m-form-title">${escapeHtml(editing.nome)}</div>
         <div class="field"><label>Nome</label><input value="${escapeAttr(editing.nome)}" onchange="masterUpd('nome',this.value)"/></div>
-        <div class="field"><label>WhatsApp</label><input type="tel" inputmode="numeric" maxlength="16" value="${escapeAttr(fmtTelStr(editing.whatsapp))}" oninput="maskTel(this);masterUpd('whatsapp',this.value)"/></div>
+        <div class="field"><label>WhatsApp</label><input type="tel" inputmode="numeric" maxlength="16" value="${escapeAttr(fmtTelStr(editing.whatsapp))}" onkeydown="if(event.key.length===1&&!/\d/.test(event.key))event.preventDefault()" oninput="maskTel(this);masterUpd('whatsapp',this.value)"/></div>
         <div class="field">
           <label>Link público</label>
           <div style="display:flex;gap:6px;align-items:center;">
