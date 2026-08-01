@@ -3099,6 +3099,7 @@ function renderMasterPanel(){
   }
 
   window.masterFecharDrawer = () => { masterDrawerMode = null; editingSlug = null; masterShowForm = false; draw(); };
+  window.masterAbrirDrawer  = (mode) => { masterDrawerMode = mode; editingSlug = null; draw(); };
 
   function draw(){
     if(masterAba === 'dashboard') drawDashboard();
@@ -3277,7 +3278,7 @@ function renderMasterPanel(){
           <div class="m-sh-title">Empresas</div>
           <div class="m-sh-sub">${empresas.length} cadastrada${empresas.length!==1?'s':''}</div>
         </div>
-        <button class="m-add" onclick="masterDrawerMode='criar'; drawMaster();">
+        <button class="m-add" onclick="masterAbrirDrawer('criar')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           Nova empresa
         </button>
