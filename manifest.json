@@ -1,7 +1,7 @@
 {
-  "name": "Agenda+",
-  "short_name": "Agenda+",
-  "description": "Plataforma de agendamentos",
+  "name": "agen+",
+  "short_name": "agen+",
+  "description": "Plataforma de agendamentos para pequenos negocios",
   "start_url": "/app.html",
   "display": "standalone",
   "background_color": "#f7f5f8",

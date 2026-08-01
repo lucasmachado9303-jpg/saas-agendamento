@@ -10,6 +10,15 @@
           "app.html"
         ],
         "createdAt": "2026-07-30T14:04:45.066Z"
+      },
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "app.html"
+        ],
+        "createdAt": "2026-07-31T15:37:02.284Z",
+        "reason": "Bordas laterais coloridas sao design intencional confirmado pelo usuario"
       }
     ]
   }
