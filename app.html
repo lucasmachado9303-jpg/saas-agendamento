@@ -2921,33 +2921,33 @@ function renderLoginUnificado(){
     <div style="min-height:100vh;background:#0A0A09;display:flex;align-items:center;justify-content:center;padding:24px 20px;">
       <div style="width:100%;max-width:400px;">
         <div style="text-align:center;margin-bottom:28px;">
-          <img src="/logoagen+.png" alt="agen+" style="height:56px;width:auto;"/>
+          <img src="/logoagen+.png" alt="agen+" style="height:120px;width:auto;"/>
         </div>
-        <div style="background:#161513;border-radius:16px;border:1px solid rgba(240,235,227,0.08);padding:28px;">
-          <h2 class="display" style="color:#F0EBE3;margin-bottom:20px;">Entrar</h2>
-          <button onclick="loginComGoogle(null)" style="display:flex;align-items:center;justify-content:center;gap:10px;width:100%;background:#fff;border:none;border-radius:10px;padding:13px 16px;font-size:15px;font-weight:600;color:#1a1a1a;cursor:pointer;font-family:inherit;">
+        <div class="card">
+          <h2 class="display" style="margin-bottom:20px;">Entrar</h2>
+          <button onclick="loginComGoogle(null)" style="display:flex;align-items:center;justify-content:center;gap:10px;width:100%;background:#fff;border:1.5px solid #e5e5ea;border-radius:10px;padding:13px 16px;font-size:15px;font-weight:600;color:#1a1a1a;cursor:pointer;font-family:inherit;box-shadow:0 1px 4px rgba(0,0,0,.08);">
             <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.08 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-3.58-13.46-8.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/><path fill="none" d="M0 0h48v48H0z"/></svg>
             Entrar com Google
           </button>
           <div style="display:flex;align-items:center;gap:10px;margin:20px 0 4px;">
-            <div style="flex:1;height:1px;background:rgba(240,235,227,0.1);"></div>
-            <span style="font-size:11px;color:rgba(240,235,227,0.3);white-space:nowrap;">ou use email e senha</span>
-            <div style="flex:1;height:1px;background:rgba(240,235,227,0.1);"></div>
+            <div style="flex:1;height:1px;background:#e5e5ea;"></div>
+            <span style="font-size:11px;color:#c7c7cc;white-space:nowrap;">ou use email e senha</span>
+            <div style="flex:1;height:1px;background:#e5e5ea;"></div>
           </div>
           <div class="field" style="margin-top:12px;">
-            <label style="color:rgba(240,235,227,0.45);">E-mail</label>
-            <input type="email" id="loginEmail" placeholder="seu@email.com" style="background:#1C1A18;border-color:rgba(240,235,227,0.12);color:#F0EBE3;"
+            <label style="color:#c7c7cc;">E-mail</label>
+            <input type="email" id="loginEmail" placeholder="seu@email.com" style="border-color:#e5e5ea;color:#8e8e93;"
               onkeyup="if(event.key==='Enter') document.getElementById('loginSenha').focus()"/>
           </div>
           <div class="field">
-            <label style="color:rgba(240,235,227,0.45);">Senha</label>
-            <input type="password" id="loginSenha" placeholder="Sua senha" style="background:#1C1A18;border-color:rgba(240,235,227,0.12);color:#F0EBE3;"
+            <label style="color:#c7c7cc;">Senha</label>
+            <input type="password" id="loginSenha" placeholder="Sua senha" style="border-color:#e5e5ea;color:#8e8e93;"
               onkeyup="checkCapsLock(event,'cLU'); if(event.key==='Enter') tentarLoginUnificado()"/>
             <div id="cLU" style="display:none;align-items:center;gap:5px;color:var(--danger);font-size:12px;margin-top:6px;"><strong>!</strong> Caps Lock ativado</div>
           </div>
-          <button class="btn ghost" style="width:100%;color:#F0EBE3;border-color:rgba(240,235,227,0.2);" onclick="tentarLoginUnificado()">Entrar com email</button>
+          <button class="btn ghost" style="width:100%;color:#8e8e93;border-color:#e5e5ea;" onclick="tentarLoginUnificado()">Entrar com email</button>
           <div style="text-align:center;margin-top:12px;">
-            <button class="icon-btn" style="color:rgba(240,235,227,0.35);font-size:12px;" onclick="recuperarSenha(null)">Esqueci minha senha</button>
+            <button class="icon-btn" style="color:#c7c7cc;font-size:12px;" onclick="recuperarSenha(null)">Esqueci minha senha</button>
           </div>
         </div>
       </div>
