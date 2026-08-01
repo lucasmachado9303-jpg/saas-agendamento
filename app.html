@@ -2588,7 +2588,7 @@ function renderGestao(empInicial){
   };
   window.toggleLinkMenu = ()=>{ _linkMenuAberto = !_linkMenuAberto; draw(); };
   window.linkAcao = (acao)=>{
-    const url = location.origin + '/' + emp.slug;
+    const url = `https://${emp.slug}.agenplus.com.br`;
     if(acao==='abrir'){ window.open(url, '_blank'); }
     else if(acao==='copiar'){ navigator.clipboard.writeText(url).then(()=>toast('Link copiado!','ok')); }
     else if(acao==='compartilhar'){ if(navigator.share) navigator.share({ title: emp.nome, url }); else navigator.clipboard.writeText(url).then(()=>toast('Link copiado!','ok')); }
@@ -2794,7 +2794,7 @@ function renderGestao(empInicial){
   };
 
   window.compartilharLink = async ()=>{
-    const url = location.origin + '/' + emp.slug;
+    const url = `https://${emp.slug}.agenplus.com.br`;
     if(navigator.share){
       try{ await navigator.share({ title: emp.nome, url }); } catch(e){}
     } else {
