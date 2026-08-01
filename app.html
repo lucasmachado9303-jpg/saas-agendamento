@@ -549,6 +549,26 @@ async function init(){
     } else {
       currentProfile = null;
     }
+
+    if (event === 'SIGNED_IN' && currentUser && currentProfile) {
+      const _goto = localStorage.getItem('ob_goto');
+      if (_goto) {
+        localStorage.removeItem('ob_goto');
+        try {
+          await loadData();
+          const t = JSON.parse(_goto);
+          currentRoute = { master: null, empresa: null, page: '', ...t };
+          route(); return;
+        } catch(e){}
+      }
+      await loadData();
+      if (currentProfile.role === 'master') {
+        goto({ master: 1 });
+      } else if (currentProfile.role === 'owner_empresa') {
+        const emp = empresas.find(e => e.id === currentProfile.empresa_id);
+        if (emp) goto({ empresa: emp.slug, page: 'gestao' });
+      }
+    }
   });
 
   // Sessão existente (ex: ao recarregar a página)
