@@ -627,10 +627,14 @@ async function init(){
   } else if(path === 'login'){
     renderLoginUnificado(); return;
   } else {
-    // Fallback: suporte a query params antigos (compatibilidade)
+    // Fallback: query params e path antigos (compatibilidade até DNS propagar)
     const params = new URLSearchParams(location.search);
     if(params.get('empresa')){ currentRoute.empresa = params.get('empresa'); if(params.get('page')) currentRoute.page = params.get('page'); }
     else if(params.get('master')) currentRoute.master = 1;
+    else {
+      const slug = path && path !== 'app.html' && path !== 'login' && path !== 'master' ? path : null;
+      if(slug) currentRoute.empresa = slug;
+    }
   }
   route();
 }
