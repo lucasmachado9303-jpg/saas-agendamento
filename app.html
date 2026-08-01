@@ -3080,24 +3080,21 @@ function renderMasterPanel(){
       .ml-content { flex:1; padding:24px 20px 80px; max-width:700px; margin:0 auto; width:100%; }
       .fin-status { display:inline-block; padding:3px 10px; border-radius:20px; font-size:12px; font-weight:600; }
 
-      /* Topbar */
-      .m-topbar { height:52px; display:flex; align-items:center; justify-content:space-between; padding:0 20px; background:#111; color:#fff; position:sticky; top:0; z-index:200; }
-      .m-topbar-brand { font-family:'Nunito',sans-serif; font-weight:900; font-size:17px; letter-spacing:-.02em; }
-      .m-topbar-user { font-size:12px; color:rgba(255,255,255,.45); }
-
       /* Bottom nav mobile */
-      .m-nav { position:fixed; bottom:0; left:0; right:0; height:60px; background:#111; border-top:1px solid rgba(255,255,255,.08); display:flex; z-index:200; }
-      .m-nb { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; border:none; background:none; color:rgba(255,255,255,.38); cursor:pointer; font-size:10px; font-weight:700; font-family:inherit; letter-spacing:.02em; transition:color .12s; }
-      .m-nb svg { width:20px; height:20px; }
-      .m-nb.on { color:#fff; }
+      .m-nav { position:fixed; bottom:0; left:0; right:0; height:60px; background:#fff; box-shadow:0 -4px 16px rgba(0,0,0,.10); display:flex; z-index:200; }
+      .m-nb { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; border:none; background:none; color:#bbb; cursor:pointer; font-size:11px; font-weight:600; font-family:inherit; transition:color .15s; padding:0; }
+      .m-nb:hover { color:#888; }
+      .m-nb svg { width:22px; height:22px; }
+      .m-nb.on { color:#1a1a1a; }
 
       /* Desktop sidebar */
       @media(min-width:768px){
         .ml { flex-direction:row; }
         .ml-content { padding-bottom:24px; }
-        .m-nav { position:sticky; top:52px; height:calc(100vh - 52px); width:150px; flex-direction:column; border-top:none; border-right:1px solid rgba(255,255,255,.08); }
-        .m-nb { flex:none; flex-direction:row; justify-content:flex-start; gap:10px; padding:13px 18px; font-size:12px; border-radius:0; }
-        .m-nb.on { background:rgba(255,255,255,.09); color:#fff; }
+        .m-nav { position:sticky; top:0; height:100vh; width:140px; flex-direction:column; box-shadow:none; border-right:1px solid var(--line); }
+        .m-nb { flex:none; flex-direction:row; justify-content:flex-start; gap:10px; padding:14px 18px; font-size:13px; }
+        .m-nb svg { width:18px; height:18px; }
+        .m-nb.on { background:#f5f5f5; color:#1a1a1a; }
       }
 
       /* Stat strip */
@@ -3173,10 +3170,6 @@ function renderMasterPanel(){
 
     render(`
       ${SIDEBAR_CSS}
-      <div class="m-topbar">
-        <span class="m-topbar-brand">Agenda+</span>
-        <span class="m-topbar-user">master</span>
-      </div>
       <div class="ml">
         <nav class="m-nav">
           ${navItems}
