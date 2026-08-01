@@ -467,10 +467,17 @@ function goto(params){
     const slug = params.empresa;
     const path = params.page ? `/${params.page}` : '/';
     if(subSlug !== slug){
-      location.href = `https://${slug}.agenplus.com.br${path}`;
-      return;
+      // Master keeps session on agenplus.com.br; others redirect to subdomain
+      if(currentProfile?.role === 'master'){
+        const qs = params.page ? `?empresa=${slug}&page=${params.page}` : `?empresa=${slug}`;
+        history.pushState(currentRoute, '', qs);
+      } else {
+        location.href = `https://${slug}.agenplus.com.br${path}`;
+        return;
+      }
+    } else {
+      history.pushState(currentRoute, '', path);
     }
-    history.pushState(currentRoute, '', path);
   } else {
     history.pushState(currentRoute, '', '/');
   }
