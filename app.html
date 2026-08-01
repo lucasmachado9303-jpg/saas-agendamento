@@ -3060,24 +3060,20 @@ function renderMasterPanel(){
       .m-tab { padding:6px 14px; border-radius:20px; border:1.5px solid var(--line); font-size:13px; cursor:pointer; background:var(--paper); color:var(--ink); font-family:inherit; font-weight:600; transition:background .12s, color .12s; }
       .m-tab.on { background:#111; color:#fff; border-color:#111; }
 
-      /* Drawer */
-      .m-overlay { position:fixed; inset:0; background:rgba(0,0,0,.3); z-index:400; }
-      .m-drawer { position:fixed; top:0; right:0; bottom:0; width:min(440px,100vw); background:#fff; z-index:401; overflow-y:auto; display:flex; flex-direction:column; box-shadow:-8px 0 40px rgba(0,0,0,.12); }
-      .m-dh { display:flex; align-items:center; justify-content:space-between; padding:18px 22px 16px; border-bottom:1px solid #f0f0f0; position:sticky; top:0; background:#fff; z-index:1; }
-      .m-dh-title { font-size:16px; font-weight:800; color:#111; }
-      .m-dclose { width:32px; height:32px; display:flex; align-items:center; justify-content:center; border:none; background:#f5f5f5; border-radius:8px; cursor:pointer; color:#555; }
-      .m-dclose:hover { background:#eee; }
-      .m-dclose svg { width:16px; height:16px; }
-      .m-dbody { padding:22px; flex:1; }
-      .m-dfoot { padding:16px 22px; border-top:1px solid #f0f0f0; display:flex; flex-direction:column; gap:8px; }
+      /* Form view (substitui drawer) */
+      .m-back { display:inline-flex; align-items:center; gap:8px; border:none; background:none; color:var(--ink-soft); font-size:14px; font-weight:600; cursor:pointer; padding:0 0 20px; font-family:inherit; }
+      .m-back:hover { color:var(--ink); }
+      .m-back svg { width:18px; height:18px; }
+      .m-form-title { font-size:20px; font-weight:800; color:var(--ink); margin-bottom:24px; }
+      .m-form-actions { display:flex; flex-direction:column; gap:8px; margin-top:24px; }
 
-      /* Color swatches in drawer */
+      /* Color swatches */
       .m-swatches { display:grid; grid-template-columns:repeat(6,1fr); gap:8px; margin-bottom:10px; }
       .m-sw { width:100%; aspect-ratio:1; border-radius:8px; cursor:pointer; border:3px solid transparent; box-sizing:border-box; transition:border-color .1s; }
     </style>
   `;
 
-  function drawMasterShell(conteudo, drawer=''){
+  function drawMasterShell(conteudo){
     const navItems = MASTER_NAV.map(n=>`
       <button class="m-nb ${masterAba===n.id?'on':''}" onclick="masterIrAba('${n.id}')">
         <span class="m-nb-ico">${n.ico}</span><span>${n.label}</span>
@@ -3094,7 +3090,6 @@ function renderMasterPanel(){
         </nav>
         <div class="ml-content">${conteudo}</div>
       </div>
-      ${drawer ? `<div class="m-overlay" onclick="masterFecharDrawer()"></div>${drawer}` : ''}
     `);
   }
 
@@ -3176,9 +3171,71 @@ function renderMasterPanel(){
     `);
   }
 
+  const ICO_BACK = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>`;
+
   function drawEmpresas(){
     const editing = editingSlug ? empresas.find(e=>e.slug===editingSlug) : null;
 
+    // Formulario de criar — substitui a lista
+    if(masterDrawerMode === 'criar'){
+      drawMasterShell(`
+        <button class="m-back" onclick="masterFecharDrawer()">${ICO_BACK} Voltar</button>
+        <div class="m-form-title">Nova empresa</div>
+        <div class="field"><label>Nome da empresa</label><input id="novoNome" placeholder="Ex: Studio Bella"/></div>
+        <div class="field"><label>WhatsApp</label><input id="novoWhats" type="tel" inputmode="numeric" maxlength="16" placeholder="(xx) xxxxx-xxxx" oninput="maskTel(this)"/></div>
+        <div class="field"><label>E-mail do gestor</label><input type="email" id="novoEmail" placeholder="gestor@email.com"/></div>
+        <div class="field"><label>Senha temporária</label><input type="password" id="novaSenha" placeholder="Mínimo 6 caracteres"/></div>
+        <div class="field">
+          <label>Cor principal</label>
+          <div class="m-swatches" id="masterCorSwatches">
+            ${['#3d1f3a','#1a1a2e','#0f3460','#264653','#2d6a4f','#533483','#b5179e','#c1121f','#e76f51','#f4a261','#457b9d','#1a1a1a'].map(c=>
+              `<div class="m-sw master-cor-sw" data-cor="${c}" onclick="masterSwatchCor('${c}')" style="background:${c};border-color:${c==='#3d1f3a'?'#1a1a1a':'transparent'};"></div>`
+            ).join('')}
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <input type="color" id="novaCor" value="#3d1f3a" style="width:38px;height:38px;border:1.5px solid #d0d0d0;border-radius:8px;cursor:pointer;padding:3px;background:#fff;" oninput="masterSwatchCor(this.value,true)"/>
+            <span style="font-size:13px;color:#888;">Personalizar cor</span>
+          </div>
+        </div>
+        <div class="m-form-actions">
+          <button class="btn" style="width:100%;" onclick="masterCriar()">Criar empresa</button>
+          <button class="btn ghost" style="width:100%;" onclick="masterFecharDrawer()">Cancelar</button>
+        </div>
+      `);
+      return;
+    }
+
+    // Formulario de editar — substitui a lista
+    if(masterDrawerMode === 'editar' && editing){
+      drawMasterShell(`
+        <button class="m-back" onclick="masterFecharDrawer()">${ICO_BACK} Voltar</button>
+        <div class="m-form-title">${escapeHtml(editing.nome)}</div>
+        <div class="field"><label>Nome</label><input value="${escapeAttr(editing.nome)}" onchange="masterUpd('nome',this.value)"/></div>
+        <div class="field"><label>WhatsApp</label><input type="tel" inputmode="numeric" maxlength="16" value="${escapeAttr(fmtTelStr(editing.whatsapp))}" oninput="maskTel(this);masterUpd('whatsapp',this.value)"/></div>
+        <div class="field">
+          <label>Link público</label>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <span style="font-size:13px;color:var(--ink-soft);white-space:nowrap;">https://</span>
+            <input id="masterSlugInput" value="${escapeAttr(editing.slug)}" placeholder="seu-link" style="flex:1;" oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9-]/g,'')"/>
+            <span style="font-size:13px;color:var(--ink-soft);white-space:nowrap;">.agenplus.com.br</span>
+          </div>
+          <div style="font-size:11px;color:var(--ink-soft);margin-top:4px;">Alterar o link quebra o endereço antigo.</div>
+        </div>
+        <div class="field">
+          <label>E-mail do gestor</label>
+          <input readonly value="${escapeAttr(editing.gestorEmail||'Não cadastrado')}" style="background:#f5f5f5;color:var(--ink-soft);" onclick="this.select()"/>
+        </div>
+        <div class="m-form-actions">
+          <button class="btn" style="width:100%;" onclick="masterSalvarEdicao()">Salvar alterações</button>
+          <button class="btn ghost" style="width:100%;" onclick="masterToggleBloqueio()">${editing.bloqueada?'Desbloquear empresa':'Bloquear empresa'}</button>
+          <button class="btn ghost" style="width:100%;" onclick="masterRedefinirSenha()">Redefinir senha do gestor</button>
+          <button class="btn danger" style="width:100%;" onclick="masterExcluir('${editing.slug}')">Excluir empresa</button>
+        </div>
+      `);
+      return;
+    }
+
+    // Lista normal
     const listaFiltrada = masterSearch
       ? empresas.filter(e => e.nome.toLowerCase().includes(masterSearch.toLowerCase()))
       : empresas;
@@ -3207,71 +3264,6 @@ function renderMasterPanel(){
         }).join('')}</div>`
       : `<p class="muted">${masterSearch ? 'Nenhuma empresa encontrada.' : 'Nenhuma empresa cadastrada ainda.'}</p>`;
 
-    // Drawer de criar
-    const drawerCriar = `
-      <div class="m-drawer">
-        <div class="m-dh">
-          <span class="m-dh-title">Nova empresa</span>
-          <button class="m-dclose" onclick="masterFecharDrawer()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-        </div>
-        <div class="m-dbody">
-          <div class="field"><label>Nome da empresa</label><input id="novoNome" placeholder="Ex: Studio Bella"/></div>
-          <div class="field"><label>WhatsApp</label><input id="novoWhats" type="tel" inputmode="numeric" maxlength="16" placeholder="(xx) xxxxx-xxxx" oninput="maskTel(this)"/></div>
-          <div class="field"><label>E-mail do gestor</label><input type="email" id="novoEmail" placeholder="gestor@email.com"/></div>
-          <div class="field"><label>Senha temporária</label><input type="password" id="novaSenha" placeholder="Mínimo 6 caracteres"/></div>
-          <div class="field">
-            <label>Cor principal</label>
-            <div class="m-swatches" id="masterCorSwatches">
-              ${['#3d1f3a','#1a1a2e','#0f3460','#264653','#2d6a4f','#533483','#b5179e','#c1121f','#e76f51','#f4a261','#457b9d','#1a1a1a'].map(c=>
-                `<div class="m-sw master-cor-sw" data-cor="${c}" onclick="masterSwatchCor('${c}')" style="background:${c};border-color:${c==='#3d1f3a'?'#1a1a1a':'transparent'};"></div>`
-              ).join('')}
-            </div>
-            <div style="display:flex;align-items:center;gap:10px;">
-              <input type="color" id="novaCor" value="#3d1f3a" style="width:38px;height:38px;border:1.5px solid #d0d0d0;border-radius:8px;cursor:pointer;padding:3px;background:#fff;" oninput="masterSwatchCor(this.value,true)"/>
-              <span style="font-size:13px;color:#888;">Personalizar cor</span>
-            </div>
-          </div>
-        </div>
-        <div class="m-dfoot">
-          <button class="btn" style="width:100%;" onclick="masterCriar()">Criar empresa</button>
-          <button class="btn ghost" style="width:100%;" onclick="masterFecharDrawer()">Cancelar</button>
-        </div>
-      </div>`;
-
-    // Drawer de editar
-    const drawerEditar = editing ? `
-      <div class="m-drawer">
-        <div class="m-dh">
-          <span class="m-dh-title">${escapeHtml(editing.nome)}</span>
-          <button class="m-dclose" onclick="masterFecharDrawer()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-        </div>
-        <div class="m-dbody">
-          <div class="field"><label>Nome</label><input value="${escapeAttr(editing.nome)}" onchange="masterUpd('nome',this.value)"/></div>
-          <div class="field"><label>WhatsApp</label><input type="tel" inputmode="numeric" maxlength="16" value="${escapeAttr(fmtTelStr(editing.whatsapp))}" oninput="maskTel(this);masterUpd('whatsapp',this.value)"/></div>
-          <div class="field">
-            <label>Link público</label>
-            <div style="display:flex;gap:6px;align-items:center;">
-              <span style="font-size:13px;color:var(--ink-soft);white-space:nowrap;">https://</span>
-              <input id="masterSlugInput" value="${escapeAttr(editing.slug)}" placeholder="seu-link" style="flex:1;" oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9-]/g,'')"/>
-              <span style="font-size:13px;color:var(--ink-soft);white-space:nowrap;">.agenplus.com.br</span>
-            </div>
-            <div style="font-size:11px;color:var(--ink-soft);margin-top:4px;">Alterar o link quebra o endereço antigo.</div>
-          </div>
-          <div class="field">
-            <label>E-mail do gestor</label>
-            <input readonly value="${escapeAttr(editing.gestorEmail||'Não cadastrado')}" style="background:#f5f5f5;color:var(--ink-soft);" onclick="this.select()"/>
-          </div>
-        </div>
-        <div class="m-dfoot">
-          <button class="btn" style="width:100%;" onclick="masterSalvarEdicao()">Salvar alterações</button>
-          <button class="btn ghost" style="width:100%;" onclick="masterToggleBloqueio()">${editing.bloqueada?'Desbloquear empresa':'Bloquear empresa'}</button>
-          <button class="btn ghost" style="width:100%;" onclick="masterRedefinirSenha()">Redefinir senha do gestor</button>
-          <button class="btn danger" style="width:100%;" onclick="masterExcluir('${editing.slug}')">Excluir empresa</button>
-        </div>
-      </div>` : '';
-
-    const drawer = masterDrawerMode === 'criar' ? drawerCriar : (masterDrawerMode === 'editar' ? drawerEditar : '');
-
     drawMasterShell(`
       <div class="m-sh">
         <div>
@@ -3285,7 +3277,7 @@ function renderMasterPanel(){
       </div>
       <input class="m-search" placeholder="Buscar empresa..." value="${escapeAttr(masterSearch)}" oninput="masterSearch=this.value; drawMaster()"/>
       ${lista}
-    `, drawer);
+    `);
   }
 
   function drawFinanceiro(){
@@ -3335,21 +3327,20 @@ function renderMasterPanel(){
         </div>`;
     }).join('') : `<p class="muted">Nenhuma empresa nesta categoria.</p>`;
 
-    const drawerFin = _finForm ? `
-      <div class="m-drawer">
-        <div class="m-dh">
-          <span class="m-dh-title">${_finForm.mode==='configurar'?'Configurar plano':'Editar plano'}</span>
-          <button class="m-dclose" onclick="finCancelarForm()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-        </div>
-        <div class="m-dbody">
-          <div class="field"><label>Valor mensal (R$)</label><input type="number" id="finFormValor" value="${_finForm.valor||''}" min="0" step="0.01" placeholder="Ex: 99.90"/></div>
-          <div class="field"><label>Dia de vencimento (1 a 28)</label><input type="number" id="finFormDia" value="${_finForm.dia||''}" min="1" max="28" placeholder="Ex: 10"/></div>
-        </div>
-        <div class="m-dfoot">
+    if(_finForm){
+      const emp = empresas.find(e=>e.id===_finForm.empresaId);
+      drawMasterShell(`
+        <button class="m-back" onclick="finCancelarForm()">${ICO_BACK} Voltar</button>
+        <div class="m-form-title">${_finForm.mode==='configurar'?'Configurar plano':'Editar plano'}${emp?' — '+escapeHtml(emp.nome):''}</div>
+        <div class="field"><label>Valor mensal (R$)</label><input type="number" id="finFormValor" value="${_finForm.valor||''}" min="0" step="0.01" placeholder="Ex: 99.90"/></div>
+        <div class="field"><label>Dia de vencimento (1 a 28)</label><input type="number" id="finFormDia" value="${_finForm.dia||''}" min="1" max="28" placeholder="Ex: 10"/></div>
+        <div class="m-form-actions">
           <button class="btn" style="width:100%;" onclick="finSalvarForm()">Salvar</button>
           <button class="btn ghost" style="width:100%;" onclick="finCancelarForm()">Cancelar</button>
         </div>
-      </div>` : '';
+      `);
+      return;
+    }
 
     drawMasterShell(`
       <div class="m-sh" style="margin-bottom:16px;">
@@ -3360,7 +3351,7 @@ function renderMasterPanel(){
       </div>
       <div class="m-tabs">${tabBtns}</div>
       <div style="display:flex;flex-direction:column;gap:8px;">${listaFin}</div>
-    `, drawerFin);
+    `);
   }
 
   window.drawMaster = draw;
