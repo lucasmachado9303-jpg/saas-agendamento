@@ -7,12 +7,12 @@
     { "source": "/confirmacao", "destination": "/app.html" },
     {
       "source": "/",
-      "has": [{ "type": "host", "value": "(?<slug>(?!www\\b)[^.]+)\\.agenplus\\.com\\.br" }],
+      "has": [{ "type": "host", "value": "(?<slug>(?!www)[^.]+)\\.agenplus\\.com\\.br" }],
       "destination": "/app.html"
     },
     {
       "source": "/:path*",
-      "has": [{ "type": "host", "value": "(?<slug>(?!www\\b)[^.]+)\\.agenplus\\.com\\.br" }],
+      "has": [{ "type": "host", "value": "(?<slug>(?!www)[^.]+)\\.agenplus\\.com\\.br" }],
       "destination": "/app.html"
     }
   ]
