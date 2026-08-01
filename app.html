@@ -2871,10 +2871,10 @@ window.tentarLoginUnificado = async ()=>{
   await loadData();
 
   if(profile.role === 'master'){
-    goto({ master: 1 });
+    location.replace('/master');
   } else if(profile.role === 'owner_empresa'){
     const emp = empresas.find(e => e.id === profile.empresa_id);
-    if(emp) goto({ empresa: emp.slug, page: 'gestao' });
+    if(emp) location.replace(`/?empresa=${emp.slug}&page=gestao`);
     else toast('Empresa não encontrada.','err');
   } else {
     toast('Acesso não autorizado.','err');
