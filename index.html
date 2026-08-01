@@ -157,17 +157,16 @@ nav{
   50%{transform:translateY(-5px);}
 }
 .phone-notch{
-  position:absolute;top:12px;left:50%;transform:translateX(-50%);
-  width:90px;height:26px;
+  position:absolute;top:10px;left:50%;transform:translateX(-50%);
+  width:68px;height:20px;
   background:#000;
   border-radius:20px;
   z-index:10;
-  display:flex;align-items:center;justify-content:flex-end;
-  padding-right:10px;gap:5px;
 }
 .phone-notch::after{
   content:'';
-  width:10px;height:10px;
+  position:absolute;right:8px;top:50%;transform:translateY(-50%);
+  width:8px;height:8px;
   border-radius:50%;
   background:#1a1a1a;
   border:1.5px solid #2a2a2a;
@@ -343,7 +342,8 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
     </div>
     <div class="phone-wrap">
       <div class="phone" id="phoneMockup">
-<div class="phone-screen">
+        <div class="phone-notch"></div>
+        <div class="phone-screen">
           <div class="phone-slide active" id="slide-0"><img src="/assets/imagens/passo-1-inicio.jpg" alt="Passo 1"/></div>
           <div class="phone-slide" id="slide-1"><img src="/assets/imagens/passo-2-servico.jpg" alt="Passo 2"/></div>
           <div class="phone-slide" id="slide-2"><img src="/assets/imagens/passo-3-horario.jpg" alt="Passo 3"/></div>
