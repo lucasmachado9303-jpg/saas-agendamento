@@ -2245,8 +2245,9 @@ function renderGestao(empInicial){
 
   window.gFinExcluir = async (id)=>{
     if(!confirm('Excluir este lancamento?')) return;
-    const { error } = await supabaseClient.from('lancamentos_financeiros').delete().eq('id', id);
-    if(error){ toast('Erro ao excluir.','err'); return; }
+    const { error, count } = await supabaseClient.from('lancamentos_financeiros').delete({ count: 'exact' }).eq('id', id);
+    if(error){ toast('Erro ao excluir: ' + error.message,'err'); return; }
+    if(count === 0){ toast('Sem permissao para excluir este lancamento.','err'); return; }
     toast('Lancamento removido.','ok');
     await gFinCarregar();
   };
