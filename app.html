@@ -1128,6 +1128,12 @@ function renderAgendar(emp){
       if(error.code==='23505') draw();
       return;
     }
+    // Registra/atualiza cliente em background (sem bloquear o fluxo)
+    fetch('/api/upsert-cliente', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ empresa_id: emp2.id, nome: bookingState.nome.trim(), telefone: bookingState.telefone.trim() })
+    }).catch(()=>{});
     const srvNomes = bookingState.servicos.map(id=>{ const s=emp2.servicos.find(x=>x.id===id); return s?s.nome:''; }).filter(Boolean);
     const novo = {
       slug,
