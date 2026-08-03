@@ -12,12 +12,12 @@ module.exports = async function handler(req, res) {
   const SUPABASE_URL = process.env.SUPABASE_URL;
   const SERVICE_KEY  = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!SUPABASE_URL || !SERVICE_KEY) {
-    return res.status(500).json({ error: 'Variaveis de ambiente nao configuradas' });
+    return res.status(500).json({ error: 'Variáveis de ambiente não configuradas' });
   }
 
   const { empresa_id, nome, telefone } = req.body || {};
   if (!empresa_id || !nome || !telefone) {
-    return res.status(400).json({ error: 'Campos obrigatorios: empresa_id, nome, telefone' });
+    return res.status(400).json({ error: 'Campos obrigatórios: empresa_id, nome, telefone' });
   }
 
   // Verifica se ja existe cliente com mesmo nome + telefone + empresa

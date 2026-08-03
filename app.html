@@ -1234,7 +1234,7 @@ window.clienteLoginSubmit = async (slug)=>{
   const telRaw = (document.getElementById('cliLoginTel')?.value||'').replace(/\D/g,'').replace(/^(55|0)/,'');
   const errEl = document.getElementById('cliLoginErr');
   if(!nome||telRaw.length!==11||telRaw[2]!=='9'){
-    if(errEl){ errEl.style.display='block'; errEl.textContent='Preencha nome e telefone validos.'; } return;
+    if(errEl){ errEl.style.display='block'; errEl.textContent='Preencha nome e telefone válidos.'; } return;
   }
   const telefone = '0'+telRaw;
   if(errEl){ errEl.style.display='none'; }
@@ -1256,7 +1256,7 @@ window.clienteLoginSubmit = async (slug)=>{
     _clienteSession = { nome, telefone, agendamentos: json.agendamentos || [] };
     goto({ empresa: slug, page: 'confirmar-lista' });
   }catch(e){
-    if(errEl){ errEl.style.display='block'; errEl.textContent='Erro de conexao. Tente novamente.'; }
+    if(errEl){ errEl.style.display='block'; errEl.textContent='Erro de conexão. Tente novamente.'; }
     if(btn){ btn.disabled=false; btn.textContent='Entrar'; }
   }
 };
@@ -1283,7 +1283,7 @@ function renderMeusAgendamentos(emp){
     const dentroPrazo = cancelamentoHoras > 0 && Date.now() < limiteCancelMs;
     const status = a.status || 'nao_confirmado';
     const statusCor = status==='confirmado' ? '#16a34a' : status==='cancelado' ? '#dc2626' : '#1a1a1a';
-    const statusLabel = status==='confirmado' ? 'Confirmado' : status==='cancelado' ? 'Cancelado' : 'Nao confirmado';
+    const statusLabel = status==='confirmado' ? 'Confirmado' : status==='cancelado' ? 'Cancelado' : 'Não confirmado';
     const nomeStyle = status==='cancelado' ? 'text-decoration:line-through;' : '';
     const cardOpacity = status==='cancelado' ? 'opacity:0.6;' : '';
     const linkReagendar = 'https://' + emp.slug + '.agenplus.com.br/agendar';
@@ -1306,10 +1306,10 @@ function renderMeusAgendamentos(emp){
     return `
       <div style="background:#fff;border:0.5px solid #e4e4e7;border-radius:14px;padding:16px;margin-bottom:10px;${cardOpacity}">
         <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">
-          <div style="font-size:16px;font-weight:700;color:#1a1a1a;margin-bottom:4px;${nomeStyle}">${escapeHtml(a.servico_nome||'Servico')}</div>
+          <div style="font-size:16px;font-weight:700;color:#1a1a1a;margin-bottom:4px;${nomeStyle}">${escapeHtml(a.servico_nome||'Serviço')}</div>
           <div style="font-size:12px;font-weight:600;color:${statusCor};white-space:nowrap;margin-top:2px;">${statusLabel}</div>
         </div>
-        <div style="font-size:14px;color:#8e8e93;text-transform:capitalize;">${dataFmt} as ${a.hora}</div>
+        <div style="font-size:14px;color:#8e8e93;text-transform:capitalize;">${dataFmt} às ${a.hora}</div>
         ${botoesHtml}
       </div>`;
   };
@@ -1332,10 +1332,10 @@ function renderMeusAgendamentos(emp){
         </div>
       </div>
       <div style="max-width:480px;margin:0 auto;padding:20px 16px 0;">
-        <div style="font-size:13px;font-weight:700;color:#8e8e93;letter-spacing:.05em;text-transform:uppercase;margin-bottom:10px;">Proximos</div>
+        <div style="font-size:13px;font-weight:700;color:#8e8e93;letter-spacing:.05em;text-transform:uppercase;margin-bottom:10px;">Próximos</div>
         ${futHtml}
         ${passados.length ? `
-          <div style="font-size:13px;font-weight:700;color:#8e8e93;letter-spacing:.05em;text-transform:uppercase;margin:20px 0 10px;">Historico</div>
+          <div style="font-size:13px;font-weight:700;color:#8e8e93;letter-spacing:.05em;text-transform:uppercase;margin:20px 0 10px;">Histórico</div>
           ${pastHtml}` : ''}
       </div>
     </div>
@@ -1488,7 +1488,7 @@ function renderGestao(empInicial){
           const ICO_WAG = `<svg width="11" height="11" viewBox="0 0 32 32" fill="currentColor"><path d="M16 0C7.163 0 0 7.163 0 16c0 2.82.736 5.469 2.027 7.773L0 32l8.418-2.002A15.94 15.94 0 0 0 16 32c8.837 0 16-7.163 16-16S24.837 0 16 0zm0 29.333a13.27 13.27 0 0 1-6.77-1.848l-.485-.29-5.001 1.19 1.226-4.866-.317-.5A13.267 13.267 0 0 1 2.667 16C2.667 8.636 8.636 2.667 16 2.667S29.333 8.636 29.333 16 23.364 29.333 16 29.333zm7.27-9.98c-.398-.199-2.354-1.162-2.719-1.295-.365-.133-.631-.199-.897.2-.265.398-1.03 1.295-1.263 1.56-.232.266-.465.3-.863.1-.398-.2-1.68-.619-3.2-1.974-1.183-1.054-1.981-2.355-2.213-2.753-.232-.398-.025-.613.174-.811.179-.178.398-.465.597-.697.2-.232.266-.398.398-.663.133-.266.067-.498-.033-.697-.1-.2-.897-2.163-1.23-2.962-.324-.778-.652-.672-.897-.685l-.764-.013c-.266 0-.697.1-1.063.498-.365.398-1.395 1.362-1.395 3.325s1.428 3.857 1.627 4.123c.2.265 2.812 4.292 6.815 6.02.953.411 1.696.657 2.276.841.956.305 1.827.262 2.515.159.767-.115 2.354-.962 2.686-1.892.333-.93.333-1.728.233-1.893-.1-.165-.365-.265-.763-.464z"/></svg>`;
           const cardOpacity = ag.status==='cancelado' ? 'opacity:0.5;' : passadoHora ? 'opacity:0.4;' : '';
           const statusCor = ag.status==='confirmado' ? '#16a34a' : ag.status==='cancelado' ? '#dc2626' : '#6b7280';
-          const statusLabel = ag.status==='confirmado' ? 'Confirmado' : ag.status==='cancelado' ? 'Cancelado' : 'Nao confirmado';
+          const statusLabel = ag.status==='confirmado' ? 'Confirmado' : ag.status==='cancelado' ? 'Cancelado' : 'Não confirmado';
           const nomeStyle = ag.status==='cancelado' ? 'text-decoration:line-through;' : '';
           parts.push(`<div style="padding:10px 12px;margin-bottom:6px;border-radius:9px;border:0.5px solid #e4e4e7;background:var(--card);display:flex;flex-direction:column;gap:8px;${cardOpacity}">
             <div>
@@ -1505,7 +1505,7 @@ function renderGestao(empInicial){
                 <button class="ag-btn ag-btn-wa" style="width:100%;" onclick="toggleWaMenu('${ag.id}')">${ICO_WAG} WhatsApp</button>
                 ${_waMenuId === ag.id ? `<div style="position:absolute;top:calc(100% + 4px);right:0;min-width:130px;background:#fff;border:0.5px solid #d1d5db;border-radius:9px;overflow:hidden;z-index:50;box-shadow:0 4px 12px rgba(0,0,0,.10);">
                   <button class="ag-wa-dd-item" onclick="waAcao('${ag.id}','conversar','${emp.id}')">Conversar</button>
-                  <button class="ag-wa-dd-item" onclick="waAcao('${ag.id}','confirmacao','${emp.id}')">Confirmacao ${ag.confirmacaoEnviada ? '<span style="color:#22c55e">&#10003;</span>' : ''}</button>
+                  <button class="ag-wa-dd-item" onclick="waAcao('${ag.id}','confirmacao','${emp.id}')">Confirmação ${ag.confirmacaoEnviada ? '<span style="color:#22c55e">&#10003;</span>' : ''}</button>
                   <button class="ag-wa-dd-item" onclick="waAcao('${ag.id}','lembrete','${emp.id}')">Lembrete ${ag.lembreteEnviado ? '<span style="color:#22c55e">&#10003;</span>' : ''}</button>
                 </div>` : ''}
               </div>
@@ -1545,8 +1545,8 @@ function renderGestao(empInicial){
               }
             </div>
             <div class="row">
-              <div class="field"><label>Servico</label><select id="novoServico">${servicoOpts}</select></div>
-              <div class="field"><label>Horario</label><select id="novoHora">${horariosOpts}</select></div>
+              <div class="field"><label>Serviço</label><select id="novoServico">${servicoOpts}</select></div>
+              <div class="field"><label>Horário</label><select id="novoHora">${horariosOpts}</select></div>
             </div>
             <div class="row">
               <button class="btn ghost" onclick="cancelarNovoAg()">Cancelar</button>
@@ -1697,7 +1697,7 @@ function renderGestao(empInicial){
         : `<p class="muted" style="text-align:center;padding:24px 0;">Nenhum agendamento encontrado.</p>`;
 
       const histSection = `
-        <div style="font-size:15px;font-weight:700;color:#1a1a1a;margin-bottom:10px;padding:0 4px;">Historico</div>
+        <div style="font-size:15px;font-weight:700;color:#1a1a1a;margin-bottom:10px;padding:0 4px;">Histórico</div>
         <div style="background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.06);">${histRows}</div>`;
 
       if(_clientePerfilEditando) {
@@ -1757,7 +1757,7 @@ function renderGestao(empInicial){
     // Banner
     const banner = (!_clientesBannerDismissed && inativos30.length && _clientesAba==='todos') ? `
       <div style="background:#fffbea;border:1px solid #fcd34d;border-radius:14px;padding:12px 14px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
-        <div style="font-size:14px;color:#92400e;font-weight:500;">${inativos30.length} cliente${inativos30.length!==1?'s':''} sem voltar ha 30 dias ou mais.</div>
+        <div style="font-size:14px;color:#92400e;font-weight:500;">${inativos30.length} cliente${inativos30.length!==1?'s':''} sem voltar há 30 dias ou mais.</div>
         <button onclick="dispensarBannerClientes()" style="background:none;border:none;color:#92400e;cursor:pointer;font-size:20px;line-height:1;padding:0 4px;">&times;</button>
       </div>` : '';
 
@@ -1788,7 +1788,7 @@ function renderGestao(empInicial){
                 </div>
               </div>`;
           }).join('')
-        : `<p class="muted" style="text-align:center;padding:24px 0;">Nenhum cliente inativo neste periodo.</p>`;
+        : `<p class="muted" style="text-align:center;padding:24px 0;">Nenhum cliente inativo neste período.</p>`;
       const wrapI = clientesInativos.length
         ? `<div style="background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.06);">${inativoRows}</div>`
         : inativoRows;
@@ -1866,8 +1866,8 @@ function renderGestao(empInicial){
           ${mkItem("configurarIr('servicos')",   '#eff6ff', ICO_BRIEF, 'Serviços oferecidos',      'Configure os serviços disponíveis')}
           ${mkItem("configurarIr('horarios')",   '#f0fdf4', ICO_CAL,   'Horários de agendamento',  'Defina dias e horários de agendamento')}
           ${mkItem("configurarIr('personalizar')","#fdf4ff", ICO_LINK,  'Personalize seu link',     'Nome, textos, logo, cor e botões')}
-          ${mkItem("configurarIr('mensagens')",    '#fff7ed', ICO_MSG,   'Configurar mensagens',     'Personalize mensagens automaticas')}
-          ${mkItem("configurarIr('cancelamento')","#fff1f2", `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#e53935" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>`, 'Cancelamento', 'Prazo minimo para cancelar agendamento')}
+          ${mkItem("configurarIr('mensagens')",    '#fff7ed', ICO_MSG,   'Configurar mensagens',     'Personalize mensagens automáticas')}
+          ${mkItem("configurarIr('cancelamento')","#fff1f2", `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#e53935" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>`, 'Cancelamento', 'Prazo mínimo para cancelar agendamento')}
           ${mkItem("toggleLinkMenu()", '#f0f9ff', `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0ea5e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>`, 'Link público', 'Compartilhar, copiar ou abrir seu link', false)}
         </div>
         ${_linkMenuAberto ? `
@@ -1893,8 +1893,8 @@ function renderGestao(empInicial){
       `;
     }
     if(configurarSub === 'mensagens'){
-      const msgConfirm = emp.msgConfirmacao || 'Ola, {nome}!\nConfirme seu agendamento de {servico} para hoje as {hora}.\nAcesse o link abaixo, faca o login e confirme ou cancele:\n{link}';
-      const msgLembrete = emp.msgLembrete || 'Ola, {nome}! Lembrando do seu agendamento de {servico} amanha as {hora}. Ate la!';
+      const msgConfirm = emp.msgConfirmacao || 'Olá, {nome}!\nConfirme seu agendamento de {servico} para hoje às {hora}.\nAcesse o link abaixo, faça o login e confirme ou cancele:\n{link}';
+      const msgLembrete = emp.msgLembrete || 'Olá, {nome}! Lembrando do seu agendamento de {servico} amanhã às {hora}. Até lá!';
       return `
         <div style="position:relative;display:flex;align-items:center;margin-bottom:16px;min-height:36px;">
           <button onclick="configurarIr(null)" style="background:none;border:none;font-size:14px;font-weight:600;color:#555;cursor:pointer;padding:0;font-family:inherit;display:flex;align-items:center;gap:4px;">&#8249; Voltar</button>
@@ -1903,8 +1903,8 @@ function renderGestao(empInicial){
         </div>
         <div style="display:flex;flex-direction:column;gap:14px;">
           <div style="background:#fff;border:0.5px solid #e4e4e7;border-radius:12px;padding:14px;">
-            <div style="font-size:13px;font-weight:700;color:#1a1a1a;margin-bottom:3px;">Mensagem de confirmacao</div>
-            <div style="font-size:12px;color:#8e8e93;margin-bottom:10px;">Enviada ao clicar em "Confirmacao" no agendamento.</div>
+            <div style="font-size:13px;font-weight:700;color:#1a1a1a;margin-bottom:3px;">Mensagem de confirmação</div>
+            <div style="font-size:12px;color:#8e8e93;margin-bottom:10px;">Enviada ao clicar em "Confirmação" no agendamento.</div>
             <textarea id="msgConfirmacao" rows="5" style="width:100%;font-family:inherit;font-size:13px;border:0.5px solid #d1d5db;border-radius:8px;padding:10px 12px;resize:none;line-height:1.5;color:#1a1a1a;background:#f9f9f7;">${escapeHtml(msgConfirm)}</textarea>
             <div style="font-size:11px;color:#8e8e93;margin-top:6px;">Variaveis: {nome} {hora} {servico} {data} {link}</div>
           </div>
@@ -1928,14 +1928,14 @@ function renderGestao(empInicial){
           <div></div>
         </div>
         <div style="background:#fff;border:0.5px solid #e4e4e7;border-radius:16px;padding:18px;margin-bottom:14px;">
-          <div style="font-size:15px;font-weight:700;color:#1a1a1a;margin-bottom:6px;">Prazo minimo para cancelar</div>
-          <div style="font-size:13px;color:#8e8e93;margin-bottom:14px;line-height:1.5;">Quantas horas antes do horario o cliente pode cancelar pelo link publico. Use 0 para desativar o cancelamento pelo cliente.</div>
+          <div style="font-size:15px;font-weight:700;color:#1a1a1a;margin-bottom:6px;">Prazo mínimo para cancelar</div>
+          <div style="font-size:13px;color:#8e8e93;margin-bottom:14px;line-height:1.5;">Quantas horas antes do horário o cliente pode cancelar pelo link público. Use 0 para desativar o cancelamento pelo cliente.</div>
           <div class="field" style="margin:0;">
-            <label>Horas de antecedencia</label>
+            <label>Horas de antecedência</label>
             <input id="cancelamentoHoras" type="number" min="0" max="168" step="1" value="${horas}" placeholder="0"
               style="width:100%;border:0.5px solid #d1d5db;border-radius:10px;padding:10px 12px;font-size:16px;font-family:inherit;color:#1a1a1a;"/>
           </div>
-          <div style="font-size:12px;color:#8e8e93;margin-top:8px;">Exemplo: 2 = o cliente pode cancelar ate 2 horas antes.</div>
+          <div style="font-size:12px;color:#8e8e93;margin-top:8px;">Exemplo: 2 = o cliente pode cancelar até 2 horas antes.</div>
         </div>
         <button class="btn" onclick="salvarCancelamentoHoras('${emp.id}')">Salvar</button>
       `;
@@ -2141,7 +2141,7 @@ function renderGestao(empInicial){
       + '<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">'
       + '<div id="pCorPreview" style="width:44px;height:44px;border-radius:12px;background:'+cor+';flex-shrink:0;border:0.5px solid rgba(0,0,0,0.1);"></div>'
       + '<div><div style="font-size:15px;font-weight:600;color:#1a1a1a;" id="pCorHex">'+cor+'</div>'
-      + '<div style="font-size:12px;color:#8e8e93;margin-top:2px;">Usada nos botoes e destaques</div></div></div>'
+      + '<div style="font-size:12px;color:#8e8e93;margin-top:2px;">Usada nos botões e destaques</div></div></div>'
       + '<div style="margin-bottom:14px;"><div style="font-size:12px;font-weight:600;color:#8e8e93;margin-bottom:8px;">Tom</div>'
       + '<input type="range" class="cor-slider" id="pCorHue" min="0" max="360" value="'+corH+'" style="background:'+hueGrad+';" oninput="atualizarCorPersonalizar()"/></div>'
       + '<div><div style="font-size:12px;font-weight:600;color:#8e8e93;margin-bottom:8px;">Claridade</div>'
@@ -2150,14 +2150,14 @@ function renderGestao(empInicial){
       + '</div>';
 
     const slugHtml = '<div class="field">'
-      + '<label>Link publico</label>'
+      + '<label>Link público</label>'
       + '<div style="display:flex;align-items:center;gap:6px;">'
       + '<span style="font-size:13px;color:#8e8e93;white-space:nowrap;flex-shrink:0;">https://</span>'
       + '<input id="pSlug" value="'+escapeAttr(emp.slug)+'" placeholder="seu-link" style="flex:1;min-width:0;" oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9-]/g,\'\')"/>'
       + '<span style="font-size:13px;color:#8e8e93;white-space:nowrap;flex-shrink:0;">.agenplus.com.br</span>'
       + '</div>'
       + '<div style="display:flex;align-items:center;justify-content:space-between;margin-top:6px;">'
-      + '<div style="font-size:12px;color:#8e8e93;">Alterar quebra o endereco antigo.</div>'
+      + '<div style="font-size:12px;color:#8e8e93;">Alterar quebra o endereço antigo.</div>'
       + '<button onclick="salvarSlugEmpresa()" style="font-family:inherit;font-size:12px;font-weight:700;color:#1a1a1a;background:#f4f4f5;border:none;border-radius:7px;padding:4px 10px;cursor:pointer;">Salvar link</button>'
       + '</div></div>';
 
@@ -2779,11 +2779,11 @@ function renderGestao(empInicial){
   };
 
   window.gFinExcluir = async (id)=>{
-    if(!confirm('Excluir este lancamento?')) return;
+    if(!confirm('Excluir este lançamento?')) return;
     const { error, count } = await supabaseClient.from('lancamentos_financeiros').delete({ count: 'exact' }).eq('id', id);
     if(error){ toast('Erro ao excluir: ' + error.message,'err'); return; }
-    if(count === 0){ toast('Sem permissao para excluir este lancamento.','err'); return; }
-    toast('Lancamento removido.','ok');
+    if(count === 0){ toast('Sem permissão para excluir este lançamento.','err'); return; }
+    toast('Lançamento removido.','ok');
     await gFinCarregar();
   };
 
@@ -2802,8 +2802,8 @@ function renderGestao(empInicial){
     const valEl  = document.getElementById('gfin-val');
     const desc = descEl?.value?.trim();
     const val  = parseFloat(valEl?.value);
-    if(!desc){ toast('Informe uma descricao.','err'); return; }
-    if(isNaN(val)||val<=0){ toast('Informe um valor valido.','err'); return; }
+    if(!desc){ toast('Informe uma descrição.','err'); return; }
+    if(isNaN(val)||val<=0){ toast('Informe um valor válido.','err'); return; }
     const m = _gFinModal;
     _gFinModal = null;
     let error;
@@ -2820,7 +2820,7 @@ function renderGestao(empInicial){
       }
     }
     if(error){ toast('Erro ao salvar: '+error.message,'err'); _gFinModal=m; draw(); return; }
-    toast('Lancamento salvo!','ok');
+    toast('Lançamento salvo!','ok');
     await gFinCarregar();
   };
 
@@ -2933,7 +2933,7 @@ function renderGestao(empInicial){
     if(!_novoAgClienteId){ toast('Selecione um cliente.','err'); return; }
     if(!servicoId||!hora){ toast('Preencha todos os campos.','err'); return; }
     const cliente = _clientes.find(c=>c.id===_novoAgClienteId);
-    if(!cliente){ toast('Cliente nao encontrado.','err'); return; }
+    if(!cliente){ toast('Cliente não encontrado.','err'); return; }
     const servico = emp.servicos.find(s=>s.id===servicoId);
     const {data:row, error} = await supabaseClient.from('agendamentos').insert({
       empresa_id: emp.id,
@@ -2979,7 +2979,7 @@ function renderGestao(empInicial){
     editandoId = null; draw();
   };
   window.excluirAgendamento = async (id)=>{
-    if(!confirm('Excluir este agendamento? Essa acao nao pode ser desfeita.')) return;
+    if(!confirm('Excluir este agendamento? Essa ação não pode ser desfeita.')) return;
     const { error } = await supabaseClient.from('agendamentos').delete().eq('id', id);
     if(error){ toast(friendlyError(error,'Erro ao excluir agendamento. Tente novamente.'),'err'); return; }
     agendamentos = agendamentos.filter(a=>a.id!==id);
@@ -3067,8 +3067,8 @@ function renderGestao(empInicial){
     } else {
       const empObj = empresas.find(e=>e.id===empId);
       const defaultMsg = tipo === 'confirmacao'
-        ? 'Ola, {nome}!\nConfirme seu agendamento de {servico} para hoje as {hora}.\nAcesse o link abaixo, faca o login e confirme ou cancele:\n{link}'
-        : 'Ola, {nome}! Lembrando do seu agendamento de {servico} amanha as {hora}. Ate la!';
+        ? 'Olá, {nome}!\nConfirme seu agendamento de {servico} para hoje às {hora}.\nAcesse o link abaixo, faça o login e confirme ou cancele:\n{link}'
+        : 'Olá, {nome}! Lembrando do seu agendamento de {servico} amanhã às {hora}. Até lá!';
       const tmpl = (tipo === 'confirmacao' ? empObj?.msgConfirmacao : empObj?.msgLembrete) || defaultMsg;
       const dataFmt = ag.data ? new Date(ag.data+'T00:00:00').toLocaleDateString('pt-BR') : '';
       const linkConfirmar = 'https://' + (empObj?.slug||'') + '.agenplus.com.br/confirmar';
@@ -3130,10 +3130,10 @@ function renderGestao(empInicial){
     const nome = (document.getElementById('cliNome')?.value||'').trim().toUpperCase();
     const telRaw = (document.getElementById('cliTel')?.value||'').replace(/\D/g,'').replace(/^(55|0)/,'');
     if(!nome){ toast('Preencha o nome.','err'); return; }
-    if(telRaw.length!==11 || telRaw[2]!=='9'){ toast('Telefone invalido. Ex: (11) 98765-4321','err'); return; }
+    if(telRaw.length!==11 || telRaw[2]!=='9'){ toast('Telefone inválido. Ex: (11) 98765-4321','err'); return; }
     const telefone = '0'+telRaw;
     const existe = _clientes.find(c=>c.nome===nome && c.telefone===telefone);
-    if(existe){ toast('Ja existe um cliente com este nome e telefone.','err'); return; }
+    if(existe){ toast('Já existe um cliente com este nome e telefone.','err'); return; }
     const { data, error } = await supabaseClient.from('clientes').insert({ empresa_id:emp.id, nome, telefone }).select().single();
     if(error){ toast('Erro ao cadastrar cliente.','err'); return; }
     _clientes.push({ id:data.id, nome:data.nome, telefone:data.telefone });
@@ -3144,7 +3144,7 @@ function renderGestao(empInicial){
     const nome = (document.getElementById('cliNome')?.value||'').trim().toUpperCase();
     const telRaw = (document.getElementById('cliTel')?.value||'').replace(/\D/g,'').replace(/^(55|0)/,'');
     if(!nome){ toast('Preencha o nome.','err'); return; }
-    if(telRaw.length!==11 || telRaw[2]!=='9'){ toast('Telefone invalido. Ex: (11) 98765-4321','err'); return; }
+    if(telRaw.length!==11 || telRaw[2]!=='9'){ toast('Telefone inválido. Ex: (11) 98765-4321','err'); return; }
     const telefone = '0'+telRaw;
     const { error } = await supabaseClient.from('clientes').update({ nome, telefone }).eq('id', id);
     if(error){ toast('Erro ao salvar.','err'); return; }
@@ -3226,12 +3226,12 @@ function renderGestao(empInicial){
 
   window.salvarCancelamentoHoras = async (empresaId)=>{
     const val = parseInt(document.getElementById('cancelamentoHoras')?.value||'0', 10);
-    if(isNaN(val)||val<0){ toast('Valor invalido.','err'); return; }
+    if(isNaN(val)||val<0){ toast('Valor inválido.','err'); return; }
     const { error } = await supabaseClient.from('empresas').update({ cancelamento_horas: val }).eq('id', empresaId);
     if(error){ toast('Erro ao salvar.','err'); return; }
     emp.cancelamentoHoras = val;
     const g = empresas.find(e=>e.id===empresaId); if(g) g.cancelamentoHoras = val;
-    toast('Configuracao salva.','ok');
+    toast('Configuração salva.','ok');
     configurarSub = null; draw();
   };
 
@@ -3254,10 +3254,10 @@ function renderGestao(empInicial){
   window.salvarSlugEmpresa = async ()=>{
     const novoSlug = (document.getElementById('pSlug')?.value || '').trim();
     if(!novoSlug){ toast('Preencha o link.','err'); return; }
-    if(novoSlug === emp.slug){ toast('Link nao alterado.','ok'); return; }
-    if(!confirm('Alterar o link para "'+novoSlug+'.agenplus.com.br"? O endereco antigo vai parar de funcionar.')) return;
+    if(novoSlug === emp.slug){ toast('Link não alterado.','ok'); return; }
+    if(!confirm('Alterar o link para "'+novoSlug+'.agenplus.com.br"? O endereço antigo vai parar de funcionar.')) return;
     const { error } = await supabaseClient.from('empresas').update({ slug: novoSlug }).eq('id', emp.id);
-    if(error){ toast((error.message||'').includes('unique')||error.code==='23505' ? 'Este link ja esta em uso.' : 'Erro ao salvar. Tente novamente.','err'); return; }
+    if(error){ toast((error.message||'').includes('unique')||error.code==='23505' ? 'Este link já está em uso.' : 'Erro ao salvar. Tente novamente.','err'); return; }
     emp.slug = novoSlug;
     toast('Link atualizado!','ok');
     draw();

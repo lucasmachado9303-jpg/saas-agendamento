@@ -12,12 +12,12 @@ module.exports = async function handler(req, res) {
   const SUPABASE_URL = process.env.SUPABASE_URL;
   const SERVICE_KEY  = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!SUPABASE_URL || !SERVICE_KEY) {
-    return res.status(500).json({ error: 'Variaveis de ambiente nao configuradas' });
+    return res.status(500).json({ error: 'Variáveis de ambiente não configuradas' });
   }
 
   const { user_id, email } = req.body || {};
   if (!user_id || !email) {
-    return res.status(400).json({ error: 'Campos obrigatorios: user_id, email' });
+    return res.status(400).json({ error: 'Campos obrigatórios: user_id, email' });
   }
 
   const updRes = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${user_id}`, {
