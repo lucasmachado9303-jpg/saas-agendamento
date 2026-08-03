@@ -1442,6 +1442,7 @@ function renderGestao(empInicial){
   let _notas = [];          // registros da tabela notas
   let _notaModal = null;    // { texto, cor, editId? }
   let _notasCarregando = false;
+  let _dashInativosFiltro = 15;
 
   function agendamentosBody(){
     if(diaSelecionado===null){
@@ -2251,7 +2252,7 @@ function renderGestao(empInicial){
       flex:1; min-height:0; display:grid; gap:9px;
       grid-template-columns:repeat(2,minmax(0,1fr));
       grid-template-rows:auto auto auto auto 1fr;
-      grid-template-areas:"prox agend" "agenda fat" "agenda cli" "agenda fatmes" "notas notas";
+      grid-template-areas:"prox agend" "agenda cli" "agenda fat" "agenda fatmes" "notas notas";
     }
     .g-dash-agenda { grid-area:agenda; min-height:0; display:flex; flex-direction:column; }
     .g-dash-agenda-list { flex:1; min-height:0; overflow-y:auto; }
@@ -2341,9 +2342,37 @@ function renderGestao(empInicial){
     const agsHoje = ags.filter(a => a.data === hoje).sort((a,b)=>a.hora.localeCompare(b.hora));
     const agHoje  = agsHoje.length;
 
-    // Próximo atendimento
-    const prox    = agsHoje.find(a => a.hora >= horaAgora);
-    const proxVal = prox ? prox.hora.slice(0,5) : '--:--';
+    // Próximo atendimento (qualquer dia futuro)
+    const agsFuturos = ags.filter(a => a.status !== 'cancelado' && (a.data > hoje || (a.data === hoje && a.hora >= horaAgora)))
+                         .sort((a,b) => a.data.localeCompare(b.data) || a.hora.localeCompare(b.hora));
+    const prox = agsFuturos[0] || null;
+    let proxVal = '--:--';
+    if (prox) {
+      const proxDt = new Date(prox.data + 'T' + prox.hora + ':00');
+      const diffMs = proxDt - agora;
+      if (diffMs > 0) {
+        const diffMin = Math.floor(diffMs / 60000);
+        const dias = Math.floor(diffMin / 1440);
+        const horas = Math.floor((diffMin % 1440) / 60);
+        const mins = diffMin % 60;
+        if (dias > 0) proxVal = 'falta ' + dias + 'd e ' + horas + 'h';
+        else if (horas > 0) proxVal = 'falta ' + horas + 'h ' + mins + 'min';
+        else proxVal = 'falta ' + mins + 'min';
+      }
+    }
+
+    // Clientes inativos
+    const clientesMap = {};
+    ags.forEach(a => {
+      const chave = (a.nome||'') + '||' + (a.telefone||'');
+      if (!clientesMap[chave] || a.data > clientesMap[chave]) clientesMap[chave] = a.data;
+    });
+    function contarInativos(dias) {
+      const limite = new Date(); limite.setDate(limite.getDate() - dias);
+      const limiteStr = isoData(limite);
+      return Object.values(clientesMap).filter(ultima => ultima < limiteStr).length;
+    }
+    const inativosAtual = contarInativos(_dashInativosFiltro);
 
     // Faturamento de hoje
     const fatHoje = _gFinLancamentos.filter(l=>l.tipo==='receita' && l.data===hoje)
@@ -2433,7 +2462,17 @@ function renderGestao(empInicial){
 
         <div class="g-dash-grid">
           ${card('prox',  '#fff7ed', ICO_CLK,  'Próximo<br>atendimento', proxVal)}
-          ${card('agend', '#eff6ff', ICO_CAL2, 'Agendamentos<br>hoje', agHoje)}
+          <div class="g-dash-card" style="grid-area:agend;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+              <div class="g-dash-ico" style="background:#fef3c7;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="17" y1="11" x2="23" y2="11"/></svg></div>
+              <div class="g-dash-label">Clientes inativos</div>
+            </div>
+            <div style="display:flex;gap:5px;margin-bottom:8px;">
+              <button onclick="window.setDashInativosFiltro(15)" style="flex:1;height:26px;border-radius:6px;border:0.5px solid ${_dashInativosFiltro===15?'#3b82f6':'#e4e4e7'};background:${_dashInativosFiltro===15?'#eff6ff':'transparent'};color:${_dashInativosFiltro===15?'#1d4ed8':'#8e8e93'};font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;">15d+</button>
+              <button onclick="window.setDashInativosFiltro(30)" style="flex:1;height:26px;border-radius:6px;border:0.5px solid ${_dashInativosFiltro===30?'#3b82f6':'#e4e4e7'};background:${_dashInativosFiltro===30?'#eff6ff':'transparent'};color:${_dashInativosFiltro===30?'#1d4ed8':'#8e8e93'};font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;">30d+</button>
+            </div>
+            <div class="g-dash-val">${inativosAtual}</div>
+          </div>
 
           <div class="g-dash-panel g-dash-agenda">
             <div class="g-dash-ttl" style="margin-bottom:5px;">Agenda de hoje</div>
@@ -2497,6 +2536,7 @@ function renderGestao(empInicial){
     if(corner === 'dashboard') draw();
   }
 
+  window.setDashInativosFiltro = (d)=>{ _dashInativosFiltro = d; draw(); };
   window.novaNota   = ()=>{ _notaModal = { texto:'', cor:'amarelo' }; draw(); };
   window.fecharNota = ()=>{ _notaModal = null; draw(); };
   window.setNotaCor = (cor)=>{
