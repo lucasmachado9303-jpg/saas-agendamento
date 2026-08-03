@@ -2144,6 +2144,18 @@ function renderGestao(empInicial){
     const _pDest = _persRascunho?.textoDestaque ?? (emp.textoDestaque||'');
     return `
       <div class="field"><label>Nome da empresa</label><input id="pNome" value="${escapeAttr(_pNome)}" oninput="marcarPersonalizarDirty()"/></div>
+      <div class="field">
+        <label>Link publico</label>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span style="font-size:13px;color:#8e8e93;white-space:nowrap;flex-shrink:0;">https://</span>
+          <input id="pSlug" value="${escapeAttr(emp.slug)}" placeholder="seu-link" style="flex:1;min-width:0;" oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9-]/g,'')"/>
+          <span style="font-size:13px;color:#8e8e93;white-space:nowrap;flex-shrink:0;">.agenplus.com.br</span>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:6px;">
+          <div style="font-size:12px;color:#8e8e93;">Alterar quebra o endereco antigo.</div>
+          <button onclick="salvarSlugEmpresa()" style="font-family:inherit;font-size:12px;font-weight:700;color:#1a1a1a;background:#f4f4f5;border:none;border-radius:7px;padding:4px 10px;cursor:pointer;">Salvar link</button>
+        </div>
+      </div>
       <div class="field"><label>Descrição curta</label><textarea id="pDescricao" rows="2" style="resize:vertical;min-height:80px;" oninput="marcarPersonalizarDirty()">${escapeHtml(_pDesc)}</textarea></div>
       <div class="field"><label>Texto de destaque</label><input id="pTextoDestaque" value="${escapeAttr(_pDest)}" placeholder="Ex: Atendimento premium" oninput="marcarPersonalizarDirty()"/></div>
       <div class="field">
@@ -3230,6 +3242,17 @@ function renderGestao(empInicial){
     const dirtyBanner = document.getElementById('pers-dirty-banner');
     if(saveWrap) saveWrap.style.display = 'none';
     if(dirtyBanner) dirtyBanner.style.display = 'block';
+  };
+  window.salvarSlugEmpresa = async ()=>{
+    const novoSlug = (document.getElementById('pSlug')?.value||'').trim();
+    if(!novoSlug){ toast('Preencha o link.','err'); return; }
+    if(novoSlug === emp.slug){ toast('Link nao alterado.','ok'); return; }
+    if(!confirm(`Alterar o link para "${novoSlug}.agenplus.com.br"? O endereco antigo vai parar de funcionar.`)) return;
+    const { error } = await supabaseClient.from('empresas').update({ slug: novoSlug }).eq('id', emp.id);
+    if(error){ toast(error.message?.includes('unique')||error.code==='23505' ? 'Este link ja esta em uso.' : 'Erro ao salvar. Tente novamente.','err'); return; }
+    emp.slug = novoSlug;
+    toast('Link atualizado!','ok');
+    draw();
   };
   window.voltarDePersonalizar = ()=>{ personalizarDirty=false; _persRascunho=null; configurarIr(null); };
   window.descartarPersonalizar = ()=>{ personalizarDirty=false; _persRascunho=null; configurarIr(null); };
