@@ -1280,7 +1280,7 @@ function renderMeusAgendamentos(emp){
   const renderAg = (a, podeInteragir) => {
     const dataFmt = fmtData(a.data);
     const limiteCancelMs = new Date(`${a.data}T${a.hora}:00`).getTime() - cancelamentoHoras*3600*1000;
-    const dentroPrazo = cancelamentoHoras === 0 || Date.now() < limiteCancelMs;
+    const dentroPrazo = cancelamentoHoras > 0 && Date.now() < limiteCancelMs;
     const status = a.status || 'nao_confirmado';
     const statusCor = status==='confirmado' ? '#16a34a' : status==='cancelado' ? '#dc2626' : '#1a1a1a';
     const statusLabel = status==='confirmado' ? 'Confirmado' : status==='cancelado' ? 'Cancelado' : 'Nao confirmado';
