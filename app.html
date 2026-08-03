@@ -2925,7 +2925,10 @@ function renderGestao(empInicial){
     _novoAgClienteBusca = v;
     if(!v.trim()){ _novoAgClienteResultados=[]; _atualizarDropdownAg(); return; }
     const q = v.toLowerCase();
-    _novoAgClienteResultados = _clientes.filter(c=>c.nome.toLowerCase().includes(q)||(c.telefone||'').includes(v.replace(/\D/g,''))).slice(0,5);
+    const digits = v.replace(/\D/g,'');
+    _novoAgClienteResultados = _clientes.filter(c=>
+      c.nome.toLowerCase().includes(q) || (digits && (c.telefone||'').includes(digits))
+    ).slice(0,5);
     _atualizarDropdownAg();
   };
   window.selecionarClienteAg = (id)=>{
