@@ -1885,7 +1885,7 @@ function renderGestao(empInicial){
       `;
     }
     if(configurarSub === 'mensagens'){
-      const msgConfirm = emp.msgConfirmacao || 'Ola, {nome}! Confirmando seu agendamento de {servico} hoje as {hora}. Te esperamos!';
+      const msgConfirm = emp.msgConfirmacao || 'Ola, {nome}!\nConfirme seu agendamento de {servico} para hoje as {hora}.\nAcesse o link abaixo, faca o login e confirme ou cancele:\n{link}';
       const msgLembrete = emp.msgLembrete || 'Ola, {nome}! Lembrando do seu agendamento de {servico} amanha as {hora}. Ate la!';
       return `
         <div style="position:relative;display:flex;align-items:center;margin-bottom:16px;min-height:36px;">
@@ -1898,7 +1898,7 @@ function renderGestao(empInicial){
             <div style="font-size:13px;font-weight:700;color:#1a1a1a;margin-bottom:3px;">Mensagem de confirmacao</div>
             <div style="font-size:12px;color:#8e8e93;margin-bottom:10px;">Enviada ao clicar em "Confirmacao" no agendamento.</div>
             <textarea id="msgConfirmacao" rows="5" style="width:100%;font-family:inherit;font-size:13px;border:0.5px solid #d1d5db;border-radius:8px;padding:10px 12px;resize:none;line-height:1.5;color:#1a1a1a;background:#f9f9f7;">${escapeHtml(msgConfirm)}</textarea>
-            <div style="font-size:11px;color:#8e8e93;margin-top:6px;">Variaveis: {nome} {hora} {servico} {data}</div>
+            <div style="font-size:11px;color:#8e8e93;margin-top:6px;">Variaveis: {nome} {hora} {servico} {data} {link}</div>
           </div>
           <div style="background:#fff;border:0.5px solid #e4e4e7;border-radius:12px;padding:14px;">
             <div style="font-size:13px;font-weight:700;color:#1a1a1a;margin-bottom:3px;">Mensagem de lembrete</div>
@@ -3018,15 +3018,17 @@ function renderGestao(empInicial){
     } else {
       const empObj = empresas.find(e=>e.id===empId);
       const defaultMsg = tipo === 'confirmacao'
-        ? 'Ola, {nome}! Confirmando seu agendamento de {servico} hoje as {hora}. Te esperamos!'
+        ? 'Ola, {nome}!\nConfirme seu agendamento de {servico} para hoje as {hora}.\nAcesse o link abaixo, faca o login e confirme ou cancele:\n{link}'
         : 'Ola, {nome}! Lembrando do seu agendamento de {servico} amanha as {hora}. Ate la!';
       const tmpl = (tipo === 'confirmacao' ? empObj?.msgConfirmacao : empObj?.msgLembrete) || defaultMsg;
       const dataFmt = ag.data ? new Date(ag.data+'T00:00:00').toLocaleDateString('pt-BR') : '';
+      const linkConfirmar = 'https://' + (empObj?.slug||'') + '.agenplus.com.br/confirmar';
       const msg = tmpl
         .replace(/{nome}/g, ag.nome||'')
         .replace(/{hora}/g, ag.hora||'')
         .replace(/{servico}/g, ag.servicoNome||'')
-        .replace(/{data}/g, dataFmt);
+        .replace(/{data}/g, dataFmt)
+        .replace(/{link}/g, linkConfirmar);
       link = `https://wa.me/${waNum}?text=${encodeURIComponent(msg)}`;
       const campo = tipo === 'confirmacao' ? 'confirmacao_enviada' : 'lembrete_enviado';
       supabaseClient.from('agendamentos').update({ [campo]: true }).eq('id', agId);
