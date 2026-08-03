@@ -1390,11 +1390,17 @@ function renderGestao(empInicial){
   let _clientes = [];
   let _clientesBusca = '';
   let _clientesCarregando = false;
-  let _clienteModalEditar = null; // { id, nome, telefone } ou null
   let _clienteModalNovo = false;
   let _novoAgClienteId = null; // cliente selecionado no formulário de novo agendamento
   let _novoAgClienteBusca = '';
   let _novoAgClienteResultados = [];
+  // Perfil do cliente
+  let _clientePerfilId = null;
+  let _clientePerfilEditando = false;
+  // Inativos
+  let _clientesAba = 'todos'; // 'todos' | 'inativos'
+  let _clientesInativosFiltro = 30;
+  let _clientesBannerDismissed = false;
 
   // Estado do bloco de notas (dashboard)
   let _notas = [];          // registros da tabela notas
@@ -1605,44 +1611,167 @@ function renderGestao(empInicial){
 
   function clientesBody(){
     const ICO_PLUS = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`;
-    const ICO_EDIT = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
-    const ICO_TRASH = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>`;
+    const ICO_BACK = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>`;
+    const ICO_WA = `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.123 1.532 5.853L.057 23.5l5.83-1.53A11.945 11.945 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.96 0-3.786-.516-5.363-1.416l-.384-.227-3.98 1.047 1.064-3.878-.25-.399C2.014 15.54 1.5 13.837 1.5 12 1.5 6.201 6.201 1.5 12 1.5S22.5 6.201 22.5 12 17.799 22.5 12 22.5z"/></svg>`;
 
     const telFmt = t => {
       const d = (t||'').replace(/\D/g,'').replace(/^0/,'');
       if(d.length===11) return `(${d.slice(0,2)}) ${d.slice(2,7)}-${d.slice(7)}`;
       return t||'';
     };
+    const telWaLink = t => {
+      const d = (t||'').replace(/\D/g,'').replace(/^0/,'');
+      return `https://wa.me/55${d}`;
+    };
+    const fmtData = d => { const [y,m,dd]=d.split('-'); return `${dd}/${m}/${y}`; };
 
-    if(_clienteModalNovo || _clienteModalEditar){
-      const ed = _clienteModalEditar;
-      const titulo = ed ? 'Editar cliente' : 'Novo cliente';
+    function _diasSemVoltar(c) {
+      const ags = agendamentos.filter(a => a.slug===emp.slug && a.nome===c.nome && a.telefone===c.telefone);
+      if(!ags.length) return null;
+      const ultima = ags.map(a=>a.data).sort().pop();
+      return Math.floor((new Date() - new Date(ultima+'T00:00:00')) / 86400000);
+    }
+
+    // VIEW: PERFIL
+    if(_clientePerfilId) {
+      const c = _clientes.find(x=>x.id===_clientePerfilId);
+      if(!c){ _clientePerfilId=null; return clientesBody(); }
+
+      const hist = agendamentos
+        .filter(a => a.slug===emp.slug && a.nome===c.nome && a.telefone===c.telefone)
+        .sort((a,b)=>b.data.localeCompare(a.data)||b.hora.localeCompare(a.hora));
+
+      const histRows = hist.length
+        ? hist.map(a=>`
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:0.5px solid #f2f2f7;">
+            <div>
+              <div style="font-size:14px;font-weight:600;color:#1a1a1a;">${escapeHtml(a.servicoNome||'Agendamento')}</div>
+              <div style="font-size:13px;color:#8e8e93;margin-top:2px;">${fmtData(a.data)} ${a.hora}</div>
+            </div>
+          </div>`).join('')
+        : `<p class="muted" style="text-align:center;padding:24px 0;">Nenhum agendamento encontrado.</p>`;
+
+      const histSection = `
+        <div style="font-size:15px;font-weight:700;color:#1a1a1a;margin-bottom:10px;padding:0 4px;">Historico</div>
+        <div style="background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.06);">${histRows}</div>`;
+
+      if(_clientePerfilEditando) {
+        return `
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;padding:0 4px;">
+            <button onclick="toggleEditarPerfil()" style="background:none;border:none;color:#1a1a1a;cursor:pointer;padding:4px;display:flex;align-items:center;">${ICO_BACK}</button>
+            <div style="font-size:18px;font-weight:700;color:#1a1a1a;">Editar cliente</div>
+          </div>
+          <div style="background:#fff;border-radius:16px;padding:18px;box-shadow:0 2px 12px rgba(0,0,0,0.06);margin-bottom:16px;">
+            <div class="field"><label>Nome completo</label><input id="cliNome" type="text" value="${escapeAttr(c.nome)}" placeholder="Nome do cliente" style="text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()"/></div>
+            <div class="field"><label>Telefone (WhatsApp)</label><input id="cliTel" type="tel" inputmode="numeric" maxlength="16" value="${escapeAttr(telFmt(c.telefone))}" placeholder="(xx) xxxxx-xxxx" oninput="maskTel(this)"/></div>
+            <div style="display:flex;gap:10px;margin-top:4px;">
+              <button class="btn ghost" style="flex:1;" onclick="toggleEditarPerfil()">Cancelar</button>
+              <button class="btn" style="flex:1;" onclick="salvarPerfilCliente('${c.id}')">Salvar</button>
+            </div>
+            <button onclick="excluirClienteDoPerfil('${c.id}')" style="width:100%;margin-top:10px;background:none;border:1.5px solid var(--danger);color:var(--danger);border-radius:12px;padding:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;">Excluir cliente</button>
+          </div>
+          ${histSection}`;
+      }
+
       return `
-        <div style="font-size:22px;font-weight:700;color:#1a1a1a;margin-bottom:20px;padding:0 4px;">${titulo}</div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;padding:0 4px;">
+          <button onclick="voltarDePerfilCliente()" style="background:none;border:none;color:#1a1a1a;cursor:pointer;padding:4px;display:flex;align-items:center;">${ICO_BACK}</button>
+        </div>
+        <div style="background:linear-gradient(160deg,#3a3a3a 0%,#5a3560 100%);border-radius:18px;padding:24px 20px 20px;margin-bottom:16px;">
+          <div style="font-size:22px;font-weight:700;color:#fff;margin-bottom:4px;">${escapeHtml(c.nome)}</div>
+          <div style="font-size:14px;color:rgba(255,255,255,0.6);margin-bottom:18px;">${telFmt(c.telefone)}</div>
+          <div style="display:flex;gap:10px;">
+            <a href="${telWaLink(c.telefone)}" target="_blank" style="flex:1;display:flex;align-items:center;justify-content:center;gap:7px;background:#25d366;color:#fff;border-radius:12px;padding:10px 0;font-size:14px;font-weight:600;text-decoration:none;">${ICO_WA} WhatsApp</a>
+            <button onclick="toggleEditarPerfil()" style="flex:1;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.15);color:#fff;border:none;border-radius:12px;padding:10px 0;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;">Editar</button>
+          </div>
+        </div>
+        ${histSection}`;
+    }
+
+    // VIEW: NOVO CLIENTE
+    if(_clienteModalNovo) {
+      return `
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;padding:0 4px;">
+          <button onclick="fecharModalCliente()" style="background:none;border:none;color:#1a1a1a;cursor:pointer;padding:4px;display:flex;align-items:center;">${ICO_BACK}</button>
+          <div style="font-size:18px;font-weight:700;color:#1a1a1a;">Novo cliente</div>
+        </div>
         <div style="background:#fff;border-radius:16px;padding:18px;box-shadow:0 2px 12px rgba(0,0,0,0.06);">
-          <div class="field"><label>Nome completo</label><input id="cliNome" type="text" value="${escapeAttr(ed?.nome||'')}" placeholder="Nome do cliente" style="text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()"/></div>
-          <div class="field"><label>Telefone (WhatsApp)</label><input id="cliTel" type="tel" inputmode="numeric" maxlength="16" value="${escapeAttr(ed ? telFmt(ed.telefone) : '')}" placeholder="(xx) xxxxx-xxxx" oninput="maskTel(this)"/></div>
+          <div class="field"><label>Nome completo</label><input id="cliNome" type="text" placeholder="Nome do cliente" style="text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()"/></div>
+          <div class="field"><label>Telefone (WhatsApp)</label><input id="cliTel" type="tel" inputmode="numeric" maxlength="16" placeholder="(xx) xxxxx-xxxx" oninput="maskTel(this)"/></div>
           <div style="display:flex;gap:10px;margin-top:4px;">
             <button class="btn ghost" style="flex:1;" onclick="fecharModalCliente()">Cancelar</button>
-            <button class="btn" style="flex:1;" onclick="${ed ? `salvarEdicaoCliente('${ed.id}')` : 'salvarNovoCliente()'}">Salvar</button>
+            <button class="btn" style="flex:1;" onclick="salvarNovoCliente()">Salvar</button>
           </div>
         </div>`;
     }
 
+    // Calcular inativos
+    const inativos30 = _clientes.filter(c => { const d=_diasSemVoltar(c); return d!==null && d>=30; });
+    const clientesInativos = _clientes.filter(c => { const d=_diasSemVoltar(c); return d!==null && d>=_clientesInativosFiltro; });
+
+    // Banner
+    const banner = (!_clientesBannerDismissed && inativos30.length && _clientesAba==='todos') ? `
+      <div style="background:#fffbea;border:1px solid #fcd34d;border-radius:14px;padding:12px 14px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
+        <div style="font-size:14px;color:#92400e;font-weight:500;">${inativos30.length} cliente${inativos30.length!==1?'s':''} sem voltar ha 30 dias ou mais.</div>
+        <button onclick="dispensarBannerClientes()" style="background:none;border:none;color:#92400e;cursor:pointer;font-size:20px;line-height:1;padding:0 4px;">&times;</button>
+      </div>` : '';
+
+    // Tabs
+    const tabs = `
+      <div style="display:flex;gap:0;background:#f2f2f7;border-radius:12px;padding:3px;margin-bottom:14px;">
+        <button onclick="setClientesAba('todos')" style="flex:1;padding:7px 0;border-radius:9px;border:none;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;${_clientesAba==='todos'?'background:#fff;color:#1a1a1a;box-shadow:0 1px 4px rgba(0,0,0,0.1);':'background:transparent;color:#8e8e93;'}">Todos</button>
+        <button onclick="setClientesAba('inativos')" style="flex:1;padding:7px 0;border-radius:9px;border:none;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;${_clientesAba==='inativos'?'background:#fff;color:#1a1a1a;box-shadow:0 1px 4px rgba(0,0,0,0.1);':'background:transparent;color:#8e8e93;'}">Inativos${inativos30.length?` <span style="background:#ef4444;color:#fff;border-radius:99px;font-size:11px;padding:1px 6px;margin-left:4px;vertical-align:middle;">${inativos30.length}</span>`:''}</button>
+      </div>`;
+
+    // VIEW: INATIVOS
+    if(_clientesAba === 'inativos') {
+      const filtros = [15,30,45].map(d=>`
+        <button onclick="setInativosFiltro(${d})" style="padding:6px 14px;border-radius:99px;border:none;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;${_clientesInativosFiltro===d?'background:#1a1a1a;color:#fff;':'background:#f2f2f7;color:#3a3a3a;'}">${d}+ dias</button>`).join('');
+      const diaColor = d => d>=45?'#dc2626':d>=30?'#f97316':'#f59e0b';
+      const inativoRows = clientesInativos.length
+        ? clientesInativos.map(c=>{
+            const dias=_diasSemVoltar(c);
+            return `
+              <div onclick="abrirPerfilCliente('${c.id}')" style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:0.5px solid #f2f2f7;cursor:pointer;" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background=''">
+                <div style="flex:1;min-width:0;">
+                  <div style="font-size:15px;font-weight:600;color:#1a1a1a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(c.nome)}</div>
+                  <div style="font-size:13px;color:#8e8e93;margin-top:2px;">${telFmt(c.telefone)}</div>
+                </div>
+                <div style="text-align:center;min-width:48px;">
+                  <div style="font-size:18px;font-weight:700;color:${diaColor(dias)};">${dias}</div>
+                  <div style="font-size:11px;color:#8e8e93;">dias</div>
+                </div>
+              </div>`;
+          }).join('')
+        : `<p class="muted" style="text-align:center;padding:24px 0;">Nenhum cliente inativo neste periodo.</p>`;
+      const wrapI = clientesInativos.length
+        ? `<div style="background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.06);">${inativoRows}</div>`
+        : inativoRows;
+      return `
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding:0 4px;">
+          <div style="font-size:22px;font-weight:700;color:#1a1a1a;">Clientes</div>
+          <button onclick="abrirNovoCliente()" style="display:flex;align-items:center;gap:6px;height:36px;padding:0 14px;border-radius:10px;border:none;background:#1a1a1a;color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;">${ICO_PLUS} Novo</button>
+        </div>
+        ${tabs}
+        <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">${filtros}</div>
+        ${wrapI}`;
+    }
+
+    // VIEW: LISTA TODOS
     const listados = _clientes.filter(c => {
       if(!_clientesBusca) return true;
       const q = _clientesBusca.toLowerCase();
-      return c.nome.toLowerCase().includes(q) || (c.telefone||'').includes(_clientesBusca.replace(/\D/g,''));
+      const digits = _clientesBusca.replace(/\D/g,'');
+      return c.nome.toLowerCase().includes(q) || (digits && (c.telefone||'').includes(digits));
     });
 
     const rows = listados.map(c => `
-      <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:0.5px solid #f2f2f7;">
+      <div onclick="abrirPerfilCliente('${c.id}')" style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:0.5px solid #f2f2f7;cursor:pointer;" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background=''">
         <div style="flex:1;min-width:0;">
           <div style="font-size:15px;font-weight:600;color:#1a1a1a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(c.nome)}</div>
           <div style="font-size:13px;color:#8e8e93;margin-top:2px;">${telFmt(c.telefone)}</div>
         </div>
-        <button onclick="abrirEditarCliente('${c.id}')" style="background:none;border:none;color:#8e8e93;cursor:pointer;padding:6px;min-height:0;">${ICO_EDIT}</button>
-        <button onclick="excluirCliente('${c.id}')" style="background:none;border:none;color:var(--danger);cursor:pointer;padding:6px;min-height:0;">${ICO_TRASH}</button>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#c7c7cc" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
       </div>`).join('');
 
     const listaHtml = _clientesCarregando
@@ -1656,6 +1785,8 @@ function renderGestao(empInicial){
         <div style="font-size:22px;font-weight:700;color:#1a1a1a;">Clientes</div>
         <button onclick="abrirNovoCliente()" style="display:flex;align-items:center;gap:6px;height:36px;padding:0 14px;border-radius:10px;border:none;background:#1a1a1a;color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;">${ICO_PLUS} Novo</button>
       </div>
+      ${banner}
+      ${tabs}
       <div style="margin-bottom:14px;">
         <input type="search" value="${escapeAttr(_clientesBusca)}" placeholder="Buscar por nome ou telefone..." oninput="filtrarClientes(this.value)"
           style="width:100%;border:0.5px solid #e4e4e7;border-radius:12px;padding:10px 14px;font-size:15px;font-family:inherit;color:#1a1a1a;background:#fff;box-sizing:border-box;"/>
@@ -2623,6 +2754,7 @@ function renderGestao(empInicial){
     }
     corner=c; editandoId=null; novoAgState=null; configurarSub=null; _removendoServicoIdx=null; _waMenuId=null; _gFinModal=null; _notaModal=null; _linkMenuAberto=false;
     _novoAgClienteId=null; _novoAgClienteBusca=''; _novoAgClienteResultados=[];
+    _clientePerfilId=null; _clientePerfilEditando=false; _clienteModalNovo=false;
     draw();
     if(c==='clientes') { carregarClientes(); return; }
     loadData().then(()=>{ const a=empresas.find(e=>e.slug===emp.slug); if(a) emp=a; draw(); });
@@ -2858,45 +2990,48 @@ function renderGestao(empInicial){
     draw();
   }
   window.filtrarClientes = (v)=>{ _clientesBusca=v; draw(); };
-  window.abrirNovoCliente = ()=>{ _clienteModalNovo=true; _clienteModalEditar=null; draw(); };
-  window.abrirEditarCliente = (id)=>{
-    const c = _clientes.find(x=>x.id===id);
-    if(!c) return;
-    _clienteModalEditar={...c}; _clienteModalNovo=false; draw();
-  };
-  window.fecharModalCliente = ()=>{ _clienteModalNovo=false; _clienteModalEditar=null; draw(); };
+  window.abrirNovoCliente = ()=>{ _clienteModalNovo=true; draw(); };
+  window.fecharModalCliente = ()=>{ _clienteModalNovo=false; draw(); };
+  window.abrirPerfilCliente = (id)=>{ _clientePerfilId=id; _clientePerfilEditando=false; draw(); };
+  window.voltarDePerfilCliente = ()=>{ _clientePerfilId=null; _clientePerfilEditando=false; draw(); };
+  window.toggleEditarPerfil = ()=>{ _clientePerfilEditando=!_clientePerfilEditando; draw(); };
+  window.setClientesAba = (aba)=>{ _clientesAba=aba; draw(); };
+  window.setInativosFiltro = (d)=>{ _clientesInativosFiltro=d; draw(); };
+  window.dispensarBannerClientes = ()=>{ _clientesBannerDismissed=true; draw(); };
   window.salvarNovoCliente = async ()=>{
     const nome = (document.getElementById('cliNome')?.value||'').trim().toUpperCase();
     const telRaw = (document.getElementById('cliTel')?.value||'').replace(/\D/g,'').replace(/^(55|0)/,'');
     if(!nome){ toast('Preencha o nome.','err'); return; }
-    if(telRaw.length!==11 || telRaw[2]!=='9'){ toast('Telefone inválido. Ex: (11) 98765-4321','err'); return; }
+    if(telRaw.length!==11 || telRaw[2]!=='9'){ toast('Telefone invalido. Ex: (11) 98765-4321','err'); return; }
     const telefone = '0'+telRaw;
     const existe = _clientes.find(c=>c.nome===nome && c.telefone===telefone);
-    if(existe){ toast('Já existe um cliente com este nome e telefone.','err'); return; }
+    if(existe){ toast('Ja existe um cliente com este nome e telefone.','err'); return; }
     const { data, error } = await supabaseClient.from('clientes').insert({ empresa_id:emp.id, nome, telefone }).select().single();
     if(error){ toast('Erro ao cadastrar cliente.','err'); return; }
     _clientes.push({ id:data.id, nome:data.nome, telefone:data.telefone });
     _clientes.sort((a,b)=>a.nome.localeCompare(b.nome));
     _clienteModalNovo=false; _clientesBusca=''; draw(); toast('Cliente cadastrado.','ok');
   };
-  window.salvarEdicaoCliente = async (id)=>{
+  window.salvarPerfilCliente = async (id)=>{
     const nome = (document.getElementById('cliNome')?.value||'').trim().toUpperCase();
     const telRaw = (document.getElementById('cliTel')?.value||'').replace(/\D/g,'').replace(/^(55|0)/,'');
     if(!nome){ toast('Preencha o nome.','err'); return; }
-    if(telRaw.length!==11 || telRaw[2]!=='9'){ toast('Telefone inválido. Ex: (11) 98765-4321','err'); return; }
+    if(telRaw.length!==11 || telRaw[2]!=='9'){ toast('Telefone invalido. Ex: (11) 98765-4321','err'); return; }
     const telefone = '0'+telRaw;
     const { error } = await supabaseClient.from('clientes').update({ nome, telefone }).eq('id', id);
     if(error){ toast('Erro ao salvar.','err'); return; }
     const c = _clientes.find(x=>x.id===id);
     if(c){ c.nome=nome; c.telefone=telefone; }
     _clientes.sort((a,b)=>a.nome.localeCompare(b.nome));
-    _clienteModalEditar=null; draw(); toast('Cliente atualizado.','ok');
+    _clientePerfilEditando=false; draw(); toast('Cliente atualizado.','ok');
   };
-  window.excluirCliente = async (id)=>{
+  window.excluirClienteDoPerfil = async (id)=>{
     if(!confirm('Excluir este cliente?')) return;
     const { error } = await supabaseClient.from('clientes').delete().eq('id', id);
     if(error){ toast('Erro ao excluir.','err'); return; }
-    _clientes = _clientes.filter(c=>c.id!==id); draw(); toast('Cliente removido.','ok');
+    _clientes = _clientes.filter(c=>c.id!==id);
+    _clientePerfilId=null; _clientePerfilEditando=false;
+    draw(); toast('Cliente removido.','ok');
   };
 
   // Busca de clientes no formulário de novo agendamento
@@ -3190,7 +3325,7 @@ function renderGestao(empInicial){
     const atual = empresas.find(e => e.slug === emp.slug);
     if(atual) emp = atual;
     // Não redesenha se houver formulário aberto (evita apagar campos em edição)
-    const formAberto = editandoId !== null || novoAgState !== null || novoBotaoState !== null || editandoBotaoId !== null || _gFinModal !== null || _notaModal !== null || _clienteModalEditar !== null || _clienteModalNovo;
+    const formAberto = editandoId !== null || novoAgState !== null || novoBotaoState !== null || editandoBotaoId !== null || _gFinModal !== null || _notaModal !== null || _clienteModalNovo || _clientePerfilEditando;
     if(!formAberto && (corner===null || corner==='dashboard')) draw();
   });
 }
