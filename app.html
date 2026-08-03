@@ -2720,7 +2720,7 @@ function renderGestao(empInicial){
                : corner==='clientes'     ? clientesBody()
                : agendamentosBody();
 
-    const cardStyle = (corner==='configurar' || corner==='financeiro' || corner==='dashboard' || corner==='clientes') ? 'background:none;box-shadow:none;padding:0;' : '';
+    const cardStyle = (corner==='configurar' || corner==='financeiro' || corner==='dashboard' || corner==='clientes' || corner===null) ? 'background:none;box-shadow:none;padding:0;' : '';
 
 
     render(`
