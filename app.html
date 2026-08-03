@@ -299,7 +299,7 @@ async function loadData(){
         ? supabaseClient.from('agendamentos').select('*').in('empresa_id', ids)
         : supabaseClient.from('horarios_ocupados').select('*').in('empresa_id', ids),
       currentProfile?.role === 'master'
-        ? supabaseClient.from('profiles').select('empresa_id, email, status').eq('role','owner_empresa')
+        ? supabaseClient.from('profiles').select('id, empresa_id, email, status').eq('role','owner_empresa')
         : Promise.resolve({ data: null })
     ];
 
@@ -365,7 +365,7 @@ async function loadData(){
 
     (rProfiles.data || []).forEach(p => {
       const emp = empresas.find(e => e.id === p.empresa_id);
-      if(emp){ emp.gestorEmail = p.email; emp.gestorStatus = p.status; }
+      if(emp){ emp.gestorEmail = p.email; emp.gestorStatus = p.status; emp.gestorUserId = p.id; }
     });
   } else {
     agendamentos = [];
@@ -3987,7 +3987,8 @@ function renderMasterPanel(){
         </div>
         <div class="field">
           <label>E-mail do gestor</label>
-          <input readonly value="${escapeAttr(editing.gestorEmail||'Não cadastrado')}" style="background:#f5f5f5;color:var(--ink-soft);" onclick="this.select()"/>
+          <input id="masterEmailInput" type="email" value="${escapeAttr(editing.gestorEmail||'')}"/>
+          <button class="btn ghost" style="width:100%;margin-top:6px;" onclick="masterSalvarEmail()">Salvar e-mail</button>
         </div>
         <div class="m-form-actions">
           <button class="btn" style="width:100%;" onclick="masterSalvarEdicao()">Salvar alterações</button>
@@ -4235,8 +4236,8 @@ function renderMasterPanel(){
     draw();
     const emp = empresas.find(e => e.slug === slug);
     if(emp && !emp.gestorEmail){
-      const { data } = await supabaseClient.from('profiles').select('email').eq('empresa_id', emp.id).eq('role','owner_empresa').single();
-      if(data?.email){ emp.gestorEmail = data.email; draw(); }
+      const { data } = await supabaseClient.from('profiles').select('id, email').eq('empresa_id', emp.id).eq('role','owner_empresa').single();
+      if(data?.email){ emp.gestorEmail = data.email; emp.gestorUserId = data.id; draw(); }
     }
   };
   window.masterSalvarEdicao = async ()=>{
@@ -4283,6 +4284,26 @@ function renderMasterPanel(){
   window.masterUpd = async (field,val)=>{
     const e = empresas.find(x=>x.slug===editingSlug);
     e[field] = val; await saveEmpresas();
+  };
+  window.masterSalvarEmail = async ()=>{
+    const e = empresas.find(x=>x.slug===editingSlug);
+    if(!e){ toast('Empresa não encontrada.','err'); return; }
+    const novoEmail = (document.getElementById('masterEmailInput')?.value||'').trim();
+    if(!novoEmail){ toast('Digite um e-mail.','err'); return; }
+    if(novoEmail === e.gestorEmail){ toast('O e-mail é o mesmo atual.','err'); return; }
+    if(!confirm('Tem certeza que deseja trocar o e-mail de login do gestor para "' + novoEmail + '"? O gestor precisará usar o novo e-mail para entrar.')){ return; }
+    if(!e.gestorUserId){ toast('Não foi possível identificar o usuário. Reabra a empresa e tente novamente.','err'); return; }
+    toast('Atualizando e-mail...','ok',2000);
+    const resp = await fetch('/api/update-email', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ user_id: e.gestorUserId, email: novoEmail })
+    });
+    const json = await resp.json().catch(()=>({}));
+    if(!resp.ok){ toast(json.error||'Erro ao atualizar e-mail.','err'); return; }
+    e.gestorEmail = novoEmail;
+    toast('E-mail atualizado com sucesso!','ok');
+    draw();
   };
   window.masterToggleBloqueio = async ()=>{
     const e = empresas.find(x=>x.slug===editingSlug);
