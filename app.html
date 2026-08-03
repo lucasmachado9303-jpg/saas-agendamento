@@ -206,22 +206,6 @@
     .dias-scroll { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px; }
     .dias-scroll .btn { flex:1; padding:10px 8px; font-size:13px; min-width:0; }
   }
-
-  .cor-slider {
-    -webkit-appearance:none; appearance:none;
-    width:100%; height:22px; border-radius:11px; border:none; outline:none; cursor:pointer;
-  }
-  .cor-slider::-webkit-slider-thumb {
-    -webkit-appearance:none; appearance:none;
-    width:28px; height:28px; border-radius:50%;
-    background:#fff; border:2.5px solid rgba(0,0,0,0.25);
-    box-shadow:0 1px 4px rgba(0,0,0,0.25); cursor:pointer;
-  }
-  .cor-slider::-moz-range-thumb {
-    width:28px; height:28px; border-radius:50%;
-    background:#fff; border:2.5px solid rgba(0,0,0,0.25);
-    box-shadow:0 1px 4px rgba(0,0,0,0.25); cursor:pointer;
-  }
 </style>
 </head>
 <body>
@@ -1411,7 +1395,6 @@ function renderGestao(empInicial){
   let configurarSub = null; // null | 'servicos' | 'horarios' | 'personalizar' | 'mensagens'
   let _waMenuId = null; // id do agendamento com dropdown WA aberto
   let personalizarDirty = false;
-  let _persRascunho = null; // { nome, descricao, textoDestaque, cor } — preserva campos ao chamar draw()
   let mesHorario = mesKey(new Date());
   let novoBotaoState = null;
   let editandoBotaoId = null;
@@ -2059,21 +2042,8 @@ function renderGestao(empInicial){
     return '';
   }
 
-  function _hexToHsl(hex){
-    let r=parseInt(hex.slice(1,3),16)/255,g=parseInt(hex.slice(3,5),16)/255,b=parseInt(hex.slice(5,7),16)/255;
-    const max=Math.max(r,g,b),min=Math.min(r,g,b);
-    let h,s,l=(max+min)/2;
-    if(max===min){h=s=0;}else{const d=max-min;s=l>0.5?d/(2-max-min):d/(max+min);switch(max){case r:h=(g-b)/d+(g<b?6:0);break;case g:h=(b-r)/d+2;break;case b:h=(r-g)/d+4;break;}h/=6;}
-    return[Math.round(h*360),Math.round(s*100),Math.round(l*100)];
-  }
-  function _hslToHex(h,s,l){
-    s/=100;l/=100;const a=s*Math.min(l,1-l);
-    const f=n=>{const k=(n+h/30)%12;const c=l-a*Math.max(Math.min(k-3,9-k,1),-1);return Math.round(255*c).toString(16).padStart(2,'0');};
-    return`#${f(0)}${f(8)}${f(4)}`;
-  }
-
   function personalizarBody(){
-    const cor = (_persRascunho?.cor) || emp.corPrincipal || '#3d1f3a';
+    const cor = emp.corPrincipal || '#3d1f3a';
     const botoesSorted = [...(emp.botoes || [])].sort((a,b) => a.ordem - b.ordem);
 
     const botoesHtml = botoesSorted.length ? `<div id="botoes-drag-list">${botoesSorted.map((b) => `
@@ -2139,25 +2109,10 @@ function renderGestao(empInicial){
       </div>
     `; })() : `<button onclick="iniciarNovoBotao()" style="width:100%;margin-top:14px;padding:14px;border:2px dashed #bbb;border-radius:12px;background:none;font-size:14px;font-weight:600;color:#888;cursor:pointer;letter-spacing:.01em;">+ Adicionar botão</button>`;
 
-    const _pNome = _persRascunho?.nome ?? emp.nome;
-    const _pDesc = _persRascunho?.descricao ?? (emp.descricao||'');
-    const _pDest = _persRascunho?.textoDestaque ?? (emp.textoDestaque||'');
     return `
-      <div class="field"><label>Nome da empresa</label><input id="pNome" value="${escapeAttr(_pNome)}" oninput="marcarPersonalizarDirty()"/></div>
-      <div class="field">
-        <label>Link publico</label>
-        <div style="display:flex;align-items:center;gap:6px;">
-          <span style="font-size:13px;color:#8e8e93;white-space:nowrap;flex-shrink:0;">https://</span>
-          <input id="pSlug" value="${escapeAttr(emp.slug)}" placeholder="seu-link" style="flex:1;min-width:0;" oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9-]/g,'')"/>
-          <span style="font-size:13px;color:#8e8e93;white-space:nowrap;flex-shrink:0;">.agenplus.com.br</span>
-        </div>
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:6px;">
-          <div style="font-size:12px;color:#8e8e93;">Alterar quebra o endereco antigo.</div>
-          <button onclick="salvarSlugEmpresa()" style="font-family:inherit;font-size:12px;font-weight:700;color:#1a1a1a;background:#f4f4f5;border:none;border-radius:7px;padding:4px 10px;cursor:pointer;">Salvar link</button>
-        </div>
-      </div>
-      <div class="field"><label>Descrição curta</label><textarea id="pDescricao" rows="2" style="resize:vertical;min-height:80px;" oninput="marcarPersonalizarDirty()">${escapeHtml(_pDesc)}</textarea></div>
-      <div class="field"><label>Texto de destaque</label><input id="pTextoDestaque" value="${escapeAttr(_pDest)}" placeholder="Ex: Atendimento premium" oninput="marcarPersonalizarDirty()"/></div>
+      <div class="field"><label>Nome da empresa</label><input id="pNome" value="${escapeAttr(emp.nome)}" oninput="marcarPersonalizarDirty()"/></div>
+      <div class="field"><label>Descrição curta</label><textarea id="pDescricao" rows="2" style="resize:vertical;min-height:80px;" oninput="marcarPersonalizarDirty()">${escapeHtml(emp.descricao||'')}</textarea></div>
+      <div class="field"><label>Texto de destaque</label><input id="pTextoDestaque" value="${escapeAttr(emp.textoDestaque||'')}" placeholder="Ex: Atendimento premium" oninput="marcarPersonalizarDirty()"/></div>
       <div class="field">
         <label>Logo</label>
         ${emp.logo ? `<img src="${escapeAttr(emp.logo)}" style="width:90px;height:90px;object-fit:cover;border-radius:50%;display:block;margin-bottom:10px;border:2px solid var(--line);"/>` : `<div style="width:90px;height:90px;border-radius:50%;background:#f0f0f0;display:flex;align-items:center;justify-content:center;margin-bottom:10px;color:#999999;font-size:13px;text-align:center;">Sem logo</div>`}
@@ -2170,30 +2125,10 @@ function renderGestao(empInicial){
       </div>
       <div class="field">
         <label>Cor principal</label>
-        ${(()=>{
-          const [h,s,l] = _hexToHsl(cor);
-          const hueGrad = `linear-gradient(to right,hsl(0,70%,45%),hsl(30,70%,45%),hsl(60,70%,45%),hsl(90,70%,45%),hsl(120,70%,45%),hsl(150,70%,45%),hsl(180,70%,45%),hsl(210,70%,45%),hsl(240,70%,45%),hsl(270,70%,45%),hsl(300,70%,45%),hsl(330,70%,45%),hsl(360,70%,45%))`;
-          const lightGrad = `linear-gradient(to right,hsl(${h},70%,15%),hsl(${h},70%,50%),hsl(${h},70%,85%))`;
-          return `
-          <div style="background:#fff;border:0.5px solid #e4e4e7;border-radius:14px;padding:16px;">
-            <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
-              <div id="pCorPreview" style="width:44px;height:44px;border-radius:12px;background:${cor};flex-shrink:0;border:0.5px solid rgba(0,0,0,0.1);"></div>
-              <div>
-                <div style="font-size:15px;font-weight:600;color:#1a1a1a;" id="pCorHex">${cor}</div>
-                <div style="font-size:12px;color:#8e8e93;margin-top:2px;">Usada nos botoes e destaques</div>
-              </div>
-            </div>
-            <div style="margin-bottom:14px;">
-              <div style="font-size:12px;font-weight:600;color:#8e8e93;margin-bottom:8px;">Tom</div>
-              <input type="range" class="cor-slider" id="pCorHue" min="0" max="360" value="${h}" style="background:${hueGrad};" oninput="atualizarCorPersonalizar()"/>
-            </div>
-            <div>
-              <div style="font-size:12px;font-weight:600;color:#8e8e93;margin-bottom:8px;">Claridade</div>
-              <input type="range" class="cor-slider" id="pCorLight" min="15" max="75" value="${l}" style="background:${lightGrad};" oninput="atualizarCorPersonalizar()"/>
-            </div>
-            <input type="hidden" id="pCor" value="${escapeAttr(cor)}"/>
-          </div>`;
-        })()}
+        <div style="display:flex;align-items:center;gap:12px;">
+          <input type="color" id="pCor" value="${escapeAttr(cor)}" style="padding:4px;height:48px;width:64px;border-radius:10px;cursor:pointer;" oninput="marcarPersonalizarDirty()"/>
+          <span class="muted" style="font-size:13px;">Usada nos botões e destaques da página</span>
+        </div>
       </div>
 
       <div class="eyebrow" style="margin-top:36px;margin-bottom:4px;color:#1a1a1a;">Botões da página</div>
@@ -3207,35 +3142,9 @@ function renderGestao(empInicial){
     configurarSub = null; draw();
   };
 
-  window.configurarIr = (sub)=>{ configurarSub=sub; personalizarDirty=false; _persRascunho=null; _removendoServicoIdx=null; draw(); };
+  window.configurarIr = (sub)=>{ configurarSub=sub; personalizarDirty=false; _removendoServicoIdx=null; draw(); };
   window.irParaHorarios = ()=>{ corner='configurar'; configurarSub='horarios'; draw(); };
-  function _salvarRascunhoPersonalizar(){
-    const nome = document.getElementById('pNome')?.value;
-    const descricao = document.getElementById('pDescricao')?.value;
-    const textoDestaque = document.getElementById('pTextoDestaque')?.value;
-    const cor = document.getElementById('pCor')?.value;
-    if(nome!=null || descricao!=null){
-      _persRascunho = { nome:nome??emp.nome, descricao:descricao??emp.descricao||'', textoDestaque:textoDestaque??emp.textoDestaque||'', cor:cor||emp.corPrincipal||'#3d1f3a' };
-    }
-  }
-  window.atualizarCorPersonalizar = ()=>{
-    const hue = parseInt(document.getElementById('pCorHue')?.value||0);
-    const light = parseInt(document.getElementById('pCorLight')?.value||45);
-    const cor = _hslToHex(hue, 70, light);
-    const preview = document.getElementById('pCorPreview');
-    const hexEl = document.getElementById('pCorHex');
-    const hiddenCor = document.getElementById('pCor');
-    const lightSlider = document.getElementById('pCorLight');
-    if(preview) preview.style.background = cor;
-    if(hexEl) hexEl.textContent = cor;
-    if(hiddenCor) hiddenCor.value = cor;
-    if(lightSlider) lightSlider.style.background = `linear-gradient(to right,hsl(${hue},70%,15%),hsl(${hue},70%,50%),hsl(${hue},70%,85%))`;
-    if(!_persRascunho) _salvarRascunhoPersonalizar();
-    if(_persRascunho) _persRascunho.cor = cor;
-    marcarPersonalizarDirty();
-  };
   window.marcarPersonalizarDirty = ()=>{
-    _salvarRascunhoPersonalizar();
     if(personalizarDirty) return;
     personalizarDirty = true;
     const saveWrap = document.getElementById('pers-save-wrap');
@@ -3243,19 +3152,8 @@ function renderGestao(empInicial){
     if(saveWrap) saveWrap.style.display = 'none';
     if(dirtyBanner) dirtyBanner.style.display = 'block';
   };
-  window.salvarSlugEmpresa = async ()=>{
-    const novoSlug = (document.getElementById('pSlug')?.value||'').trim();
-    if(!novoSlug){ toast('Preencha o link.','err'); return; }
-    if(novoSlug === emp.slug){ toast('Link nao alterado.','ok'); return; }
-    if(!confirm(`Alterar o link para "${novoSlug}.agenplus.com.br"? O endereco antigo vai parar de funcionar.`)) return;
-    const { error } = await supabaseClient.from('empresas').update({ slug: novoSlug }).eq('id', emp.id);
-    if(error){ toast(error.message?.includes('unique')||error.code==='23505' ? 'Este link ja esta em uso.' : 'Erro ao salvar. Tente novamente.','err'); return; }
-    emp.slug = novoSlug;
-    toast('Link atualizado!','ok');
-    draw();
-  };
-  window.voltarDePersonalizar = ()=>{ personalizarDirty=false; _persRascunho=null; configurarIr(null); };
-  window.descartarPersonalizar = ()=>{ personalizarDirty=false; _persRascunho=null; configurarIr(null); };
+  window.voltarDePersonalizar = ()=>{ personalizarDirty=false; configurarIr(null); };
+  window.descartarPersonalizar = ()=>{ personalizarDirty=false; configurarIr(null); };
   window.adicionarHorario = async ()=>{
     const val = document.getElementById('novoHorarioInput').value;
     if(!val){ toast('Selecione um horário.','err'); return; }
@@ -3316,7 +3214,6 @@ function renderGestao(empInicial){
     }).eq('id', emp.id);
     if(error){ console.error('Erro ao salvar informações:', error); toast('Erro ao salvar. Tente novamente.','err'); return; }
     personalizarDirty = false;
-    _persRascunho = null;
     toast('Informações salvas!','ok');
     draw();
   };
@@ -3344,10 +3241,10 @@ function renderGestao(empInicial){
       if(hint) hint.style.display = 'none';
     }
   };
-  window.iniciarNovoBotao  = ()=>{ _salvarRascunhoPersonalizar(); novoBotaoState = {}; editandoBotaoId = null; draw(); };
-  window.cancelarNovoBotao = ()=>{ _salvarRascunhoPersonalizar(); novoBotaoState = null; draw(); };
-  window.editarBotao       = (id)=>{ _salvarRascunhoPersonalizar(); editandoBotaoId = id; novoBotaoState = null; draw(); };
-  window.cancelarEdicaoBotao = ()=>{ _salvarRascunhoPersonalizar(); editandoBotaoId = null; draw(); };
+  window.iniciarNovoBotao  = ()=>{ novoBotaoState = {}; editandoBotaoId = null; draw(); };
+  window.cancelarNovoBotao = ()=>{ novoBotaoState = null; draw(); };
+  window.editarBotao       = (id)=>{ editandoBotaoId = id; novoBotaoState = null; draw(); };
+  window.cancelarEdicaoBotao = ()=>{ editandoBotaoId = null; draw(); };
   window.salvarEdicaoBotao = async (id)=>{
     const tipo = document.getElementById('ebTipo').value;
     const nome = LABEL_POR_TIPO[tipo] || tipo;
@@ -3371,7 +3268,7 @@ function renderGestao(empInicial){
     if(error){ toast('Erro ao salvar. Tente novamente.','err'); return; }
     Object.assign(existingB, { nome, tipo, link, icone: '', abrirNovaAba: true });
     editandoBotaoId = null;
-    _salvarRascunhoPersonalizar(); draw();
+    draw();
   };
 
   window.salvarNovoBotao = async ()=>{
@@ -3404,7 +3301,7 @@ function renderGestao(empInicial){
       icone:row.icone, ordem:row.ordem, ativo:row.ativo, abrirNovaAba:row.abrir_nova_aba });
     emp.botoes.sort((a,b)=>a.ordem-b.ordem);
     novoBotaoState = null;
-    _salvarRascunhoPersonalizar(); draw();
+    draw();
   };
 
   window.removerBotao = async (id)=>{
@@ -3412,7 +3309,7 @@ function renderGestao(empInicial){
     const { error } = await supabaseClient.from('botoes_empresa').delete().eq('id', id);
     if(error){ toast(friendlyError(error,'Erro ao remover botão. Tente novamente.'),'err'); return; }
     emp.botoes = emp.botoes.filter(b=>b.id!==id);
-    _salvarRascunhoPersonalizar(); draw();
+    draw();
   };
 
   let _dragFromId = null;
@@ -3441,7 +3338,7 @@ function renderGestao(empInicial){
     await Promise.all(emp.botoes.map(b =>
       supabaseClient.from('botoes_empresa').update({ ordem: b.ordem }).eq('id', b.id)
     ));
-    _salvarRascunhoPersonalizar(); draw();
+    draw();
   };
 
   window.compartilharLink = async ()=>{
