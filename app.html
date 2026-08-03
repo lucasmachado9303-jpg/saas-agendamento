@@ -2463,15 +2463,17 @@ function renderGestao(empInicial){
         <div class="g-dash-grid">
           ${card('prox',  '#fff7ed', ICO_CLK,  'Próximo<br>atendimento', proxVal)}
           <div class="g-dash-card" style="grid-area:agend;">
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
               <div class="g-dash-ico" style="background:#fef3c7;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="17" y1="11" x2="23" y2="11"/></svg></div>
               <div class="g-dash-label">Clientes inativos</div>
             </div>
-            <div style="display:flex;gap:5px;margin-bottom:8px;">
-              <button onclick="window.setDashInativosFiltro(15)" style="flex:1;height:26px;border-radius:6px;border:0.5px solid ${_dashInativosFiltro===15?'#3b82f6':'#e4e4e7'};background:${_dashInativosFiltro===15?'#eff6ff':'transparent'};color:${_dashInativosFiltro===15?'#1d4ed8':'#8e8e93'};font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;">15d+</button>
-              <button onclick="window.setDashInativosFiltro(30)" style="flex:1;height:26px;border-radius:6px;border:0.5px solid ${_dashInativosFiltro===30?'#3b82f6':'#e4e4e7'};background:${_dashInativosFiltro===30?'#eff6ff':'transparent'};color:${_dashInativosFiltro===30?'#1d4ed8':'#8e8e93'};font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;">30d+</button>
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <div class="g-dash-val">${inativosAtual}</div>
+              <div style="display:flex;gap:4px;">
+                <button onclick="window.setDashInativosFiltro(15)" style="height:22px;padding:0 7px;border-radius:5px;border:0.5px solid ${_dashInativosFiltro===15?'#bfdbfe':'#e4e4e7'};background:${_dashInativosFiltro===15?'#eff6ff':'transparent'};color:${_dashInativosFiltro===15?'#1d4ed8':'#8e8e93'};font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;">15d+</button>
+                <button onclick="window.setDashInativosFiltro(30)" style="height:22px;padding:0 7px;border-radius:5px;border:0.5px solid ${_dashInativosFiltro===30?'#bfdbfe':'#e4e4e7'};background:${_dashInativosFiltro===30?'#eff6ff':'transparent'};color:${_dashInativosFiltro===30?'#1d4ed8':'#8e8e93'};font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;">30d+</button>
+              </div>
             </div>
-            <div class="g-dash-val">${inativosAtual}</div>
           </div>
 
           <div class="g-dash-panel g-dash-agenda">
