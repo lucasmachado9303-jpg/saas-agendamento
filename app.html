@@ -656,8 +656,8 @@ function route(){
     if(!emp){ renderNotFound(); return; }
     if(page==="agendar") renderAgendar(emp);
     else if(page==="confirmacao") renderConfirmacao(emp);
-    else if(page==="meus") renderClienteLogin(emp);
-    else if(page==="meus-lista") renderMeusAgendamentos(emp);
+    else if(page==="confirmar") renderClienteLogin(emp);
+    else if(page==="confirmar-lista") renderMeusAgendamentos(emp);
     else if(page==="gestao"){
       const isMaster = currentProfile?.role === 'master';
       const isOwner  = currentProfile?.role === 'owner_empresa'
@@ -763,7 +763,7 @@ function renderHome(emp){
 
         <!-- Ver meus agendamentos -->
         <div style="width:100%;max-width:360px;margin:0 auto 12px;">
-          <button onclick="goto({empresa:'${emp.slug}', page:'meus'})"
+          <button onclick="goto({empresa:'${emp.slug}', page:'confirmar'})"
             style="width:100%;background:#fff;color:var(--ink);border:1.5px solid var(--line);border-radius:14px;padding:14px 20px;font-size:15px;font-weight:600;font-family:'Nunito',sans-serif;cursor:pointer;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
             Ver meus agendamentos
           </button>
@@ -1254,7 +1254,7 @@ window.clienteLoginSubmit = async (slug)=>{
       if(btn){ btn.disabled=false; btn.textContent='Entrar'; } return;
     }
     _clienteSession = { nome, telefone, agendamentos: json.agendamentos || [] };
-    goto({ empresa: slug, page: 'meus-lista' });
+    goto({ empresa: slug, page: 'confirmar-lista' });
   }catch(e){
     if(errEl){ errEl.style.display='block'; errEl.textContent='Erro de conexao. Tente novamente.'; }
     if(btn){ btn.disabled=false; btn.textContent='Entrar'; }
@@ -1264,7 +1264,7 @@ window.clienteLoginSubmit = async (slug)=>{
 function renderMeusAgendamentos(emp){
   applyAccent(emp.corPrincipal);
   const cor = emp.corPrincipal || '#3d1f3a';
-  if(!_clienteSession){ goto({ empresa: emp.slug, page: 'meus' }); return; }
+  if(!_clienteSession){ goto({ empresa: emp.slug, page: 'confirmar' }); return; }
   const { nome, agendamentos: ags } = _clienteSession;
   const agora = new Date();
   const hojeStr = isoData(agora);
@@ -1318,7 +1318,7 @@ function renderMeusAgendamentos(emp){
   render(`
     <div style="min-height:100vh;background:var(--paper);padding:0 0 40px;">
       <div style="background:#fff;border-bottom:0.5px solid var(--line);padding:16px 20px;display:flex;align-items:center;gap:12px;">
-        <button onclick="goto({empresa:'${emp.slug}',page:'meus'})" style="background:none;border:none;font-size:20px;color:#555;cursor:pointer;padding:0;min-height:0;">&#8249;</button>
+        <button onclick="goto({empresa:'${emp.slug}',page:'confirmar'})" style="background:none;border:none;font-size:20px;color:#555;cursor:pointer;padding:0;min-height:0;">&#8249;</button>
         <div>
           <div style="font-size:17px;font-weight:700;color:#1a1a1a;">Meus agendamentos</div>
           <div style="font-size:13px;color:#8e8e93;">${escapeHtml(nome)}</div>
