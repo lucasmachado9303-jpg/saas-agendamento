@@ -349,7 +349,8 @@ async function loadData(){
           telefone:            a.telefone,
           criadoEm:            a.criado_em,
           confirmacaoEnviada:  a.confirmacao_enviada || false,
-          lembreteEnviado:     a.lembrete_enviado    || false
+          lembreteEnviado:     a.lembrete_enviado    || false,
+          status:              a.status || 'nao_confirmado'
         };
       });
     } else {
@@ -1273,20 +1274,33 @@ function renderMeusAgendamentos(emp){
 
   const cancelamentoHoras = emp.cancelamentoHoras || 0;
 
-  const renderAg = (a, podeCancel) => {
+  const renderAg = (a, podeInteragir) => {
     const dataFmt = fmtData(a.data);
     const limiteCancelMs = new Date(`${a.data}T${a.hora}:00`).getTime() - cancelamentoHoras*3600*1000;
     const dentroPrazo = cancelamentoHoras > 0 && Date.now() < limiteCancelMs;
+    const status = a.status || 'nao_confirmado';
+    const statusCor = status==='confirmado' ? '#16a34a' : status==='cancelado' ? '#dc2626' : '#1a1a1a';
+    const statusLabel = status==='confirmado' ? 'Confirmado' : status==='cancelado' ? 'Cancelado' : 'Nao confirmado';
+    const nomeStyle = status==='cancelado' ? 'text-decoration:line-through;' : '';
+    const cardOpacity = status==='cancelado' ? 'opacity:0.6;' : '';
+    const botoesHtml = podeInteragir && status==='nao_confirmado' ? `
+      <div style="display:flex;gap:8px;margin-top:12px;">
+        ${dentroPrazo ? `<button onclick="cancelarMeuAg('${a.id}','${emp.slug}')"
+          style="flex:1;height:36px;border-radius:9px;border:1.5px solid #e53935;background:#fff;color:#e53935;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;">
+          Cancelar</button>` : ''}
+        <button onclick="confirmarMeuAg('${a.id}','${emp.slug}')"
+          style="flex:1;height:36px;border-radius:9px;border:1.5px solid #22c55e;background:#f0fdf4;color:#16a34a;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;">
+          Confirmar</button>
+      </div>
+      ${cancelamentoHoras > 0 && !dentroPrazo ? `<div style="font-size:12px;color:#8e8e93;margin-top:8px;">Prazo de cancelamento encerrado.</div>` : ''}` : '';
     return `
-      <div style="background:#fff;border:0.5px solid #e4e4e7;border-radius:14px;padding:16px;margin-bottom:10px;">
-        <div style="font-size:16px;font-weight:700;color:#1a1a1a;margin-bottom:4px;">${escapeHtml(a.servico_nome||'Servico')}</div>
+      <div style="background:#fff;border:0.5px solid #e4e4e7;border-radius:14px;padding:16px;margin-bottom:10px;${cardOpacity}">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">
+          <div style="font-size:16px;font-weight:700;color:#1a1a1a;margin-bottom:4px;${nomeStyle}">${escapeHtml(a.servico_nome||'Servico')}</div>
+          <div style="font-size:12px;font-weight:600;color:${statusCor};white-space:nowrap;margin-top:2px;">${statusLabel}</div>
+        </div>
         <div style="font-size:14px;color:#8e8e93;text-transform:capitalize;">${dataFmt} as ${a.hora}</div>
-        ${podeCancel && dentroPrazo ? `
-          <button onclick="cancelarMeuAg('${a.id}','${emp.slug}')"
-            style="margin-top:12px;height:36px;padding:0 16px;border-radius:9px;border:1.5px solid #e53935;background:#fff;color:#e53935;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;">
-            Cancelar agendamento
-          </button>` : ''}
-        ${podeCancel && cancelamentoHoras > 0 && !dentroPrazo ? `<div style="font-size:12px;color:#8e8e93;margin-top:10px;">Prazo de cancelamento encerrado.</div>` : ''}
+        ${botoesHtml}
       </div>`;
   };
 
@@ -1321,15 +1335,27 @@ function renderMeusAgendamentos(emp){
 window.cancelarMeuAg = async (id, slug)=>{
   if(!confirm('Cancelar este agendamento?')) return;
   const resp = await fetch('/api/cliente-login', {
-    method:'DELETE',
+    method:'PATCH',
     headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({ agendamento_id: id, nome: _clienteSession?.nome, telefone: _clienteSession?.telefone })
+    body: JSON.stringify({ agendamento_id: id, nome: _clienteSession?.nome, telefone: _clienteSession?.telefone, acao: 'cancelar' })
   });
   if(!resp.ok){ toast('Erro ao cancelar. Tente novamente.','err'); return; }
-  if(_clienteSession) _clienteSession.agendamentos = _clienteSession.agendamentos.filter(a=>a.id!==id);
+  if(_clienteSession) { const a = _clienteSession.agendamentos.find(x=>x.id===id); if(a) a.status='cancelado'; }
   const emp2 = empresas.find(e=>e.slug===slug);
   if(emp2) renderMeusAgendamentos(emp2);
   toast('Agendamento cancelado.','ok');
+};
+window.confirmarMeuAg = async (id, slug)=>{
+  const resp = await fetch('/api/cliente-login', {
+    method:'PATCH',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ agendamento_id: id, nome: _clienteSession?.nome, telefone: _clienteSession?.telefone, acao: 'confirmar' })
+  });
+  if(!resp.ok){ toast('Erro ao confirmar. Tente novamente.','err'); return; }
+  if(_clienteSession) { const a = _clienteSession.agendamentos.find(x=>x.id===id); if(a) a.status='confirmado'; }
+  const emp2 = empresas.find(e=>e.slug===slug);
+  if(emp2) renderMeusAgendamentos(emp2);
+  toast('Agendamento confirmado.','ok');
 };
 
 window.loginComGoogle = async (slug)=>{
@@ -1449,14 +1475,21 @@ function renderGestao(empInicial){
           const ICO_PEN = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
           const ICO_X   = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>`;
           const ICO_WAG = `<svg width="11" height="11" viewBox="0 0 32 32" fill="currentColor"><path d="M16 0C7.163 0 0 7.163 0 16c0 2.82.736 5.469 2.027 7.773L0 32l8.418-2.002A15.94 15.94 0 0 0 16 32c8.837 0 16-7.163 16-16S24.837 0 16 0zm0 29.333a13.27 13.27 0 0 1-6.77-1.848l-.485-.29-5.001 1.19 1.226-4.866-.317-.5A13.267 13.267 0 0 1 2.667 16C2.667 8.636 8.636 2.667 16 2.667S29.333 8.636 29.333 16 23.364 29.333 16 29.333zm7.27-9.98c-.398-.199-2.354-1.162-2.719-1.295-.365-.133-.631-.199-.897.2-.265.398-1.03 1.295-1.263 1.56-.232.266-.465.3-.863.1-.398-.2-1.68-.619-3.2-1.974-1.183-1.054-1.981-2.355-2.213-2.753-.232-.398-.025-.613.174-.811.179-.178.398-.465.597-.697.2-.232.266-.398.398-.663.133-.266.067-.498-.033-.697-.1-.2-.897-2.163-1.23-2.962-.324-.778-.652-.672-.897-.685l-.764-.013c-.266 0-.697.1-1.063.498-.365.398-1.395 1.362-1.395 3.325s1.428 3.857 1.627 4.123c.2.265 2.812 4.292 6.815 6.02.953.411 1.696.657 2.276.841.956.305 1.827.262 2.515.159.767-.115 2.354-.962 2.686-1.892.333-.93.333-1.728.233-1.893-.1-.165-.365-.265-.763-.464z"/></svg>`;
-          parts.push(`<div style="padding:10px 12px;margin-bottom:6px;border-radius:9px;border:0.5px solid #e4e4e7;background:var(--card);display:flex;flex-direction:column;gap:8px;${passadoHora?'opacity:0.4;':''}">
+          const cardOpacity = ag.status==='cancelado' ? 'opacity:0.5;' : passadoHora ? 'opacity:0.4;' : '';
+          const statusCor = ag.status==='confirmado' ? '#16a34a' : ag.status==='cancelado' ? '#dc2626' : '#6b7280';
+          const statusLabel = ag.status==='confirmado' ? 'Confirmado' : ag.status==='cancelado' ? 'Cancelado' : 'Nao confirmado';
+          const nomeStyle = ag.status==='cancelado' ? 'text-decoration:line-through;' : '';
+          parts.push(`<div style="padding:10px 12px;margin-bottom:6px;border-radius:9px;border:0.5px solid #e4e4e7;background:var(--card);display:flex;flex-direction:column;gap:8px;${cardOpacity}">
             <div>
-              <div style="font-weight:700;font-size:15px;">${h} — ${escapeHtml(ag.nome)}</div>
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+                <div style="font-weight:700;font-size:15px;${nomeStyle}">${h} — ${escapeHtml(ag.nome)}</div>
+                <div style="font-size:11px;font-weight:600;white-space:nowrap;color:${statusCor};">${statusLabel}</div>
+              </div>
               <div class="muted" style="font-size:13px;margin-top:2px;">${escapeHtml(ag.servicoNome)}</div>
             </div>
             <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;">
               <button class="ag-btn ag-btn-edit" onclick="editarAgendamento('${ag.id}')">${ICO_PEN} Editar</button>
-              <button class="ag-btn ag-btn-cancel" onclick="cancelarAgendamento('${ag.id}')">${ICO_X} Cancelar</button>
+              <button class="ag-btn ag-btn-cancel" onclick="excluirAgendamento('${ag.id}')">${ICO_X} Excluir</button>
               <div style="position:relative;">
                 <button class="ag-btn ag-btn-wa" style="width:100%;" onclick="toggleWaMenu('${ag.id}')">${ICO_WAG} WhatsApp</button>
                 ${_waMenuId === ag.id ? `<div style="position:absolute;top:calc(100% + 4px);right:0;min-width:130px;background:#fff;border:0.5px solid #d1d5db;border-radius:9px;overflow:hidden;z-index:50;box-shadow:0 4px 12px rgba(0,0,0,.10);">
@@ -2854,10 +2887,10 @@ function renderGestao(empInicial){
     ag.nome = nome; ag.telefone = telNorm; ag.servicoId = servicoId; ag.servicoNome = servico?servico.nome:ag.servicoNome; ag.hora = hora;
     editandoId = null; draw();
   };
-  window.cancelarAgendamento = async (id)=>{
-    if(!confirm('Cancelar este agendamento? Essa ação não pode ser desfeita.')) return;
+  window.excluirAgendamento = async (id)=>{
+    if(!confirm('Excluir este agendamento? Essa acao nao pode ser desfeita.')) return;
     const { error } = await supabaseClient.from('agendamentos').delete().eq('id', id);
-    if(error){ toast(friendlyError(error,'Erro ao cancelar agendamento. Tente novamente.'),'err'); return; }
+    if(error){ toast(friendlyError(error,'Erro ao excluir agendamento. Tente novamente.'),'err'); return; }
     agendamentos = agendamentos.filter(a=>a.id!==id);
     draw();
   };
