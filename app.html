@@ -1424,6 +1424,10 @@ function renderGestao(empInicial){
   let _gFinCarregando = false;
   let _gFinAgLancados = new Set(); // IDs de agendamentos já lançados — nunca removido ao excluir lançamento
 
+  // Estado de relatórios
+  let _relAba = 'financeiro'; // 'financeiro' | 'agendamentos'
+  let _relMes = isoData(new Date()).slice(0,7); // YYYY-MM
+
   // Estado de clientes
   let _clientes = [];
   let _clientesBusca = '';
@@ -2221,6 +2225,7 @@ function renderGestao(empInicial){
     sair:         `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:100%;height:100%;"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>`,
     voltar:       `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:100%;height:100%;"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>`,
     clientes:     `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:100%;height:100%;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
+    relatorios:   `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:100%;height:100%;"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>`,
   };
 
   const GESTAO_NAV = [
@@ -2228,6 +2233,7 @@ function renderGestao(empInicial){
     { id: null,           label: 'Agenda',     ico: G_ICO.agendamentos },
     { id: 'clientes',     label: 'Clientes',   ico: G_ICO.clientes },
     { id: 'financeiro',   label: 'Financeiro', ico: G_ICO.financeiro },
+    { id: 'relatorios',   label: 'Relatórios', ico: G_ICO.relatorios },
     { id: 'configurar',   label: 'Configurar', ico: G_ICO.configurar },
   ];
 
@@ -2768,6 +2774,114 @@ function renderGestao(empInicial){
 
   window.gFinSetFiltro = (f)=>{ _gFinFiltro=f; draw(); };
 
+  function relatoriosBody(){
+    const MESES_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+    const [ano, mes] = _relMes.split('-').map(Number);
+    const mesLabel = MESES_PT[mes-1] + ' ' + ano;
+    const fmtData = d => { const [y,m,dd]=d.split('-'); return `${dd}/${m}/${y}`; };
+    const prevMes = (()=>{ const d=new Date(ano,mes-2,1); return isoData(d).slice(0,7); })();
+    const nextMes = (()=>{ const d=new Date(ano,mes,1);   return isoData(d).slice(0,7); })();
+
+    const mesSelector = `
+      <div style="display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:20px;">
+        <button onclick="setRelMes('${prevMes}')" style="background:none;border:none;font-size:22px;cursor:pointer;color:#1a1a1a;padding:4px 10px;line-height:1;">&#8249;</button>
+        <div style="font-size:16px;font-weight:700;color:#1a1a1a;min-width:150px;text-align:center;">${mesLabel}</div>
+        <button onclick="setRelMes('${nextMes}')" style="background:none;border:none;font-size:22px;cursor:pointer;color:#1a1a1a;padding:4px 10px;line-height:1;">&#8250;</button>
+      </div>`;
+
+    const tabs = `
+      <div style="display:flex;gap:0;background:#f2f2f7;border-radius:12px;padding:3px;margin-bottom:16px;">
+        <button onclick="setRelAba('financeiro')" style="flex:1;padding:7px 0;border-radius:9px;border:none;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;${_relAba==='financeiro'?'background:#fff;color:#1a1a1a;box-shadow:0 1px 4px rgba(0,0,0,0.1);':'background:transparent;color:#8e8e93;'}">Financeiro</button>
+        <button onclick="setRelAba('agendamentos')" style="flex:1;padding:7px 0;border-radius:9px;border:none;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;${_relAba==='agendamentos'?'background:#fff;color:#1a1a1a;box-shadow:0 1px 4px rgba(0,0,0,0.1);':'background:transparent;color:#8e8e93;'}">Agendamentos</button>
+      </div>`;
+
+    const ICO_DOWN = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`;
+
+    let conteudo = '';
+
+    if(_relAba === 'financeiro'){
+      const lancs = _gFinLancamentos.filter(l=>l.data.startsWith(_relMes)).sort((a,b)=>a.data.localeCompare(b.data));
+      const receita = lancs.filter(l=>l.tipo==='receita').reduce((s,l)=>s+parseFloat(l.valor||0),0);
+      const despesa = lancs.filter(l=>l.tipo==='despesa').reduce((s,l)=>s+parseFloat(l.valor||0),0);
+      const saldo   = receita - despesa;
+
+      const resumo = `
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px;">
+          <div style="background:#fff;border:0.5px solid #eee;border-radius:10px;padding:10px;text-align:center;">
+            <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#008000;margin-bottom:4px;">Receitas</div>
+            <div style="font-size:12px;font-weight:700;color:#008000;font-variant-numeric:tabular-nums;">${gFinFmtMoeda(receita)}</div>
+          </div>
+          <div style="background:#fff;border:0.5px solid #eee;border-radius:10px;padding:10px;text-align:center;">
+            <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#FF0000;margin-bottom:4px;">Despesas</div>
+            <div style="font-size:12px;font-weight:700;color:#FF0000;font-variant-numeric:tabular-nums;">${gFinFmtMoeda(despesa)}</div>
+          </div>
+          <div style="background:#fff;border:0.5px solid #eee;border-radius:10px;padding:10px;text-align:center;">
+            <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#1a1a1a;margin-bottom:4px;">Saldo</div>
+            <div style="font-size:12px;font-weight:700;color:${saldo>=0?'#008000':'#FF0000'};font-variant-numeric:tabular-nums;">${gFinFmtMoeda(saldo)}</div>
+          </div>
+        </div>`;
+
+      const linhas = lancs.length === 0
+        ? `<div style="text-align:center;padding:28px;color:#aaa;font-size:13px;">Nenhum lançamento neste mês</div>`
+        : lancs.map(l=>{
+            const isIn = l.tipo==='receita';
+            return `<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:0.5px solid #f2f2f7;">
+              <div style="flex:1;min-width:0;">
+                <div style="font-size:14px;font-weight:600;color:#1a1a1a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(l.descricao||'-')}</div>
+                <div style="font-size:12px;color:#8e8e93;margin-top:2px;">${fmtData(l.data)}</div>
+              </div>
+              <div style="font-size:14px;font-weight:700;color:${isIn?'#008000':'#FF0000'};font-variant-numeric:tabular-nums;flex-shrink:0;">${isIn?'+':'-'}${gFinFmtMoeda(l.valor)}</div>
+            </div>`;
+          }).join('');
+
+      const lista = lancs.length
+        ? `<div style="background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.05);margin-bottom:16px;">${linhas}</div>`
+        : `<div style="margin-bottom:16px;">${linhas}</div>`;
+
+      conteudo = resumo + lista + `
+        <button onclick="exportarRelCSV('financeiro')" style="width:100%;height:44px;border-radius:12px;border:1.5px solid #d1d5db;background:#fff;color:#1a1a1a;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;">${ICO_DOWN} Exportar CSV</button>`;
+    }
+
+    if(_relAba === 'agendamentos'){
+      const ags = agendamentos.filter(a=>a.slug===emp.slug && a.data.startsWith(_relMes)).sort((a,b)=>a.data.localeCompare(b.data)||a.hora.localeCompare(b.hora));
+
+      const resumo = `
+        <div style="background:#fff;border:0.5px solid #eee;border-radius:10px;padding:12px;text-align:center;margin-bottom:16px;">
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#8e8e93;margin-bottom:4px;">Total de agendamentos</div>
+          <div style="font-size:28px;font-weight:700;color:#1a1a1a;line-height:1;">${ags.length}</div>
+        </div>`;
+
+      const linhas = ags.length === 0
+        ? `<div style="text-align:center;padding:28px;color:#aaa;font-size:13px;">Nenhum agendamento neste mês</div>`
+        : ags.map(a=>`
+            <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:0.5px solid #f2f2f7;">
+              <div style="flex-shrink:0;min-width:50px;text-align:center;">
+                <div style="font-size:12px;font-weight:700;color:#1a1a1a;">${fmtData(a.data)}</div>
+                <div style="font-size:11px;color:#8e8e93;">${a.hora}</div>
+              </div>
+              <div style="flex:1;min-width:0;">
+                <div style="font-size:14px;font-weight:600;color:#1a1a1a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(a.nome||'-')}</div>
+                <div style="font-size:12px;color:#8e8e93;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(a.servicoNome||'-')}</div>
+              </div>
+            </div>`).join('');
+
+      const lista = ags.length
+        ? `<div style="background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.05);margin-bottom:16px;">${linhas}</div>`
+        : `<div style="margin-bottom:16px;">${linhas}</div>`;
+
+      conteudo = resumo + lista + `
+        <button onclick="exportarRelCSV('agendamentos')" style="width:100%;height:44px;border-radius:12px;border:1.5px solid #d1d5db;background:#fff;color:#1a1a1a;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;">${ICO_DOWN} Exportar CSV</button>`;
+    }
+
+    return `
+      <div style="display:flex;align-items:center;margin-bottom:16px;padding:0 4px;">
+        <div style="font-size:22px;font-weight:700;color:#1a1a1a;">Relatórios</div>
+      </div>
+      ${tabs}
+      ${mesSelector}
+      ${conteudo}`;
+  }
+
   window.gFinAbrirModal = (tipo)=>{
     _gFinModal = { tipo, agId: null, descricao: '', valor: '', editId: null };
     draw();
@@ -2845,9 +2959,10 @@ function renderGestao(empInicial){
                : corner==='configurar'   ? configurarBody()
                : corner==='financeiro'   ? financeiroBody()
                : corner==='clientes'     ? clientesBody()
+               : corner==='relatorios'   ? relatoriosBody()
                : agendamentosBody();
 
-    const cardStyle = (corner==='configurar' || corner==='financeiro' || corner==='dashboard' || corner==='clientes' || corner===null) ? 'background:none;box-shadow:none;padding:0;' : '';
+    const cardStyle = (corner==='configurar' || corner==='financeiro' || corner==='dashboard' || corner==='clientes' || corner==='relatorios' || corner===null) ? 'background:none;box-shadow:none;padding:0;' : '';
 
 
     render(`
@@ -2879,6 +2994,13 @@ function renderGestao(empInicial){
       draw();
       if(!_gFinLancamentos.length) gFinCarregar();
       carregarNotas();
+      return;
+    }
+    if(c==='relatorios' && corner!=='relatorios'){
+      corner=c; editandoId=null; novoAgState=null; configurarSub=null; _removendoServicoIdx=null; _waMenuId=null; _gFinModal=null; _notaModal=null; _linkMenuAberto=false;
+      _relMes = isoData(new Date()).slice(0,7);
+      draw();
+      if(!_gFinLancamentos.length) gFinCarregar();
       return;
     }
     corner=c; editandoId=null; novoAgState=null; configurarSub=null; _removendoServicoIdx=null; _waMenuId=null; _gFinModal=null; _notaModal=null; _linkMenuAberto=false;
@@ -3060,6 +3182,32 @@ function renderGestao(empInicial){
     _waMenuId = _waMenuId === agId ? null : agId;
     draw();
   };
+  window.setRelAba = (aba)=>{ _relAba=aba; draw(); };
+  window.setRelMes = (mes)=>{ _relMes=mes; draw(); };
+  window.exportarRelCSV = (tipo)=>{
+    const MESES_PT = ['Janeiro','Fevereiro','Marco','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+    const [ano, mes] = _relMes.split('-').map(Number);
+    const mesLabel = MESES_PT[mes-1]+'_'+ano;
+    const fmtData = d => { const [y,m,dd]=d.split('-'); return `${dd}/${m}/${y}`; };
+    let csv, nome;
+    if(tipo==='financeiro'){
+      const lancs = _gFinLancamentos.filter(l=>l.data.startsWith(_relMes)).sort((a,b)=>a.data.localeCompare(b.data));
+      csv = 'Data;Descricao;Tipo;Valor\n';
+      csv += lancs.map(l=>`${fmtData(l.data)};${(l.descricao||'').replace(/;/g,'')};${l.tipo==='receita'?'Receita':'Despesa'};${parseFloat(l.valor||0).toFixed(2).replace('.',',')}`).join('\n');
+      nome = `financeiro_${mesLabel}.csv`;
+    } else {
+      const ags = agendamentos.filter(a=>a.slug===emp.slug && a.data.startsWith(_relMes)).sort((a,b)=>a.data.localeCompare(b.data)||a.hora.localeCompare(b.hora));
+      csv = 'Data;Hora;Cliente;Servico\n';
+      csv += ags.map(a=>`${fmtData(a.data)};${a.hora};${(a.nome||'').replace(/;/g,'')};${(a.servicoNome||'').replace(/;/g,'')}`).join('\n');
+      nome = `agendamentos_${mesLabel}.csv`;
+    }
+    const blob = new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8;'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href=url; a.download=nome; a.click();
+    URL.revokeObjectURL(url);
+  };
+
   window.toggleWaMenuInativo = (clienteId)=>{
     _inativoWaMenuId = _inativoWaMenuId === clienteId ? null : clienteId;
     draw();
