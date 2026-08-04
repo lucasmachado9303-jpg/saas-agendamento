@@ -16,17 +16,17 @@
 html{scroll-behavior:smooth;}
 
 :root{
-  --ink:#F9F8FC;
-  --ink-2:#EDEAF8;
-  --ink-3:#E4E1F4;
-  --cream:#0A0A12;
-  --cream-2:#1E1B32;
-  --muted:#7E7C98;
-  --muted-2:#4E4C6A;
-  --gold:#5b24ab;
-  --gold-deep:#4a1d8e;
-  --line:rgba(91,36,171,0.08);
-  --line-mid:rgba(91,36,171,0.13);
+  --ink:#0A0A09;
+  --ink-2:#141210;
+  --ink-3:#1C1A18;
+  --cream:#F0EBE3;
+  --cream-2:#E6DED5;
+  --muted:#706C67;
+  --muted-2:#9E9990;
+  --gold:#E8952A;
+  --gold-deep:#CC7E1C;
+  --line:rgba(240,235,227,0.07);
+  --line-mid:rgba(240,235,227,0.12);
   --r:10px;
 }
 
@@ -43,7 +43,7 @@ body{
 nav{
   position:fixed;top:0;left:0;right:0;z-index:100;
   height:60px;
-  background:rgba(249,248,252,0.93);
+  background:rgba(10,10,9,0.88);
   backdrop-filter:blur(20px);
   -webkit-backdrop-filter:blur(20px);
   border-bottom:1px solid var(--line);
@@ -54,8 +54,8 @@ nav{
   padding:0 max(24px,5vw);
 }
 .logo-link{display:flex;align-items:center;text-decoration:none;}
-.nav-logo{height:48px;width:auto;display:block;filter:invert(1);}
-.footer-logo{height:36px;width:auto;display:block;opacity:0.5;filter:invert(1);}
+.nav-logo{height:48px;width:auto;display:block;}
+.footer-logo{height:36px;width:auto;display:block;opacity:0.5;}
 .wordmark{
   font-family:'Bricolage Grotesque',system-ui,sans-serif;
   font-weight:800;font-size:22px;letter-spacing:-0.04em;
@@ -78,12 +78,12 @@ nav{
 }
 .btn:active{transform:scale(0.97);}
 .btn-amber{
-  background:var(--gold);color:#fff;
+  background:var(--gold);color:#000;
   padding:10px 22px;font-size:14px;
 }
 .btn-amber:hover{background:var(--gold-deep);}
 .btn-amber-lg{
-  background:var(--gold);color:#fff;
+  background:var(--gold);color:#000;
   padding:15px 32px;font-size:17px;font-weight:800;letter-spacing:-0.01em;
 }
 .btn-amber-lg:hover{background:var(--gold-deep);}
@@ -245,7 +245,7 @@ nav{
   font-weight:700;letter-spacing:-0.03em;
   color:var(--cream);line-height:1.35;margin-bottom:20px;
 }
-.pain-q em{font-style:normal;color:rgba(10,10,18,0.38);}
+.pain-q em{font-style:normal;color:rgba(240,235,227,0.45);}
 .pain-a{
   font-size:clamp(1rem,2vw,1.15rem);
   color:var(--gold);font-weight:600;line-height:1.5;
@@ -280,7 +280,7 @@ nav{
   font-size:1.05rem;font-weight:700;
   color:var(--ink);margin-bottom:8px;letter-spacing:-0.01em;
 }
-.step-desc{font-size:1rem;color:rgba(249,248,252,0.6);line-height:1.65;}
+.step-desc{font-size:1rem;color:rgba(10,10,9,0.5);line-height:1.65;}
 
 /* FEATURES */
 .features-section{background:var(--ink);padding:100px max(24px,5vw);}
@@ -432,20 +432,19 @@ nav{
   max-height:560px;width:auto;max-width:100%;
   display:block;
   vertical-align:bottom;
-  mix-blend-mode:multiply;
 }
 .close-text{padding:80px 0 80px;text-align:left;}
 .close-h{
   font-family:'Bricolage Grotesque',system-ui,sans-serif;
   font-size:clamp(2rem,5vw,4rem);
   font-weight:800;letter-spacing:-0.04em;line-height:1.03;
-  color:#fff;margin-bottom:20px;
+  color:#000;margin-bottom:20px;
 }
 .close-sub{
-  font-size:1.05rem;color:rgba(255,255,255,0.72);
+  font-size:1.05rem;color:rgba(0,0,0,0.55);
   margin-bottom:40px;line-height:1.5;
 }
-.risk-dark{font-size:13px;color:rgba(255,255,255,0.55);margin-top:16px;}
+.risk-dark{font-size:13px;color:rgba(0,0,0,0.45);margin-top:16px;}
 @media(max-width:640px){
   .close-section{padding:0 max(24px,5vw) 0;}
   .close-inner{grid-template-columns:1fr;}
@@ -464,7 +463,7 @@ footer{
 }
 .footer-mark{
   font-family:'Bricolage Grotesque',system-ui,sans-serif;
-  font-weight:800;font-size:18px;color:rgba(10,10,18,0.3);
+  font-weight:800;font-size:18px;color:rgba(240,235,227,0.35);
   letter-spacing:-0.03em;
 }
 .footer-links{display:flex;gap:20px;flex-wrap:wrap;}
@@ -474,7 +473,7 @@ footer{
 }
 .footer-link:hover{color:var(--cream);}
 .footer-cr{
-  width:100%;font-size:12px;color:rgba(10,10,18,0.28);
+  width:100%;font-size:12px;color:rgba(240,235,227,0.22);
 }
 
 /* ANIMATIONS — one authored moment: the hero arrival */
