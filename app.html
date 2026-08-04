@@ -1437,14 +1437,14 @@ function renderGestao(empInicial){
   let _clientePerfilEditando = false;
   // Inativos
   let _clientesAba = 'todos'; // 'todos' | 'inativos'
-  let _clientesInativosFiltro = 15;
+  let _clientesInativosFiltro = 30;
   let _clientesBannerDismissed = false;
 
   // Estado do bloco de notas (dashboard)
   let _notas = [];          // registros da tabela notas
   let _notaModal = null;    // { texto, cor, editId? }
   let _notasCarregando = false;
-  let _dashInativosFiltro = 15;
+  let _dashInativosFiltro = 30;
 
   function agendamentosBody(){
     if(diaSelecionado===null){
@@ -1772,7 +1772,7 @@ function renderGestao(empInicial){
 
     // VIEW: INATIVOS
     if(_clientesAba === 'inativos') {
-      const filtros = [15,30,45].map(d=>`
+      const filtros = [30,45].map(d=>`
         <button onclick="setInativosFiltro(${d})" style="padding:6px 14px;border-radius:99px;border:none;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;${_clientesInativosFiltro===d?'background:#1a1a1a;color:#fff;':'background:#f2f2f7;color:#3a3a3a;'}">${d}+ dias</button>`).join('');
       const diaColor = d => d>=45?'#dc2626':d>=30?'#f97316':'#f59e0b';
       const inativoRows = clientesInativos.length
@@ -2479,13 +2479,7 @@ function renderGestao(empInicial){
               <div class="g-dash-ico" style="background:#fef3c7;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="17" y1="11" x2="23" y2="11"/></svg></div>
               <div class="g-dash-label">Clientes inativos</div>
             </div>
-            <div style="display:flex;align-items:center;justify-content:space-between;">
-              <div class="g-dash-val">${inativosAtual}</div>
-              <div style="display:flex;gap:4px;">
-                <button onclick="window.setDashInativosFiltro(15)" style="height:22px;padding:0 7px;border-radius:5px;border:0.5px solid ${_dashInativosFiltro===15?'#bfdbfe':'#e4e4e7'};background:${_dashInativosFiltro===15?'#eff6ff':'transparent'};color:${_dashInativosFiltro===15?'#1d4ed8':'#8e8e93'};font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;">15d+</button>
-                <button onclick="window.setDashInativosFiltro(30)" style="height:22px;padding:0 7px;border-radius:5px;border:0.5px solid ${_dashInativosFiltro===30?'#bfdbfe':'#e4e4e7'};background:${_dashInativosFiltro===30?'#eff6ff':'transparent'};color:${_dashInativosFiltro===30?'#1d4ed8':'#8e8e93'};font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;">30d+</button>
-              </div>
-            </div>
+            <div class="g-dash-val">${inativosAtual}</div>
           </div>
 
           <div class="g-dash-panel g-dash-agenda">
@@ -2550,7 +2544,6 @@ function renderGestao(empInicial){
     if(corner === 'dashboard') draw();
   }
 
-  window.setDashInativosFiltro = (d)=>{ _dashInativosFiltro = d; draw(); };
   window.novaNota   = ()=>{ _notaModal = { texto:'', cor:'amarelo' }; draw(); };
   window.fecharNota = ()=>{ _notaModal = null; draw(); };
   window.setNotaCor = (cor)=>{
