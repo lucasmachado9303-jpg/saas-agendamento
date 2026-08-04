@@ -293,6 +293,45 @@ nav{
 }
 .feat-desc{font-size:0.95rem;color:var(--muted-2);line-height:1.65;max-width:58ch;}
 
+/* GESTOR SECTION */
+.gestor-section{
+  background:var(--ink-2);
+  border-top:1px solid var(--line);
+  border-bottom:1px solid var(--line);
+  padding:100px max(24px,5vw);
+}
+.gestor-inner{
+  max-width:1100px;margin:0 auto;
+  display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:center;
+}
+@media(max-width:800px){.gestor-inner{grid-template-columns:1fr;gap:48px;}}
+.gestor-tag{
+  display:inline-block;
+  font-size:12px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;
+  color:var(--gold);margin-bottom:16px;
+}
+.gestor-h{
+  font-family:'Bricolage Grotesque',system-ui,sans-serif;
+  font-size:clamp(1.8rem,4vw,3rem);
+  font-weight:800;letter-spacing:-0.035em;line-height:1.08;
+  color:var(--cream);margin-bottom:16px;
+}
+.gestor-sub{
+  font-size:1rem;color:var(--muted-2);line-height:1.7;
+  margin-bottom:32px;max-width:42ch;
+}
+.gestor-feats{list-style:none;display:flex;flex-direction:column;gap:12px;}
+.gestor-feats li{
+  display:flex;align-items:center;gap:10px;
+  font-size:0.95rem;color:var(--cream-2);line-height:1.4;
+}
+.gestor-feats li::before{
+  content:'';
+  flex-shrink:0;
+  width:7px;height:7px;border-radius:50%;
+  background:var(--gold);
+}
+
 /* CLOSE / FINAL CTA */
 .close-section{
   background:var(--gold);
@@ -450,6 +489,41 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
   </div>
 </section>
 
+<section class="gestor-section">
+  <div class="gestor-inner">
+    <div>
+      <div class="gestor-tag">Para você, gestor</div>
+      <h2 class="gestor-h">Seu negócio na palma da mão.</h2>
+      <p class="gestor-sub">Abra o painel e veja tudo: agendamentos do dia, clientes, financeiro e lembretes. Sem planilha, sem app extra.</p>
+      <ul class="gestor-feats">
+        <li>Dashboard com resumo do dia</li>
+        <li>Agenda completa e bloqueio de horários</li>
+        <li>Cadastro de clientes</li>
+        <li>Clientes que não voltaram</li>
+        <li>Lembretes no WhatsApp</li>
+        <li>Link de confirmação para o cliente</li>
+        <li>Controle financeiro</li>
+        <li>Configuração personalizada da sua página</li>
+      </ul>
+    </div>
+    <div class="phone-wrap">
+      <div class="phone-frame">
+        <div class="phone" id="phoneGestor">
+          <div class="phone-notch"></div>
+          <div class="phone-screen">
+            <div class="phone-slide active"><img src="/assets/imagens/passo-6.png" alt="Dashboard"/></div>
+            <div class="phone-slide"><img src="/assets/imagens/passo-7.png" alt="Agenda"/></div>
+            <div class="phone-slide"><img src="/assets/imagens/passo-8.png" alt="Clientes"/></div>
+            <div class="phone-slide"><img src="/assets/imagens/passo-9.png" alt="WhatsApp"/></div>
+            <div class="phone-slide"><img src="/assets/imagens/passo-10.png" alt="Financeiro"/></div>
+            <div class="phone-slide"><img src="/assets/imagens/passo-11.png" alt="Configurações"/></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
 <section class="close-section">
   <div class="close-inner">
     <h2 class="close-h">Comece hoje.</h2>
@@ -488,6 +562,15 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
     slides[current].classList.add('active');
   }
   setInterval(next,2000);
+
+  var slidesG=document.querySelectorAll('#phoneGestor .phone-slide');
+  var curG=0;
+  function nextG(){
+    slidesG[curG].classList.remove('active');
+    curG=(curG+1)%slidesG.length;
+    slidesG[curG].classList.add('active');
+  }
+  setInterval(nextG,2000);
 })();
 </script>
 </body>
