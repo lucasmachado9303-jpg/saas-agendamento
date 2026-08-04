@@ -448,8 +448,9 @@ nav{
 @media(max-width:640px){
   .close-section{padding:0 max(24px,5vw) 0;}
   .close-inner{grid-template-columns:1fr;}
-  .close-model{display:none;}
-  .close-text{padding:60px 0;text-align:center;}
+  .close-model{justify-content:center;}
+  .close-model img{max-height:360px;}
+  .close-text{padding:0 0 60px;text-align:center;}
 }
 
 /* FOOTER */
@@ -610,7 +611,10 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
       </ul>
     </div>
     <div class="gestor-img-wrap">
-      <img src="/assets/imagens/telas-gestor.png" alt="Painel de gestão da agen+ em celulares e desktop"/>
+      <picture>
+        <source srcset="/assets/imagens/telas-gestor.webp" type="image/webp"/>
+        <img src="/assets/imagens/telas-gestor.png" alt="Painel de gestão da agen+ em celulares e desktop"/>
+      </picture>
     </div>
   </div>
 </section>
@@ -644,7 +648,10 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
 <section class="close-section">
   <div class="close-inner">
     <div class="close-model">
-      <img src="/assets/imagens/modelo-celular.png" alt="Gestora usando a agen+"/>
+      <picture>
+        <source srcset="/assets/imagens/modelo-celular.webp" type="image/webp"/>
+        <img src="/assets/imagens/modelo-celular.png" alt="Gestora usando a agen+"/>
+      </picture>
     </div>
     <div class="close-text">
       <h2 class="close-h">Sua agenda online em 10 minutos.</h2>
