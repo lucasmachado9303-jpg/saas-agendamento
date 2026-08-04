@@ -107,20 +107,11 @@ nav{
 }
 .btn-ink:hover{background:var(--ink-2);}
 
-/* SCROLL PROGRESS BAR */
-#scrollBar{
-  position:fixed;top:0;left:0;height:3px;width:0;
-  background:var(--gold);z-index:201;pointer-events:none;
-  transition:width 0.08s linear;
-  transform-origin:left;
-}
-
 /* HERO */
 .hero-section{
   background:var(--ink);
   min-height:100svh;
   display:flex;align-items:center;
-  position:relative;overflow:hidden;
 }
 .hero{
   width:100%;max-width:1200px;margin:0 auto;
@@ -508,7 +499,6 @@ footer{
   from{opacity:0;transform:translateY(18px);}
   to{opacity:1;transform:translateY(0);}
 }
-
 .hero-headline{animation:heroUp 0.85s cubic-bezier(0.22,1,0.36,1) both;}
 .hero-sub{animation:heroUp 0.85s cubic-bezier(0.22,1,0.36,1) 0.1s both;}
 .hero-cta-row{animation:heroUp 0.85s cubic-bezier(0.22,1,0.36,1) 0.2s both;}
@@ -577,7 +567,6 @@ FIRST VIEWPORT: Full-height dark hero. agen+ wordmark top-left. Strong headline 
 FORM: Premium appointment ledger translated to dark web. Candidate 3 of 7. Seed key 54f29fba.
 FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, and DESIGN.md.
 -->
-<div id="scrollBar" aria-hidden="true"></div>
 <nav>
   <div class="nav-inner">
     <a href="/" class="logo-link"><img src="/logoagen+.png" alt="agen+" class="nav-logo"/></a>
@@ -589,8 +578,7 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
 </nav>
 
 <section class="hero-section">
-  <canvas id="heroParticles" aria-hidden="true" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0;"></canvas>
-  <div class="hero" style="position:relative;z-index:1;">
+  <div class="hero">
     <div class="hero-text">
       <h1 class="hero-headline">Sua agenda,<br>no link<br>da bio.</h1>
       <p class="hero-sub">Compartilhe o link com seus clientes. Eles agendam sozinhos, 24 horas por dia. Sem app, sem complicação.</p>
@@ -781,58 +769,6 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
     slides[current].classList.add('active');
   }
   setInterval(next,2500);
-
-  // Barra de progresso
-  var scrollBar=document.getElementById('scrollBar');
-  window.addEventListener('scroll',function(){
-    var d=document.documentElement;
-    var pct=d.scrollTop/(d.scrollHeight-d.clientHeight)*100;
-    scrollBar.style.width=Math.min(pct,100)+'%';
-  },{passive:true});
-
-  // Particulas ambar na hero
-  var heroCanvas=document.getElementById('heroParticles');
-  if(heroCanvas&&!window.matchMedia('(prefers-reduced-motion:reduce)').matches){
-    var hctx=heroCanvas.getContext('2d');
-    var hmouse={x:-2000,y:-2000};
-    var isMob=window.innerWidth<768;
-    var hN=isMob?18:48;
-    var hpts=[];
-    function resizeHero(){
-      heroCanvas.width=heroCanvas.parentElement.offsetWidth||window.innerWidth;
-      heroCanvas.height=heroCanvas.parentElement.offsetHeight||window.innerHeight;
-    }
-    resizeHero();
-    window.addEventListener('resize',resizeHero,{passive:true});
-    for(var hi=0;hi<hN;hi++){
-      var hcx=Math.random()*heroCanvas.width;
-      var hcy=Math.random()*heroCanvas.height;
-      hpts.push({x:hcx,y:hcy,ox:hcx,oy:hcy,vx:(Math.random()-.5)*.4,vy:(Math.random()-.5)*.4,r:Math.random()*2.5+1,o:Math.random()*.3+.15});
-    }
-    var heroSection=heroCanvas.parentElement;
-    heroSection.addEventListener('mousemove',function(e){
-      var r=heroSection.getBoundingClientRect();
-      hmouse.x=e.clientX-r.left;hmouse.y=e.clientY-r.top;
-    },{passive:true});
-    heroSection.addEventListener('mouseleave',function(){hmouse.x=-2000;hmouse.y=-2000;});
-    (function htick(){
-      hctx.clearRect(0,0,heroCanvas.width,heroCanvas.height);
-      for(var hj=0;hj<hpts.length;hj++){
-        var hp=hpts[hj];
-        hp.vx+=(hp.ox-hp.x)*.0008;
-        hp.vy+=(hp.oy-hp.y)*.0008;
-        var hdx=hp.x-hmouse.x,hdy=hp.y-hmouse.y,hdist=Math.sqrt(hdx*hdx+hdy*hdy);
-        if(hdist<130){hp.vx+=hdx/hdist*.35;hp.vy+=hdy/hdist*.35;}
-        hp.vx*=.97;hp.vy*=.97;
-        hp.x+=hp.vx;hp.y+=hp.vy;
-        hctx.beginPath();
-        hctx.arc(hp.x,hp.y,hp.r,0,Math.PI*2);
-        hctx.fillStyle='rgba(232,149,42,'+hp.o+')';
-        hctx.fill();
-      }
-      requestAnimationFrame(htick);
-    })();
-  }
 
   // Scroll reveals
   var revealEls=document.querySelectorAll('.reveal');
