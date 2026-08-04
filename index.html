@@ -56,11 +56,7 @@ nav{
 .logo-link{display:flex;align-items:center;text-decoration:none;}
 .nav-logo{height:48px;width:auto;display:block;}
 .footer-logo{height:36px;width:auto;display:block;opacity:0.5;}
-.wordmark{
-  font-family:'Bricolage Grotesque',system-ui,sans-serif;
-  font-weight:800;font-size:22px;letter-spacing:-0.04em;
-  color:var(--cream-2);text-decoration:none;
-}
+
 .nav-actions{display:flex;align-items:center;gap:8px;}
 .nav-link{
   color:var(--muted-2);text-decoration:none;
@@ -110,6 +106,7 @@ nav{
 /* HERO */
 .hero-section{
   background:var(--ink);
+  min-height:100vh;
   min-height:100svh;
   display:flex;align-items:center;
 }
@@ -128,7 +125,6 @@ nav{
 @media(max-width:480px){
   .nav-link{display:none;}
   .btn-amber-lg{width:100%;text-align:center;}
-  footer{flex-direction:column;align-items:flex-start;gap:20px;}
   .close-section{padding:48px 24px;}
   .phone-wrap{max-width:calc(100vw - 48px);}
   .phone-frame{max-width:100%;}
@@ -336,7 +332,7 @@ nav{
 .gestor-img-wrap img{
   width:100%;max-width:680px;height:auto;
   filter:drop-shadow(0 24px 64px rgba(0,0,0,0.55));
-  animation:heroUp 0.9s cubic-bezier(0.22,1,0.36,1) 0.2s both;
+  transition:none;
 }
 .gestor-tag{
   display:inline-block;
@@ -480,11 +476,7 @@ footer{
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   text-align:center;gap:16px;
 }
-.footer-mark{
-  font-family:'Bricolage Grotesque',system-ui,sans-serif;
-  font-weight:800;font-size:18px;color:rgba(240,235,227,0.35);
-  letter-spacing:-0.03em;
-}
+
 .footer-links{display:flex;gap:20px;flex-wrap:wrap;}
 .footer-link{
   font-size:13px;color:var(--muted);text-decoration:none;
@@ -752,13 +744,7 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
     '/assets/imagens/passo-2-servico.jpg',
     '/assets/imagens/passo-3-horario.jpg',
     '/assets/imagens/passo-4-dados.jpg',
-    '/assets/imagens/passo-5-confirmacao.jpg',
-    '/assets/imagens/passo-6.png',
-    '/assets/imagens/passo-7.png',
-    '/assets/imagens/passo-8.png',
-    '/assets/imagens/passo-9.png',
-    '/assets/imagens/passo-10.png',
-    '/assets/imagens/passo-11.png'
+    '/assets/imagens/passo-5-confirmacao.jpg'
   ];
   images.forEach(function(src){var i=new Image();i.src=src;});
 
