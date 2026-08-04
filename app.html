@@ -1496,18 +1496,18 @@ function renderGestao(empInicial){
           const statusCor = ag.status==='confirmado' ? '#16a34a' : ag.status==='cancelado' ? '#dc2626' : '#6b7280';
           const statusLabel = ag.status==='confirmado' ? 'Confirmado' : ag.status==='cancelado' ? 'Cancelado' : 'Não confirmado';
           const nomeStyle = ag.status==='cancelado' ? 'text-decoration:line-through;' : '';
-          const BTN = 'font-family:inherit;height:28px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;border:0.5px solid #ccc;background:#fff;color:#555;';
+          const BTN = 'font-family:inherit;height:28px;padding:0 10px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;border:0.5px solid #ccc;background:#fff;color:#555;';
           const botoesPassado = `
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;">
+            <div style="display:flex;gap:5px;justify-content:flex-end;">
               <button style="${BTN}" onclick="editarAgendamento('${ag.id}')">Editar</button>
               <button style="${BTN}border-color:#fca5a5;color:#dc2626;" onclick="excluirAgendamento('${ag.id}')">Excluir</button>
             </div>`;
           const botoesAtivo = `
-            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;">
+            <div style="display:flex;gap:5px;justify-content:flex-end;">
               <button style="${BTN}" onclick="editarAgendamento('${ag.id}')">Editar</button>
               <button style="${BTN}border-color:#fca5a5;color:#dc2626;" onclick="excluirAgendamento('${ag.id}')">Excluir</button>
               <div style="position:relative;">
-                <button style="${BTN}width:100%;border-color:#86efac;color:#16a34a;" onclick="toggleWaMenu('${ag.id}')">WhatsApp</button>
+                <button style="${BTN}border-color:#86efac;color:#16a34a;" onclick="toggleWaMenu('${ag.id}')">WhatsApp</button>
                 ${_waMenuId === ag.id ? `<div style="position:absolute;top:calc(100% + 4px);right:0;min-width:130px;background:#fff;border:0.5px solid #d1d5db;border-radius:9px;overflow:hidden;z-index:50;box-shadow:0 4px 12px rgba(0,0,0,.10);">
                   <button class="ag-wa-dd-item" onclick="waAcao('${ag.id}','conversar','${emp.id}')">Conversar</button>
                   <button class="ag-wa-dd-item" onclick="waAcao('${ag.id}','confirmacao','${emp.id}')">Confirmação ${ag.confirmacaoEnviada ? '<span style="color:#22c55e">&#10003;</span>' : ''}</button>
