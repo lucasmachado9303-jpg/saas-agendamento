@@ -144,10 +144,6 @@ nav{
   display:inline-block;
   animation:phonefloat 5s ease-in-out infinite;
 }
-@keyframes phonefloat{
-  0%,100%{transform:translateY(0);}
-  50%{transform:translateY(-5px);}
-}
 /* botao power (direita) */
 .phone-frame::after{
   content:'';
@@ -238,7 +234,7 @@ nav{
   font-family:'Bricolage Grotesque',system-ui,sans-serif;
   font-size:clamp(1.5rem,4vw,2.6rem);
   font-weight:700;letter-spacing:-0.03em;
-  color:var(--cream);line-height:1.2;margin-bottom:20px;
+  color:var(--cream);line-height:1.35;margin-bottom:20px;
 }
 .pain-q em{font-style:normal;color:rgba(240,235,227,0.45);}
 .pain-a{
@@ -415,11 +411,11 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
         <div class="phone" id="phoneMockup">
           <div class="phone-notch"></div>
           <div class="phone-screen">
-            <div class="phone-slide active" id="slide-0"><img src="/assets/imagens/passo-1-inicio.jpg" alt="Passo 1"/></div>
-            <div class="phone-slide" id="slide-1"><img src="/assets/imagens/passo-2-servico.jpg" alt="Passo 2"/></div>
-            <div class="phone-slide" id="slide-2"><img src="/assets/imagens/passo-3-horario.jpg" alt="Passo 3"/></div>
-            <div class="phone-slide" id="slide-3"><img src="/assets/imagens/passo-4-dados.jpg" alt="Passo 4"/></div>
-            <div class="phone-slide" id="slide-4"><img src="/assets/imagens/passo-5-confirmacao.jpg" alt="Passo 5"/></div>
+            <div class="phone-slide active" id="slide-0"><img src="/assets/imagens/passo-1-inicio.jpg" alt="Tela inicial da página de agendamento"/></div>
+            <div class="phone-slide" id="slide-1"><img src="/assets/imagens/passo-2-servico.jpg" alt="Escolha do serviço"/></div>
+            <div class="phone-slide" id="slide-2"><img src="/assets/imagens/passo-3-horario.jpg" alt="Escolha do horário disponível"/></div>
+            <div class="phone-slide" id="slide-3"><img src="/assets/imagens/passo-4-dados.jpg" alt="Preenchimento dos dados do cliente"/></div>
+            <div class="phone-slide" id="slide-4"><img src="/assets/imagens/passo-5-confirmacao.jpg" alt="Confirmação do agendamento"/></div>
           </div>
         </div>
       </div>
@@ -479,7 +475,7 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
       </div>
       <div class="feat-item">
         <div class="feat-name">Lembretes no WhatsApp</div>
-        <p class="feat-desc">Mensagens de confirmação e lembrete pré-programadas. Envie com um toque.</p>
+        <p class="feat-desc">Mensagens de confirmação e lembrete prontas para enviar. Um toque e o cliente recebe tudo.</p>
       </div>
       <div class="feat-item">
         <div class="feat-name">Bloco de notas</div>
@@ -511,12 +507,12 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
         <div class="phone" id="phoneGestor">
           <div class="phone-notch"></div>
           <div class="phone-screen">
-            <div class="phone-slide active"><img src="/assets/imagens/passo-6.png" alt="Dashboard"/></div>
-            <div class="phone-slide"><img src="/assets/imagens/passo-7.png" alt="Agenda"/></div>
-            <div class="phone-slide"><img src="/assets/imagens/passo-8.png" alt="Clientes"/></div>
-            <div class="phone-slide"><img src="/assets/imagens/passo-9.png" alt="WhatsApp"/></div>
-            <div class="phone-slide"><img src="/assets/imagens/passo-10.png" alt="Financeiro"/></div>
-            <div class="phone-slide"><img src="/assets/imagens/passo-11.png" alt="Configurações"/></div>
+            <div class="phone-slide active"><img src="/assets/imagens/passo-6.png" alt="Dashboard com resumo do dia"/></div>
+            <div class="phone-slide"><img src="/assets/imagens/passo-7.png" alt="Agenda completa de agendamentos"/></div>
+            <div class="phone-slide"><img src="/assets/imagens/passo-8.png" alt="Cadastro e lista de clientes"/></div>
+            <div class="phone-slide"><img src="/assets/imagens/passo-9.png" alt="Lembretes no WhatsApp"/></div>
+            <div class="phone-slide"><img src="/assets/imagens/passo-10.png" alt="Controle financeiro"/></div>
+            <div class="phone-slide"><img src="/assets/imagens/passo-11.png" alt="Configuração personalizada da página"/></div>
           </div>
         </div>
       </div>
@@ -540,7 +536,7 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
     <a href="#" class="footer-link">Privacidade</a>
     <a href="/login" class="footer-link">Entrar</a>
   </div>
-  <p class="footer-cr">&copy; 2025 AgenPlus</p>
+  <p class="footer-cr">&copy; 2026 AgenPlus</p>
 </footer>
 
 <script>
@@ -550,11 +546,17 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
     '/assets/imagens/passo-2-servico.jpg',
     '/assets/imagens/passo-3-horario.jpg',
     '/assets/imagens/passo-4-dados.jpg',
-    '/assets/imagens/passo-5-confirmacao.jpg'
+    '/assets/imagens/passo-5-confirmacao.jpg',
+    '/assets/imagens/passo-6.png',
+    '/assets/imagens/passo-7.png',
+    '/assets/imagens/passo-8.png',
+    '/assets/imagens/passo-9.png',
+    '/assets/imagens/passo-10.png',
+    '/assets/imagens/passo-11.png'
   ];
   images.forEach(function(src){var i=new Image();i.src=src;});
 
-  var slides=document.querySelectorAll('.phone-slide');
+  var slides=document.querySelectorAll('#phoneMockup .phone-slide');
   var current=0;
   function next(){
     slides[current].classList.remove('active');
