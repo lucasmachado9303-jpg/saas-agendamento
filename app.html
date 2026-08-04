@@ -1772,9 +1772,7 @@ function renderGestao(empInicial){
 
     // VIEW: INATIVOS
     if(_clientesAba === 'inativos') {
-      const filtros = [30,45].map(d=>`
-        <button onclick="setInativosFiltro(${d})" style="padding:6px 14px;border-radius:99px;border:none;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;${_clientesInativosFiltro===d?'background:#1a1a1a;color:#fff;':'background:#f2f2f7;color:#3a3a3a;'}">${d}+ dias</button>`).join('');
-      const diaColor = d => d>=45?'#dc2626':d>=30?'#f97316':'#f59e0b';
+      const diaColor = d => d>=45?'#dc2626':'#f97316';
       const inativoRows = clientesInativos.length
         ? clientesInativos.map(c=>{
             const dias=_diasSemVoltar(c);
@@ -1807,7 +1805,6 @@ function renderGestao(empInicial){
           <button onclick="abrirNovoCliente()" style="display:flex;align-items:center;gap:6px;height:36px;padding:0 14px;border-radius:10px;border:none;background:#1a1a1a;color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;">${ICO_PLUS} Novo</button>
         </div>
         ${tabs}
-        <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">${filtros}</div>
         ${wrapI}`;
     }
 
