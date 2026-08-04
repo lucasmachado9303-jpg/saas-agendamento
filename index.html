@@ -3,7 +3,7 @@
 <head>
 <script>(function(){var h=location.hostname.split('.');if(h.length>=4&&h[0]!=='www'){var pg=location.pathname.replace(/^\/+|\/+$/g,'');var q=pg&&pg!=='app.html'?'?_p='+encodeURIComponent(pg):'';location.replace('/app.html'+q+location.hash);}})();</script>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
 <title>agen+ — Agendamentos no link da bio</title>
 <meta name="description" content="Crie sua página de agendamentos em minutos. Coloque na bio, compartilhe o link e deixe seus clientes agendarem sozinhos."/>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -122,6 +122,12 @@ nav{
   .btn-amber-lg{width:100%;text-align:center;}
   footer{flex-direction:column;align-items:flex-start;gap:20px;}
   .close-section{padding:48px 24px;}
+  .phone-wrap{max-width:calc(100vw - 48px);}
+  .phone-frame{max-width:100%;}
+}
+@media(prefers-reduced-motion:reduce){
+  .phone-frame{animation:none;}
+  .hero-headline,.hero-sub,.hero-cta-row,.phone-wrap{animation:none;}
 }
 .hero-headline{
   font-family:'Bricolage Grotesque',system-ui,sans-serif;
@@ -274,7 +280,7 @@ nav{
   font-size:1.05rem;font-weight:700;
   color:var(--ink);margin-bottom:8px;letter-spacing:-0.01em;
 }
-.step-desc{font-size:0.9rem;color:rgba(10,10,9,0.5);line-height:1.65;}
+.step-desc{font-size:1rem;color:rgba(10,10,9,0.5);line-height:1.65;}
 
 /* FEATURES */
 .features-section{background:var(--ink);padding:100px max(24px,5vw);}
@@ -291,7 +297,7 @@ nav{
   color:var(--cream);letter-spacing:-0.02em;margin-bottom:8px;
 }
 .feat-item:first-child .feat-name{font-size:clamp(1.3rem,3.5vw,1.7rem);}
-.feat-desc{font-size:0.95rem;color:var(--muted-2);line-height:1.65;max-width:58ch;}
+.feat-desc{font-size:1rem;color:var(--muted-2);line-height:1.65;max-width:58ch;}
 
 /* GESTOR SECTION */
 .gestor-section{
@@ -423,7 +429,7 @@ nav{
 footer{
   background:var(--ink);
   border-top:1px solid var(--line);
-  padding:36px max(24px,5vw);
+  padding:36px max(24px,5vw) max(36px,calc(36px + env(safe-area-inset-bottom)));
   display:flex;align-items:center;justify-content:space-between;
   flex-wrap:wrap;gap:16px;
 }
