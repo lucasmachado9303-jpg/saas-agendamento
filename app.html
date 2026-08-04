@@ -1754,7 +1754,12 @@ function renderGestao(empInicial){
 
     // Calcular inativos
     const inativos30 = _clientes.filter(c => { const d=_diasSemVoltar(c); return d!==null && d>=30; });
-    const clientesInativos = _clientes.filter(c => { const d=_diasSemVoltar(c); return d!==null && d>=_clientesInativosFiltro; });
+    const clientesInativos = _clientes.filter(c => {
+      const d=_diasSemVoltar(c);
+      if(d===null) return false;
+      if(_clientesInativosFiltro===45) return d>=45;
+      return d>=_clientesInativosFiltro && d<_clientesInativosFiltro+15;
+    });
 
     // Banner
     const banner = (!_clientesBannerDismissed && inativos30.length && _clientesAba==='todos') ? `
@@ -1799,7 +1804,7 @@ function renderGestao(empInicial){
           }).join('')
         : `<p class="muted" style="text-align:center;padding:24px 0;">Nenhum cliente inativo neste período.</p>`;
       const wrapI = clientesInativos.length
-        ? `<div style="background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.06);">${inativoRows}</div>`
+        ? `<div style="background:#fff;border-radius:16px;box-shadow:0 2px 12px rgba(0,0,0,0.06);">${inativoRows}</div>`
         : inativoRows;
       return `
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding:0 4px;">
@@ -1904,7 +1909,7 @@ function renderGestao(empInicial){
     if(configurarSub === 'mensagens'){
       const msgConfirm   = emp.msgConfirmacao || 'Olá, {nome}!\nConfirme seu agendamento de {servico} para {data} às {hora}.\nAcesse o link abaixo, faça o login e confirme ou cancele:\n{link}';
       const msgLembrete  = emp.msgLembrete   || 'Olá, {nome}! \nPassando pra lembrar do seu agendamento! \n{servico}\n{data} - {hora}.\nAté lá!';
-      const msgInativoTx = emp.msgInativo    || 'Olá, {nome}! 😊\nFaz um tempinho desde o seu último atendimento.\nQue tal agendar um novo horário? Estamos à disposição.\nAgende pelo link:\n{link}';
+      const msgInativoTx = emp.msgInativo    || 'Olá, {nome}! \nFaz um tempinho desde o seu último atendimento.\nQue tal agendar um novo horário? Estamos à disposição.\nAgende pelo link:\n{link}';
       return `
         <div style="position:relative;display:flex;align-items:center;margin-bottom:16px;min-height:36px;">
           <button onclick="configurarIr(null)" style="background:none;border:none;font-size:14px;font-weight:600;color:#555;cursor:pointer;padding:0;font-family:inherit;display:flex;align-items:center;gap:4px;">&#8249; Voltar</button>
@@ -3086,7 +3091,7 @@ function renderGestao(empInicial){
       link = `https://wa.me/${waNum}`;
     } else {
       const empObj = empresas.find(e=>e.id===empId);
-      const defaultMsg = 'Olá, {nome}! 😊\nFaz um tempinho desde o seu último atendimento.\nQue tal agendar um novo horário? Estamos à disposição.\nAgende pelo link:\n{link}';
+      const defaultMsg = 'Olá, {nome}! \nFaz um tempinho desde o seu último atendimento.\nQue tal agendar um novo horário? Estamos à disposição.\nAgende pelo link:\n{link}';
       const tmpl = empObj?.msgInativo || defaultMsg;
       const linkPublico = 'https://' + (empObj?.slug||'') + '.agenplus.com.br';
       const msg = tmpl
