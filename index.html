@@ -134,59 +134,7 @@ nav{
 .hero-cta-row{display:flex;flex-direction:column;align-items:flex-start;gap:14px;}
 .risk-copy{font-size:13px;color:var(--muted);letter-spacing:0.01em;}
 
-/* FAN MOCKUP — hero */
-.fan-wrap{
-  position:relative;
-  height:420px;
-  animation:heroUp 0.9s cubic-bezier(0.22,1,0.36,1) 0.15s both;
-}
-.fan-glow{
-  position:absolute;
-  width:480px;height:480px;
-  border-radius:50%;
-  background:radial-gradient(circle,rgba(232,149,42,0.28) 0%,rgba(232,149,42,0.08) 52%,transparent 72%);
-  bottom:-40px;left:50%;transform:translateX(-50%);
-  pointer-events:none;
-}
-.fan-phone{
-  position:absolute;
-  bottom:0;
-  left:50%;
-  border-radius:22px;
-  background:#0E0D0C;
-  outline:2.5px solid #2c2c2c;
-  overflow:hidden;
-  box-shadow:0 20px 60px rgba(0,0,0,0.7),0 6px 16px rgba(0,0,0,0.45),inset 0 1px 0 rgba(255,255,255,0.08);
-  transform-origin:bottom center;
-}
-.fan-phone img{
-  width:100%;height:100%;
-  object-fit:cover;
-  object-position:top center;
-  display:block;
-}
-.fan-notch{
-  position:absolute;top:7px;left:50%;transform:translateX(-50%);
-  width:32%;height:9px;
-  background:#000;border-radius:6px;z-index:10;
-}
-/* cada phone e centrado em left:50% via margin-left:-half-width, depois rotacionado na base */
-.fan-p0{width:116px;height:236px;margin-left:-58px;transform:rotate(-22deg);z-index:1;}
-.fan-p1{width:134px;height:274px;margin-left:-67px;transform:rotate(-11deg);z-index:2;}
-.fan-p2{width:154px;height:314px;margin-left:-77px;transform:rotate(0deg);z-index:5;}
-.fan-p3{width:134px;height:274px;margin-left:-67px;transform:rotate(11deg);z-index:2;}
-.fan-p4{width:116px;height:236px;margin-left:-58px;transform:rotate(22deg);z-index:1;}
-@media(max-width:800px){
-  .fan-wrap{height:280px;}
-  .fan-glow{width:300px;height:300px;}
-  .fan-p0{width:74px;height:150px;margin-left:-37px;}
-  .fan-p1{width:86px;height:175px;margin-left:-43px;}
-  .fan-p2{width:98px;height:200px;margin-left:-49px;}
-  .fan-p3{width:86px;height:175px;margin-left:-43px;}
-  .fan-p4{width:74px;height:150px;margin-left:-37px;}
-}
-
-/* PHONE MOCKUP — gestor section */
+/* PHONE MOCKUP */
 .phone-wrap{
   display:flex;justify-content:center;align-items:center;
   animation:heroUp 0.9s cubic-bezier(0.22,1,0.36,1) 0.15s both;
@@ -200,6 +148,7 @@ nav{
   0%,100%{transform:translateY(0);}
   50%{transform:translateY(-5px);}
 }
+/* botao power (direita) */
 .phone-frame::after{
   content:'';
   position:absolute;
@@ -208,6 +157,7 @@ nav{
   background:linear-gradient(to bottom,#2a2a2a,#1a1a1a 40%,#2a2a2a);
   border-radius:0 2px 2px 0;
 }
+/* botoes de volume (esquerda) */
 .phone-frame::before{
   content:'';
   position:absolute;
@@ -274,33 +224,6 @@ nav{
   object-position:center;
   background:#fff;
   display:block;
-}
-
-/* GESTOR SECTION */
-.gestor-section{
-  background:var(--ink-2);
-  border-top:1px solid var(--line);
-  border-bottom:1px solid var(--line);
-  padding:100px max(24px,5vw);
-}
-.gestor-inner{
-  max-width:1100px;margin:0 auto;
-  display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:center;
-}
-@media(max-width:800px){.gestor-inner{grid-template-columns:1fr;gap:40px;}}
-.gestor-tag{
-  display:inline-block;
-  font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;
-  color:var(--gold);margin-bottom:16px;
-}
-.gestor-h{
-  font-family:'Bricolage Grotesque',system-ui,sans-serif;
-  font-size:clamp(1.6rem,4vw,2.8rem);
-  font-weight:800;letter-spacing:-0.035em;line-height:1.1;
-  color:var(--cream);margin-bottom:16px;
-}
-.gestor-sub{
-  font-size:1rem;color:var(--muted-2);line-height:1.7;max-width:42ch;
 }
 
 /* PAIN */
@@ -448,27 +371,18 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
         <span class="risk-copy">7 dias grátis &middot; R$29,90/mês &middot; Sem cartão de crédito</span>
       </div>
     </div>
-    <div class="fan-wrap">
-      <div class="fan-glow"></div>
-      <div class="fan-phone fan-p0">
-        <div class="fan-notch"></div>
-        <img src="/assets/imagens/passo-2-servico.jpg" alt="Escolha o serviço"/>
-      </div>
-      <div class="fan-phone fan-p1">
-        <div class="fan-notch"></div>
-        <img src="/assets/imagens/passo-3-horario.jpg" alt="Escolha o horário"/>
-      </div>
-      <div class="fan-phone fan-p2">
-        <div class="fan-notch"></div>
-        <img src="/assets/imagens/passo-1-inicio.jpg" alt="Início"/>
-      </div>
-      <div class="fan-phone fan-p3">
-        <div class="fan-notch"></div>
-        <img src="/assets/imagens/passo-4-dados.jpg" alt="Seus dados"/>
-      </div>
-      <div class="fan-phone fan-p4">
-        <div class="fan-notch"></div>
-        <img src="/assets/imagens/passo-5-confirmacao.jpg" alt="Confirmação"/>
+    <div class="phone-wrap">
+      <div class="phone-frame">
+        <div class="phone" id="phoneMockup">
+          <div class="phone-notch"></div>
+          <div class="phone-screen">
+            <div class="phone-slide active" id="slide-0"><img src="/assets/imagens/passo-1-inicio.jpg" alt="Passo 1"/></div>
+            <div class="phone-slide" id="slide-1"><img src="/assets/imagens/passo-2-servico.jpg" alt="Passo 2"/></div>
+            <div class="phone-slide" id="slide-2"><img src="/assets/imagens/passo-3-horario.jpg" alt="Passo 3"/></div>
+            <div class="phone-slide" id="slide-3"><img src="/assets/imagens/passo-4-dados.jpg" alt="Passo 4"/></div>
+            <div class="phone-slide" id="slide-4"><img src="/assets/imagens/passo-5-confirmacao.jpg" alt="Passo 5"/></div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -536,30 +450,6 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
   </div>
 </section>
 
-<section class="gestor-section">
-  <div class="gestor-inner">
-    <div>
-      <div class="gestor-tag">Para voce, gestor</div>
-      <h2 class="gestor-h">Painel completo pra gerenciar tudo</h2>
-      <p class="gestor-sub">Veja seus agendamentos, clientes, faturamento e configure tudo direto pelo celular. Simples, rapido, sem complicacao.</p>
-    </div>
-    <div class="phone-wrap">
-      <div class="phone-frame">
-        <div class="phone" id="phoneMockupGestor">
-          <div class="phone-notch"></div>
-          <div class="phone-screen">
-            <div class="phone-slide active" id="g-slide-0"><img src="/assets/imagens/passo-1-inicio.jpg" alt="Passo 1"/></div>
-            <div class="phone-slide" id="g-slide-1"><img src="/assets/imagens/passo-2-servico.jpg" alt="Passo 2"/></div>
-            <div class="phone-slide" id="g-slide-2"><img src="/assets/imagens/passo-3-horario.jpg" alt="Passo 3"/></div>
-            <div class="phone-slide" id="g-slide-3"><img src="/assets/imagens/passo-4-dados.jpg" alt="Passo 4"/></div>
-            <div class="phone-slide" id="g-slide-4"><img src="/assets/imagens/passo-5-confirmacao.jpg" alt="Passo 5"/></div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
 <section class="close-section">
   <div class="close-inner">
     <h2 class="close-h">Comece hoje.</h2>
@@ -590,7 +480,7 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
   ];
   images.forEach(function(src){var i=new Image();i.src=src;});
 
-  var slides=document.querySelectorAll('#phoneMockupGestor .phone-slide');
+  var slides=document.querySelectorAll('.phone-slide');
   var current=0;
   function next(){
     slides[current].classList.remove('active');
