@@ -2439,10 +2439,10 @@ function renderGestao(empInicial){
       ? agsHoje.map(a=>{
           const passou = a.hora < horaAgora;
           const ehProx = prox && a.id === prox.id;
-          return `<div class="g-ag-row" style="${passou?'opacity:.45;':''}">
+          return `<div class="g-ag-row" style="${passou?'opacity:0.4;':''}">
             <div style="display:flex;align-items:baseline;gap:7px;">
               <span class="g-ag-hora">${a.hora.slice(0,5)}</span>
-              <span class="g-ag-nome" style="${ehProx?'font-weight:700;':''}">${escapeHtml(a.nome)}</span>
+              <span class="g-ag-nome">${escapeHtml(a.nome)}</span>
             </div>
             <div class="g-ag-serv">${escapeHtml(a.servicoNome||'')}</div>
           </div>`;
