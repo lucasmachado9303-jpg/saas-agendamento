@@ -227,22 +227,29 @@ nav{
 
 /* PAIN */
 .pain-section{
-  background:var(--ink-2);
-  border-top:1px solid var(--line);
-  border-bottom:1px solid var(--line);
-  padding:80px max(24px,5vw);
+  background:var(--gold);
+  position:relative;
+  padding:90px max(24px,5vw) 80px;
+}
+.pain-section::before{
+  content:'';
+  position:absolute;
+  top:-1px;left:-20%;
+  width:140%;height:55px;
+  background:var(--ink);
+  border-radius:0 0 50% 50%;
 }
 .pain-inner{max-width:700px;margin:0 auto;text-align:center;}
 .pain-q{
   font-family:'Bricolage Grotesque',system-ui,sans-serif;
   font-size:clamp(1.5rem,4vw,2.6rem);
   font-weight:700;letter-spacing:-0.03em;
-  color:var(--cream);line-height:1.35;margin-bottom:20px;
+  color:#000;line-height:1.35;margin-bottom:20px;
 }
-.pain-q em{font-style:normal;color:rgba(240,235,227,0.45);}
+.pain-q em{font-style:normal;color:#fff;}
 .pain-a{
   font-size:clamp(1rem,2vw,1.15rem);
-  color:var(--gold);font-weight:600;line-height:1.5;
+  color:rgba(0,0,0,0.7);font-weight:600;line-height:1.5;
 }
 
 /* HOW IT WORKS */
@@ -277,13 +284,13 @@ nav{
 .step-desc{font-size:1rem;color:rgba(10,10,9,0.5);line-height:1.65;}
 
 /* FEATURES */
-.features-section{background:var(--ink);padding:100px max(24px,5vw);}
+.features-section{background:var(--ink);padding:64px max(24px,5vw);}
 .features-inner{max-width:760px;margin:0 auto;}
 .features-section .section-h{color:var(--cream);}
-.feat-list{border-top:1px solid var(--line-mid);}
+.feat-list{border-top:1px solid rgba(232,149,42,0.25);}
 .feat-item{
-  padding:28px 0;
-  border-bottom:1px solid var(--line-mid);
+  padding:16px 0;
+  border-bottom:1px solid rgba(232,149,42,0.25);
 }
 .feat-name{
   font-family:'Bricolage Grotesque',system-ui,sans-serif;
@@ -426,6 +433,8 @@ nav{
   max-height:560px;width:auto;max-width:100%;
   display:block;
   vertical-align:bottom;
+  -webkit-mask-image:linear-gradient(to bottom, black 55%, transparent 100%);
+  mask-image:linear-gradient(to bottom, black 55%, transparent 100%);
 }
 .close-text{padding:80px 0 80px;text-align:left;}
 .close-h{
