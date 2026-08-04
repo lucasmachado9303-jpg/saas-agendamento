@@ -310,8 +310,13 @@ nav{
   max-width:1100px;margin:0 auto;
   display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:center;
 }
-.gestor-inner .phone-wrap{order:-1;}
-@media(max-width:800px){.gestor-inner{grid-template-columns:1fr;gap:48px;}.gestor-inner .phone-wrap{order:0;}}
+@media(max-width:800px){.gestor-inner{grid-template-columns:1fr;gap:48px;}}
+.gestor-img-wrap{display:flex;align-items:center;justify-content:center;}
+.gestor-img-wrap img{
+  width:100%;max-width:560px;height:auto;
+  filter:drop-shadow(0 24px 64px rgba(0,0,0,0.55));
+  animation:heroUp 0.9s cubic-bezier(0.22,1,0.36,1) 0.2s both;
+}
 .gestor-tag{
   display:inline-block;
   font-size:12px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;
@@ -582,20 +587,8 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
         <li>Configuração personalizada da sua página</li>
       </ul>
     </div>
-    <div class="phone-wrap">
-      <div class="phone-frame">
-        <div class="phone" id="phoneGestor">
-          <div class="phone-notch"></div>
-          <div class="phone-screen">
-            <div class="phone-slide active"><img src="/assets/imagens/passo-6.png" alt="Dashboard com resumo do dia"/></div>
-            <div class="phone-slide"><img src="/assets/imagens/passo-7.png" alt="Agenda completa de agendamentos"/></div>
-            <div class="phone-slide"><img src="/assets/imagens/passo-8.png" alt="Cadastro e lista de clientes"/></div>
-            <div class="phone-slide"><img src="/assets/imagens/passo-9.png" alt="Lembretes no WhatsApp"/></div>
-            <div class="phone-slide"><img src="/assets/imagens/passo-10.png" alt="Controle financeiro"/></div>
-            <div class="phone-slide"><img src="/assets/imagens/passo-11.png" alt="Configuração personalizada da página"/></div>
-          </div>
-        </div>
-      </div>
+    <div class="gestor-img-wrap">
+      <img src="/assets/imagens/telas-gestor.png" alt="Painel de gestão da agen+ em celulares e desktop"/>
     </div>
   </div>
 </section>
@@ -670,14 +663,6 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
   }
   setInterval(next,2000);
 
-  var slidesG=document.querySelectorAll('#phoneGestor .phone-slide');
-  var curG=0;
-  function nextG(){
-    slidesG[curG].classList.remove('active');
-    curG=(curG+1)%slidesG.length;
-    slidesG[curG].classList.add('active');
-  }
-  setTimeout(function(){ setInterval(nextG,2000); }, 1000);
 })();
 </script>
 </body>
