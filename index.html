@@ -488,6 +488,33 @@ footer{
 .hero-headline{animation:heroUp 0.85s cubic-bezier(0.22,1,0.36,1) both;}
 .hero-sub{animation:heroUp 0.85s cubic-bezier(0.22,1,0.36,1) 0.1s both;}
 .hero-cta-row{animation:heroUp 0.85s cubic-bezier(0.22,1,0.36,1) 0.2s both;}
+
+/* SCROLL REVEALS */
+.reveal{
+  opacity:0;
+  transition:opacity 0.7s cubic-bezier(0.16,1,0.3,1),transform 0.7s cubic-bezier(0.16,1,0.3,1);
+  will-change:opacity,transform;
+}
+.reveal.in{opacity:1;transform:none!important;}
+.rv-up{transform:translateY(28px);}
+.rv-left{transform:translateX(-32px);}
+.rv-right{transform:translateX(32px);}
+.rv-scale{transform:scale(0.94);}
+.rv-d1{transition-delay:0.07s;}
+.rv-d2{transition-delay:0.14s;}
+.rv-d3{transition-delay:0.21s;}
+.rv-d4{transition-delay:0.28s;}
+.rv-d5{transition-delay:0.35s;}
+.rv-d6{transition-delay:0.42s;}
+
+/* Button hover lift */
+.btn-amber:hover{transform:translateY(-2px);}
+.btn-amber-lg:hover{transform:translateY(-2px);}
+
+@media(prefers-reduced-motion:reduce){
+  .reveal{opacity:1!important;transform:none!important;transition:none!important;}
+  .btn-amber:hover,.btn-amber-lg:hover{transform:none;}
+}
 </style>
 </head>
 <body>
@@ -536,7 +563,7 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
 </section>
 
 <section class="pain-section">
-  <div class="pain-inner">
+  <div class="pain-inner reveal rv-up">
     <p class="pain-q">Quanto tempo você perde respondendo <em>"tem horário?"</em> pelo WhatsApp?</p>
     <p class="pain-a">Com a agen+, seus clientes agendam sozinhos. Você só gerencia.</p>
   </div>
@@ -544,19 +571,19 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
 
 <section class="how-section">
   <div class="how-inner">
-    <h2 class="section-h">Como funciona</h2>
+    <h2 class="section-h reveal rv-up">Como funciona</h2>
     <div class="steps">
-      <div class="step">
+      <div class="step reveal rv-up rv-d1">
         <div class="step-num">1</div>
         <div class="step-title">Configure em 10 minutos</div>
         <p class="step-desc">Cadastre seus serviços, preços e horários. Nenhum conhecimento técnico necessário.</p>
       </div>
-      <div class="step">
+      <div class="step reveal rv-up rv-d2">
         <div class="step-num">2</div>
         <div class="step-title">Compartilhe o link</div>
         <p class="step-desc">Coloque na bio do Instagram, nas redes sociais e compartilhe no WhatsApp. Um link para tudo.</p>
       </div>
-      <div class="step">
+      <div class="step reveal rv-up rv-d3">
         <div class="step-num">3</div>
         <div class="step-title">Receba os agendamentos</div>
         <p class="step-desc">Seus clientes escolhem o horário e agendam sozinhos. O agendamento cai direto no seu painel.</p>
@@ -567,29 +594,29 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
 
 <section class="features-section">
   <div class="features-inner">
-    <h2 class="section-h">O que você ganha</h2>
+    <h2 class="section-h reveal rv-up">O que você ganha</h2>
     <div class="feat-list">
-      <div class="feat-item">
+      <div class="feat-item reveal rv-up rv-d1">
         <div class="feat-name">Agendamentos 24h, sem você precisar responder</div>
         <p class="feat-desc">Sua página recebe pedidos 24h por dia. Você foca no atendimento, não nas mensagens.</p>
       </div>
-      <div class="feat-item">
+      <div class="feat-item reveal rv-up rv-d2">
         <div class="feat-name">Sua marca, do seu jeito</div>
         <p class="feat-desc">Logo, cor, foto, serviços e horários, tudo configurado por você, sem depender de ninguém.</p>
       </div>
-      <div class="feat-item">
+      <div class="feat-item reveal rv-up rv-d3">
         <div class="feat-name">Tudo num lugar só</div>
         <p class="feat-desc">Agendamentos do dia, bloqueio de horários e configurações num lugar só. Sem planilha.</p>
       </div>
-      <div class="feat-item">
+      <div class="feat-item reveal rv-up rv-d4">
         <div class="feat-name">Controle financeiro</div>
         <p class="feat-desc">Registre entradas, acompanhe o faturamento e veja o resumo do seu negócio.</p>
       </div>
-      <div class="feat-item">
+      <div class="feat-item reveal rv-up rv-d5">
         <div class="feat-name">Lembretes no WhatsApp</div>
         <p class="feat-desc">Mensagens de confirmação e lembrete prontas para enviar. Um toque e o cliente recebe tudo.</p>
       </div>
-      <div class="feat-item">
+      <div class="feat-item reveal rv-up rv-d6">
         <div class="feat-name">Bloco de notas</div>
         <p class="feat-desc">Anote tarefas e recados direto no painel, sem precisar de outro app.</p>
       </div>
@@ -599,7 +626,7 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
 
 <section class="gestor-section">
   <div class="gestor-inner">
-    <div>
+    <div class="reveal rv-left">
       <div class="gestor-tag">Para você, gestor</div>
       <h2 class="gestor-h">Tudo que você precisa para gerenciar sua agenda.</h2>
       <p class="gestor-sub">Abra o painel e veja tudo: agendamentos do dia, clientes, financeiro e lembretes. Sem planilha, sem app extra.</p>
@@ -614,7 +641,7 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
         <li>Configuração personalizada da sua página</li>
       </ul>
     </div>
-    <div class="gestor-img-wrap">
+    <div class="gestor-img-wrap reveal rv-right">
       <picture>
         <source srcset="/assets/imagens/telas-gestor.webp" type="image/webp"/>
         <img src="/assets/imagens/telas-gestor.png" alt="Painel de gestão da agen+ em celulares e desktop"/>
@@ -626,7 +653,7 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
 <section class="price-section">
   <div class="price-inner">
     <div class="price-tag">Preço simples, sem surpresa</div>
-    <div class="price-card">
+    <div class="price-card reveal rv-scale">
       <div class="price-plan">Plano único</div>
       <div class="price-value">
         <span class="price-currency">R$</span>
@@ -657,7 +684,7 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
         <img src="/assets/imagens/modelo-celular.png" alt="Gestora usando a agen+"/>
       </picture>
     </div>
-    <div class="close-text">
+    <div class="close-text reveal rv-up">
       <h2 class="close-h">Sua agenda online em 10 minutos.</h2>
       <p class="close-sub">Crie sua página de agendamentos em menos de 10 minutos.</p>
       <a href="/cadastro" class="btn btn-ink">Criar minha agenda grátis</a>
@@ -701,6 +728,19 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
     slides[current].classList.add('active');
   }
   setInterval(next,2500);
+
+  // Scroll reveals
+  var revealEls=document.querySelectorAll('.reveal');
+  if('IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}
+      });
+    },{threshold:0.12});
+    revealEls.forEach(function(el){io.observe(el);});
+  } else {
+    revealEls.forEach(function(el){el.classList.add('in');});
+  }
 
 })();
 </script>
