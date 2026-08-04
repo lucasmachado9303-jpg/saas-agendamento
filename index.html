@@ -310,7 +310,11 @@ nav{
   max-width:1200px;margin:0 auto;
   display:grid;grid-template-columns:1fr 1.4fr;gap:60px;align-items:center;
 }
-@media(max-width:800px){.gestor-inner{grid-template-columns:1fr;gap:48px;}}
+@media(max-width:800px){
+  .gestor-inner{grid-template-columns:1fr;gap:48px;}
+  .gestor-img-wrap{margin-left:calc(-1 * max(24px,5vw));margin-right:calc(-1 * max(24px,5vw));}
+  .gestor-img-wrap img{max-width:100%;}
+}
 .gestor-img-wrap{display:flex;align-items:center;justify-content:center;}
 .gestor-img-wrap img{
   width:100%;max-width:680px;height:auto;
