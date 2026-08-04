@@ -276,6 +276,7 @@ async function loadData(){
       // Mensagens de lembrete
       msgConfirmacao:       e.msg_confirmacao       || '',
       msgLembrete:          e.msg_lembrete          || '',
+      msgInativo:           e.msg_inativo           || '',
       // Relações
       servicos:             [],
       horariosPorMes:       {},
@@ -464,7 +465,7 @@ window.addEventListener('popstate', e => {
 
 function defaultEmpresa(){
   return {
-    slug:"", nome:"", fotoUrl:"", whatsapp:"", bloqueada:false,
+    slug:"", nome:"", fotoUrl:"", whatsapp:"", bloqueada:false, msgInativo:"",
     descricao:"", logo:"", corPrincipal:"#3d1f3a", textoDestaque:"",
     servicos:[], horariosPorMes:{}, bloqueios:[], botoes:[], cancelamentoHoras:0
   };
@@ -1404,6 +1405,7 @@ function renderGestao(empInicial){
   let novoAgState = null;
   let configurarSub = null; // null | 'servicos' | 'horarios' | 'personalizar' | 'mensagens'
   let _waMenuId = null; // id do agendamento com dropdown WA aberto
+  let _inativoWaMenuId = null; // id do cliente inativo com dropdown WA aberto
   let personalizarDirty = false;
   let mesHorario = mesKey(new Date());
   let novoBotaoState = null;
@@ -1777,14 +1779,21 @@ function renderGestao(empInicial){
         ? clientesInativos.map(c=>{
             const dias=_diasSemVoltar(c);
             return `
-              <div onclick="abrirPerfilCliente('${c.id}')" style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:0.5px solid #f2f2f7;cursor:pointer;" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background=''">
-                <div style="flex:1;min-width:0;">
+              <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:0.5px solid #f2f2f7;" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background=''">
+                <div onclick="abrirPerfilCliente('${c.id}')" style="flex:1;min-width:0;cursor:pointer;">
                   <div style="font-size:15px;font-weight:600;color:#1a1a1a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(c.nome)}</div>
                   <div style="font-size:13px;color:#8e8e93;margin-top:2px;">${telFmt(c.telefone)}</div>
                 </div>
-                <div style="text-align:center;min-width:48px;">
+                <div style="text-align:center;min-width:42px;">
                   <div style="font-size:18px;font-weight:700;color:${diaColor(dias)};">${dias}</div>
                   <div style="font-size:11px;color:#8e8e93;">dias</div>
+                </div>
+                <div style="position:relative;">
+                  <button onclick="event.stopPropagation();toggleWaMenuInativo('${c.id}')" class="ag-btn ag-btn-wa" style="padding:6px 10px;">${ICO_WA}</button>
+                  ${_inativoWaMenuId === c.id ? `<div style="position:absolute;top:calc(100% + 4px);right:0;min-width:130px;background:#fff;border:0.5px solid #d1d5db;border-radius:9px;overflow:hidden;z-index:50;box-shadow:0 4px 12px rgba(0,0,0,.10);" onclick="event.stopPropagation()">
+                    <button class="ag-wa-dd-item" onclick="waAcaoInativo('${c.id}','conversar','${emp.id}')">Conversar</button>
+                    <button class="ag-wa-dd-item" style="border-bottom:none;" onclick="waAcaoInativo('${c.id}','inativo','${emp.id}')">Inativo</button>
+                  </div>` : ''}
                 </div>
               </div>`;
           }).join('')
@@ -1893,8 +1902,9 @@ function renderGestao(empInicial){
       `;
     }
     if(configurarSub === 'mensagens'){
-      const msgConfirm = emp.msgConfirmacao || 'Olá, {nome}!\nConfirme seu agendamento de {servico} para hoje às {hora}.\nAcesse o link abaixo, faça o login e confirme ou cancele:\n{link}';
-      const msgLembrete = emp.msgLembrete || 'Olá, {nome}! Lembrando do seu agendamento de {servico} amanhã às {hora}. Até lá!';
+      const msgConfirm   = emp.msgConfirmacao || 'Olá, {nome}!\nConfirme seu agendamento de {servico} para {data} às {hora}.\nAcesse o link abaixo, faça o login e confirme ou cancele:\n{link}';
+      const msgLembrete  = emp.msgLembrete   || 'Olá, {nome}! \nPassando pra lembrar do seu agendamento! \n{servico}\n{data} - {hora}.\nAté lá!';
+      const msgInativoTx = emp.msgInativo    || 'Olá, {nome}! 😊\nFaz um tempinho desde o seu último atendimento.\nQue tal agendar um novo horário? Estamos à disposição.\nAgende pelo link:\n{link}';
       return `
         <div style="position:relative;display:flex;align-items:center;margin-bottom:16px;min-height:36px;">
           <button onclick="configurarIr(null)" style="background:none;border:none;font-size:14px;font-weight:600;color:#555;cursor:pointer;padding:0;font-family:inherit;display:flex;align-items:center;gap:4px;">&#8249; Voltar</button>
@@ -1903,7 +1913,7 @@ function renderGestao(empInicial){
         </div>
         <div style="display:flex;flex-direction:column;gap:14px;">
           <div style="background:#fff;border:0.5px solid #e4e4e7;border-radius:12px;padding:14px;">
-            <div style="font-size:13px;font-weight:700;color:#1a1a1a;margin-bottom:3px;">Mensagem de confirmação</div>
+            <div style="font-size:13px;font-weight:700;color:#1a1a1a;margin-bottom:3px;">Mensagem de confirmacao</div>
             <div style="font-size:12px;color:#8e8e93;margin-bottom:10px;">Enviada ao clicar em "Confirmação" no agendamento.</div>
             <textarea id="msgConfirmacao" rows="5" style="width:100%;font-family:inherit;font-size:13px;border:0.5px solid #d1d5db;border-radius:8px;padding:10px 12px;resize:none;line-height:1.5;color:#1a1a1a;background:#f9f9f7;">${escapeHtml(msgConfirm)}</textarea>
             <div style="font-size:11px;color:#8e8e93;margin-top:6px;">Variaveis: {nome} {hora} {servico} {data} {link}</div>
@@ -1913,6 +1923,12 @@ function renderGestao(empInicial){
             <div style="font-size:12px;color:#8e8e93;margin-bottom:10px;">Enviada ao clicar em "Lembrete" no agendamento.</div>
             <textarea id="msgLembrete" rows="5" style="width:100%;font-family:inherit;font-size:13px;border:0.5px solid #d1d5db;border-radius:8px;padding:10px 12px;resize:none;line-height:1.5;color:#1a1a1a;background:#f9f9f7;">${escapeHtml(msgLembrete)}</textarea>
             <div style="font-size:11px;color:#8e8e93;margin-top:6px;">Variaveis: {nome} {hora} {servico} {data}</div>
+          </div>
+          <div style="background:#fff;border:0.5px solid #e4e4e7;border-radius:12px;padding:14px;">
+            <div style="font-size:13px;font-weight:700;color:#1a1a1a;margin-bottom:3px;">Mensagem de cliente inativo</div>
+            <div style="font-size:12px;color:#8e8e93;margin-bottom:10px;">Enviada ao clicar em "Inativo" na aba Clientes inativos.</div>
+            <textarea id="msgInativo" rows="6" style="width:100%;font-family:inherit;font-size:13px;border:0.5px solid #d1d5db;border-radius:8px;padding:10px 12px;resize:none;line-height:1.5;color:#1a1a1a;background:#f9f9f7;">${escapeHtml(msgInativoTx)}</textarea>
+            <div style="font-size:11px;color:#8e8e93;margin-top:6px;">Variaveis: {nome} {link}</div>
           </div>
           <button class="btn" onclick="salvarMensagens('${emp.id}')">Salvar mensagens</button>
         </div>
@@ -3057,6 +3073,31 @@ function renderGestao(empInicial){
     _waMenuId = _waMenuId === agId ? null : agId;
     draw();
   };
+  window.toggleWaMenuInativo = (clienteId)=>{
+    _inativoWaMenuId = _inativoWaMenuId === clienteId ? null : clienteId;
+    draw();
+  };
+  window.waAcaoInativo = (clienteId, tipo, empId)=>{
+    const c = _clientes.find(x=>x.id===clienteId);
+    if(!c || !c.telefone){ _inativoWaMenuId=null; draw(); return; }
+    const waNum = '55' + c.telefone.replace(/\D/g,'').replace(/^0/,'');
+    let link;
+    if(tipo === 'conversar'){
+      link = `https://wa.me/${waNum}`;
+    } else {
+      const empObj = empresas.find(e=>e.id===empId);
+      const defaultMsg = 'Olá, {nome}! 😊\nFaz um tempinho desde o seu último atendimento.\nQue tal agendar um novo horário? Estamos à disposição.\nAgende pelo link:\n{link}';
+      const tmpl = empObj?.msgInativo || defaultMsg;
+      const linkPublico = 'https://' + (empObj?.slug||'') + '.agenplus.com.br';
+      const msg = tmpl
+        .replace(/{nome}/g, c.nome||'')
+        .replace(/{link}/g, linkPublico);
+      link = `https://wa.me/${waNum}?text=${encodeURIComponent(msg)}`;
+    }
+    _inativoWaMenuId = null;
+    draw();
+    window.open(link, '_blank', 'noopener,noreferrer');
+  };
   window.waAcao = (agId, tipo, empId)=>{
     const ag = agendamentos.find(a=>a.id===agId);
     if(!ag) return;
@@ -3067,8 +3108,8 @@ function renderGestao(empInicial){
     } else {
       const empObj = empresas.find(e=>e.id===empId);
       const defaultMsg = tipo === 'confirmacao'
-        ? 'Olá, {nome}!\nConfirme seu agendamento de {servico} para hoje às {hora}.\nAcesse o link abaixo, faça o login e confirme ou cancele:\n{link}'
-        : 'Olá, {nome}! Lembrando do seu agendamento de {servico} amanhã às {hora}. Até lá!';
+        ? 'Olá, {nome}!\nConfirme seu agendamento de {servico} para {data} às {hora}.\nAcesse o link abaixo, faça o login e confirme ou cancele:\n{link}'
+        : 'Olá, {nome}! \nPassando pra lembrar do seu agendamento! \n{servico}\n{data} - {hora}.\nAté lá!';
       const tmpl = (tipo === 'confirmacao' ? empObj?.msgConfirmacao : empObj?.msgLembrete) || defaultMsg;
       const dataFmt = ag.data ? new Date(ag.data+'T00:00:00').toLocaleDateString('pt-BR') : '';
       const linkConfirmar = 'https://' + (empObj?.slug||'') + '.agenplus.com.br/confirmar';
@@ -3091,14 +3132,16 @@ function renderGestao(empInicial){
   window.salvarMensagens = async (empId)=>{
     const c = document.getElementById('msgConfirmacao');
     const l = document.getElementById('msgLembrete');
+    const i = document.getElementById('msgInativo');
     if(!c || !l) return;
     const { error } = await supabaseClient.from('empresas').update({
       msg_confirmacao: c.value,
-      msg_lembrete:    l.value
+      msg_lembrete:    l.value,
+      msg_inativo:     i ? i.value : null
     }).eq('id', empId);
     if(error){ toast('Erro ao salvar. Tente novamente.','err'); return; }
     const empObj = empresas.find(e=>e.id===empId);
-    if(empObj){ empObj.msgConfirmacao = c.value; empObj.msgLembrete = l.value; }
+    if(empObj){ empObj.msgConfirmacao = c.value; empObj.msgLembrete = l.value; if(i) empObj.msgInativo = i.value; }
     toast('Mensagens salvas!','ok');
   };
   window.toggleLinkMenu = ()=>{ _linkMenuAberto = !_linkMenuAberto; draw(); };
