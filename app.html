@@ -2382,18 +2382,14 @@ function renderGestao(empInicial){
       }
     }
 
-    // Clientes inativos
-    const clientesMap = {};
-    ags.forEach(a => {
-      const chave = (a.nome||'') + '||' + (a.telefone||'');
-      if (!clientesMap[chave] || a.data > clientesMap[chave]) clientesMap[chave] = a.data;
-    });
-    function contarInativos(dias) {
-      const limite = new Date(); limite.setDate(limite.getDate() - dias);
-      const limiteStr = isoData(limite);
-      return Object.values(clientesMap).filter(ultima => ultima < limiteStr).length;
+    // Clientes inativos — usa a tabela de clientes cadastrados, igual à aba Clientes
+    function diasSemVoltarDash(c) {
+      const cAgs = agendamentos.filter(a => a.slug===emp.slug && a.nome===c.nome && a.telefone===c.telefone);
+      if(!cAgs.length) return null;
+      const ultima = cAgs.map(a=>a.data).sort().pop();
+      return Math.floor((new Date() - new Date(ultima+'T00:00:00')) / 86400000);
     }
-    const inativosAtual = contarInativos(_dashInativosFiltro);
+    const inativosAtual = _clientes.filter(c => { const d=diasSemVoltarDash(c); return d!==null && d>=_dashInativosFiltro; }).length;
 
     // Faturamento de hoje
     const fatHoje = _gFinLancamentos.filter(l=>l.tipo==='receita' && l.data===hoje)
@@ -2831,7 +2827,8 @@ function renderGestao(empInicial){
     if(m.editId){
       ({ error } = await supabaseClient.from('lancamentos_financeiros').update({ descricao: desc, valor: val }).eq('id', m.editId));
     } else {
-      const dataLanc = _gFinPeriodo==='dia' ? _gFinData : isoData(new Date());
+      const agObj = m.agId ? agendamentos.find(a=>a.id===m.agId) : null;
+      const dataLanc = agObj?.data || (_gFinPeriodo==='dia' ? _gFinData : isoData(new Date()));
       const payload = { empresa_id: emp.id, tipo: m.tipo, descricao: desc, valor: val, data: dataLanc };
       if(m.agId) payload.agendamento_id = m.agId;
       ({ error } = await supabaseClient.from('lancamentos_financeiros').insert(payload));
