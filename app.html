@@ -1425,7 +1425,7 @@ function renderGestao(empInicial){
   let _gFinAgLancados = new Set(); // IDs de agendamentos já lançados — nunca removido ao excluir lançamento
 
   // Estado de relatórios
-  let _relAba = 'financeiro'; // 'financeiro' | 'agendamentos'
+  let _relAba = null; // null = menu | 'financeiro' | 'agendamentos'
   let _relMes = isoData(new Date()).slice(0,7); // YYYY-MM
 
   // Estado de clientes
@@ -1492,11 +1492,30 @@ function renderGestao(empInicial){
           const ICO_PEN = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
           const ICO_X   = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>`;
           const ICO_WAG = `<svg width="11" height="11" viewBox="0 0 32 32" fill="currentColor"><path d="M16 0C7.163 0 0 7.163 0 16c0 2.82.736 5.469 2.027 7.773L0 32l8.418-2.002A15.94 15.94 0 0 0 16 32c8.837 0 16-7.163 16-16S24.837 0 16 0zm0 29.333a13.27 13.27 0 0 1-6.77-1.848l-.485-.29-5.001 1.19 1.226-4.866-.317-.5A13.267 13.267 0 0 1 2.667 16C2.667 8.636 8.636 2.667 16 2.667S29.333 8.636 29.333 16 23.364 29.333 16 29.333zm7.27-9.98c-.398-.199-2.354-1.162-2.719-1.295-.365-.133-.631-.199-.897.2-.265.398-1.03 1.295-1.263 1.56-.232.266-.465.3-.863.1-.398-.2-1.68-.619-3.2-1.974-1.183-1.054-1.981-2.355-2.213-2.753-.232-.398-.025-.613.174-.811.179-.178.398-.465.597-.697.2-.232.266-.398.398-.663.133-.266.067-.498-.033-.697-.1-.2-.897-2.163-1.23-2.962-.324-.778-.652-.672-.897-.685l-.764-.013c-.266 0-.697.1-1.063.498-.365.398-1.395 1.362-1.395 3.325s1.428 3.857 1.627 4.123c.2.265 2.812 4.292 6.815 6.02.953.411 1.696.657 2.276.841.956.305 1.827.262 2.515.159.767-.115 2.354-.962 2.686-1.892.333-.93.333-1.728.233-1.893-.1-.165-.365-.265-.763-.464z"/></svg>`;
-          const cardOpacity = ag.status==='cancelado' ? 'opacity:0.5;' : passadoHora ? 'opacity:0.4;' : '';
+          const cardStyle2 = ag.status==='cancelado' ? 'opacity:0.5;filter:grayscale(1);' : passadoHora ? 'opacity:0.5;filter:grayscale(1);' : '';
           const statusCor = ag.status==='confirmado' ? '#16a34a' : ag.status==='cancelado' ? '#dc2626' : '#6b7280';
           const statusLabel = ag.status==='confirmado' ? 'Confirmado' : ag.status==='cancelado' ? 'Cancelado' : 'Não confirmado';
           const nomeStyle = ag.status==='cancelado' ? 'text-decoration:line-through;' : '';
-          parts.push(`<div style="padding:10px 12px;margin-bottom:6px;border-radius:9px;border:0.5px solid #e4e4e7;background:var(--card);display:flex;flex-direction:column;gap:8px;${cardOpacity}">
+          const BTN = 'font-family:inherit;height:26px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:3px;';
+          const botoesPassado = `
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;">
+              <button style="${BTN}border:1px solid #d1d5db;background:#fff;color:#374151;" onclick="editarAgendamento('${ag.id}')">${ICO_PEN} Editar</button>
+              <button style="${BTN}border:1px solid #fca5a5;background:#fff;color:#dc2626;" onclick="excluirAgendamento('${ag.id}')">${ICO_X} Excluir</button>
+            </div>`;
+          const botoesAtivo = `
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;">
+              <button style="${BTN}border:1px solid #d1d5db;background:#fff;color:#374151;" onclick="editarAgendamento('${ag.id}')">${ICO_PEN} Editar</button>
+              <button style="${BTN}border:1px solid #fca5a5;background:#fff;color:#dc2626;" onclick="excluirAgendamento('${ag.id}')">${ICO_X} Excluir</button>
+              <div style="position:relative;">
+                <button style="${BTN}width:100%;border:1px solid #86efac;background:#f0fdf4;color:#16a34a;" onclick="toggleWaMenu('${ag.id}')">${ICO_WAG} WhatsApp</button>
+                ${_waMenuId === ag.id ? `<div style="position:absolute;top:calc(100% + 4px);right:0;min-width:130px;background:#fff;border:0.5px solid #d1d5db;border-radius:9px;overflow:hidden;z-index:50;box-shadow:0 4px 12px rgba(0,0,0,.10);">
+                  <button class="ag-wa-dd-item" onclick="waAcao('${ag.id}','conversar','${emp.id}')">Conversar</button>
+                  <button class="ag-wa-dd-item" onclick="waAcao('${ag.id}','confirmacao','${emp.id}')">Confirmação ${ag.confirmacaoEnviada ? '<span style="color:#22c55e">&#10003;</span>' : ''}</button>
+                  <button class="ag-wa-dd-item" onclick="waAcao('${ag.id}','lembrete','${emp.id}')">Lembrete ${ag.lembreteEnviado ? '<span style="color:#22c55e">&#10003;</span>' : ''}</button>
+                </div>` : ''}
+              </div>
+            </div>`;
+          parts.push(`<div style="padding:10px 12px;margin-bottom:6px;border-radius:9px;border:0.5px solid #e4e4e7;background:var(--card);display:flex;flex-direction:column;gap:8px;${cardStyle2}">
             <div>
               <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
                 <div style="font-weight:700;font-size:15px;${nomeStyle}">${h} — ${escapeHtml(ag.nome)}</div>
@@ -1504,18 +1523,7 @@ function renderGestao(empInicial){
               </div>
               <div class="muted" style="font-size:13px;margin-top:2px;">${escapeHtml(ag.servicoNome)}</div>
             </div>
-            <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;">
-              <button class="ag-btn ag-btn-edit" onclick="editarAgendamento('${ag.id}')">${ICO_PEN} Editar</button>
-              <button class="ag-btn ag-btn-cancel" onclick="excluirAgendamento('${ag.id}')">${ICO_X} Excluir</button>
-              <div style="position:relative;">
-                <button class="ag-btn ag-btn-wa" style="width:100%;" onclick="toggleWaMenu('${ag.id}')">${ICO_WAG} WhatsApp</button>
-                ${_waMenuId === ag.id ? `<div style="position:absolute;top:calc(100% + 4px);right:0;min-width:130px;background:#fff;border:0.5px solid #d1d5db;border-radius:9px;overflow:hidden;z-index:50;box-shadow:0 4px 12px rgba(0,0,0,.10);">
-                  <button class="ag-wa-dd-item" onclick="waAcao('${ag.id}','conversar','${emp.id}')">Conversar</button>
-                  <button class="ag-wa-dd-item" onclick="waAcao('${ag.id}','confirmacao','${emp.id}')">Confirmação ${ag.confirmacaoEnviada ? '<span style="color:#22c55e">&#10003;</span>' : ''}</button>
-                  <button class="ag-wa-dd-item" onclick="waAcao('${ag.id}','lembrete','${emp.id}')">Lembrete ${ag.lembreteEnviado ? '<span style="color:#22c55e">&#10003;</span>' : ''}</button>
-                </div>` : ''}
-              </div>
-            </div>
+            ${passadoHora || ag.status==='cancelado' ? botoesPassado : botoesAtivo}
           </div>`); continue;
         }
         if(bloqueado){
@@ -2776,26 +2784,50 @@ function renderGestao(empInicial){
 
   function relatoriosBody(){
     const MESES_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+    const fmtData = d => { const [y,m,dd]=d.split('-'); return `${dd}/${m}/${y}`; };
+    const ICO_DOWN = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`;
+    const ICO_CHEV = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#c7c7cc" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>`;
+
+    // MENU
+    if(!_relAba){
+      const mkCard = (onclick, bg, ico, titulo, desc) => `
+        <button onclick="${onclick}" style="width:100%;display:flex;align-items:center;gap:14px;padding:14px 16px;background:none;border:none;border-bottom:0.5px solid #f2f2f7;cursor:pointer;font-family:inherit;text-align:left;">
+          <div style="width:36px;height:36px;border-radius:10px;background:${bg};display:flex;align-items:center;justify-content:center;flex-shrink:0;">${ico}</div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:15px;font-weight:600;color:#1a1a1a;">${titulo}</div>
+            <div style="font-size:12px;color:#8e8e93;margin-top:2px;">${desc}</div>
+          </div>
+          ${ICO_CHEV}
+        </button>`;
+      const ICO_FIN = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>`;
+      const ICO_CAL2 = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`;
+      return `
+        <div style="display:flex;align-items:center;margin-bottom:16px;padding:0 4px;">
+          <div style="font-size:22px;font-weight:700;color:#1a1a1a;">Relatórios</div>
+        </div>
+        <div style="background:#fff;border-radius:22px;box-shadow:0 2px 16px rgba(0,0,0,0.06);overflow:hidden;">
+          ${mkCard("setRelAba('financeiro')",   '#f0fdf4', ICO_FIN,  'Financeiro',    'Receitas, despesas e saldo por mês')}
+          ${mkCard("setRelAba('agendamentos')", '#eff6ff', ICO_CAL2, 'Agendamentos',  'Todos os agendamentos do mês')}
+        </div>`;
+    }
+
+    // RELATÓRIO (financeiro ou agendamentos)
     const [ano, mes] = _relMes.split('-').map(Number);
     const mesLabel = MESES_PT[mes-1] + ' ' + ano;
-    const fmtData = d => { const [y,m,dd]=d.split('-'); return `${dd}/${m}/${y}`; };
     const prevMes = (()=>{ const d=new Date(ano,mes-2,1); return isoData(d).slice(0,7); })();
     const nextMes = (()=>{ const d=new Date(ano,mes,1);   return isoData(d).slice(0,7); })();
+    const titulo = _relAba==='financeiro' ? 'Financeiro' : 'Agendamentos';
 
-    const mesSelector = `
-      <div style="display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:20px;">
+    const cabecalho = `
+      <div style="position:relative;display:flex;align-items:center;margin-bottom:16px;min-height:36px;">
+        <button onclick="setRelAba(null)" style="background:none;border:none;font-size:14px;font-weight:600;color:#555;cursor:pointer;padding:0;font-family:inherit;display:flex;align-items:center;gap:4px;">&#8249; Voltar</button>
+        <div style="position:absolute;left:0;right:0;text-align:center;font-weight:700;font-size:16px;pointer-events:none;">${titulo}</div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:20px;">
         <button onclick="setRelMes('${prevMes}')" style="background:none;border:none;font-size:22px;cursor:pointer;color:#1a1a1a;padding:4px 10px;line-height:1;">&#8249;</button>
-        <div style="font-size:16px;font-weight:700;color:#1a1a1a;min-width:150px;text-align:center;">${mesLabel}</div>
+        <div style="font-size:15px;font-weight:700;color:#1a1a1a;min-width:140px;text-align:center;">${mesLabel}</div>
         <button onclick="setRelMes('${nextMes}')" style="background:none;border:none;font-size:22px;cursor:pointer;color:#1a1a1a;padding:4px 10px;line-height:1;">&#8250;</button>
       </div>`;
-
-    const tabs = `
-      <div style="display:flex;gap:0;background:#f2f2f7;border-radius:12px;padding:3px;margin-bottom:16px;">
-        <button onclick="setRelAba('financeiro')" style="flex:1;padding:7px 0;border-radius:9px;border:none;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;${_relAba==='financeiro'?'background:#fff;color:#1a1a1a;box-shadow:0 1px 4px rgba(0,0,0,0.1);':'background:transparent;color:#8e8e93;'}">Financeiro</button>
-        <button onclick="setRelAba('agendamentos')" style="flex:1;padding:7px 0;border-radius:9px;border:none;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;${_relAba==='agendamentos'?'background:#fff;color:#1a1a1a;box-shadow:0 1px 4px rgba(0,0,0,0.1);':'background:transparent;color:#8e8e93;'}">Agendamentos</button>
-      </div>`;
-
-    const ICO_DOWN = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`;
 
     let conteudo = '';
 
@@ -2804,7 +2836,6 @@ function renderGestao(empInicial){
       const receita = lancs.filter(l=>l.tipo==='receita').reduce((s,l)=>s+parseFloat(l.valor||0),0);
       const despesa = lancs.filter(l=>l.tipo==='despesa').reduce((s,l)=>s+parseFloat(l.valor||0),0);
       const saldo   = receita - despesa;
-
       const resumo = `
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px;">
           <div style="background:#fff;border:0.5px solid #eee;border-radius:10px;padding:10px;text-align:center;">
@@ -2820,37 +2851,29 @@ function renderGestao(empInicial){
             <div style="font-size:12px;font-weight:700;color:${saldo>=0?'#008000':'#FF0000'};font-variant-numeric:tabular-nums;">${gFinFmtMoeda(saldo)}</div>
           </div>
         </div>`;
-
       const linhas = lancs.length === 0
         ? `<div style="text-align:center;padding:28px;color:#aaa;font-size:13px;">Nenhum lançamento neste mês</div>`
-        : lancs.map(l=>{
-            const isIn = l.tipo==='receita';
-            return `<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:0.5px solid #f2f2f7;">
+        : lancs.map(l=>{ const isIn=l.tipo==='receita'; return `
+            <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:0.5px solid #f2f2f7;">
               <div style="flex:1;min-width:0;">
                 <div style="font-size:14px;font-weight:600;color:#1a1a1a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(l.descricao||'-')}</div>
                 <div style="font-size:12px;color:#8e8e93;margin-top:2px;">${fmtData(l.data)}</div>
               </div>
               <div style="font-size:14px;font-weight:700;color:${isIn?'#008000':'#FF0000'};font-variant-numeric:tabular-nums;flex-shrink:0;">${isIn?'+':'-'}${gFinFmtMoeda(l.valor)}</div>
-            </div>`;
-          }).join('');
-
+            </div>`; }).join('');
       const lista = lancs.length
         ? `<div style="background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.05);margin-bottom:16px;">${linhas}</div>`
         : `<div style="margin-bottom:16px;">${linhas}</div>`;
-
-      conteudo = resumo + lista + `
-        <button onclick="exportarRelCSV('financeiro')" style="width:100%;height:44px;border-radius:12px;border:1.5px solid #d1d5db;background:#fff;color:#1a1a1a;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;">${ICO_DOWN} Exportar CSV</button>`;
+      conteudo = resumo + lista + `<button onclick="exportarRelCSV('financeiro')" style="width:100%;height:44px;border-radius:12px;border:1.5px solid #d1d5db;background:#fff;color:#1a1a1a;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;">${ICO_DOWN} Exportar CSV</button>`;
     }
 
     if(_relAba === 'agendamentos'){
       const ags = agendamentos.filter(a=>a.slug===emp.slug && a.data.startsWith(_relMes)).sort((a,b)=>a.data.localeCompare(b.data)||a.hora.localeCompare(b.hora));
-
       const resumo = `
         <div style="background:#fff;border:0.5px solid #eee;border-radius:10px;padding:12px;text-align:center;margin-bottom:16px;">
           <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#8e8e93;margin-bottom:4px;">Total de agendamentos</div>
           <div style="font-size:28px;font-weight:700;color:#1a1a1a;line-height:1;">${ags.length}</div>
         </div>`;
-
       const linhas = ags.length === 0
         ? `<div style="text-align:center;padding:28px;color:#aaa;font-size:13px;">Nenhum agendamento neste mês</div>`
         : ags.map(a=>`
@@ -2864,22 +2887,13 @@ function renderGestao(empInicial){
                 <div style="font-size:12px;color:#8e8e93;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(a.servicoNome||'-')}</div>
               </div>
             </div>`).join('');
-
       const lista = ags.length
         ? `<div style="background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.05);margin-bottom:16px;">${linhas}</div>`
         : `<div style="margin-bottom:16px;">${linhas}</div>`;
-
-      conteudo = resumo + lista + `
-        <button onclick="exportarRelCSV('agendamentos')" style="width:100%;height:44px;border-radius:12px;border:1.5px solid #d1d5db;background:#fff;color:#1a1a1a;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;">${ICO_DOWN} Exportar CSV</button>`;
+      conteudo = resumo + lista + `<button onclick="exportarRelCSV('agendamentos')" style="width:100%;height:44px;border-radius:12px;border:1.5px solid #d1d5db;background:#fff;color:#1a1a1a;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;">${ICO_DOWN} Exportar CSV</button>`;
     }
 
-    return `
-      <div style="display:flex;align-items:center;margin-bottom:16px;padding:0 4px;">
-        <div style="font-size:22px;font-weight:700;color:#1a1a1a;">Relatórios</div>
-      </div>
-      ${tabs}
-      ${mesSelector}
-      ${conteudo}`;
+    return `${cabecalho}${conteudo}`;
   }
 
   window.gFinAbrirModal = (tipo)=>{
@@ -2998,7 +3012,7 @@ function renderGestao(empInicial){
     }
     if(c==='relatorios' && corner!=='relatorios'){
       corner=c; editandoId=null; novoAgState=null; configurarSub=null; _removendoServicoIdx=null; _waMenuId=null; _gFinModal=null; _notaModal=null; _linkMenuAberto=false;
-      _relMes = isoData(new Date()).slice(0,7);
+      _relAba=null; _relMes = isoData(new Date()).slice(0,7);
       draw();
       if(!_gFinLancamentos.length) gFinCarregar();
       return;
