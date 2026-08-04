@@ -43,12 +43,15 @@ body{
 nav{
   position:fixed;top:0;left:0;right:0;z-index:100;
   height:60px;
-  display:flex;align-items:center;justify-content:space-between;
-  padding:0 max(24px,5vw);
   background:rgba(10,10,9,0.88);
   backdrop-filter:blur(20px);
   -webkit-backdrop-filter:blur(20px);
   border-bottom:1px solid var(--line);
+}
+.nav-inner{
+  max-width:1200px;margin:0 auto;height:100%;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 max(24px,5vw);
 }
 .logo-link{display:flex;align-items:center;text-decoration:none;}
 .nav-logo{height:48px;width:auto;display:block;}
@@ -61,7 +64,7 @@ nav{
 .nav-actions{display:flex;align-items:center;gap:8px;}
 .nav-link{
   color:var(--muted-2);text-decoration:none;
-  font-size:14px;font-weight:500;padding:8px 14px;border-radius:99px;
+  font-size:14px;font-weight:500;padding:12px 14px;border-radius:99px;
   transition:color 0.15s,background 0.15s;
 }
 .nav-link:hover{color:var(--cream);background:rgba(240,235,227,0.06);}
@@ -129,7 +132,7 @@ nav{
 .hero-sub{
   font-size:clamp(1rem,2vw,1.2rem);
   line-height:1.7;color:var(--muted-2);
-  margin-bottom:36px;max-width:46ch;
+  margin-bottom:36px;max-width:52ch;
 }
 .hero-cta-row{display:flex;flex-direction:column;align-items:flex-start;gap:14px;}
 .risk-copy{font-size:13px;color:var(--muted);letter-spacing:0.01em;}
@@ -245,7 +248,7 @@ nav{
 /* HOW IT WORKS */
 .how-section{
   background:var(--cream);
-  padding:100px max(24px,5vw);
+  padding:80px max(24px,5vw);
 }
 .how-inner{max-width:1000px;margin:0 auto;}
 .section-h{
@@ -287,6 +290,7 @@ nav{
   font-size:clamp(1.1rem,3vw,1.4rem);font-weight:700;
   color:var(--cream);letter-spacing:-0.02em;margin-bottom:8px;
 }
+.feat-item:first-child .feat-name{font-size:clamp(1.3rem,3.5vw,1.7rem);}
 .feat-desc{font-size:0.95rem;color:var(--muted-2);line-height:1.65;max-width:58ch;}
 
 /* GESTOR SECTION */
@@ -294,13 +298,14 @@ nav{
   background:var(--ink-2);
   border-top:1px solid var(--line);
   border-bottom:1px solid var(--line);
-  padding:100px max(24px,5vw);
+  padding:80px max(24px,5vw);
 }
 .gestor-inner{
   max-width:1100px;margin:0 auto;
   display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:center;
 }
-@media(max-width:800px){.gestor-inner{grid-template-columns:1fr;gap:48px;}}
+.gestor-inner .phone-wrap{order:-1;}
+@media(max-width:800px){.gestor-inner{grid-template-columns:1fr;gap:48px;}.gestor-inner .phone-wrap{order:0;}}
 .gestor-tag{
   display:inline-block;
   font-size:12px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;
@@ -333,7 +338,7 @@ nav{
   background:var(--ink-3);
   border-top:1px solid var(--line);
   border-bottom:1px solid var(--line);
-  padding:100px max(24px,5vw);
+  padding:80px max(24px,5vw);
 }
 .price-inner{max-width:480px;margin:0 auto;text-align:center;}
 .price-tag{
@@ -457,10 +462,12 @@ FORM: Premium appointment ledger translated to dark web. Candidate 3 of 7. Seed 
 FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, and DESIGN.md.
 -->
 <nav>
-  <a href="/" class="logo-link"><img src="/logoagen+.png" alt="agen+" class="nav-logo"/></a>
-  <div class="nav-actions">
-    <a href="/login" class="nav-link">Entrar</a>
-    <a href="/cadastro" class="btn btn-amber">Criar minha agenda</a>
+  <div class="nav-inner">
+    <a href="/" class="logo-link"><img src="/logoagen+.png" alt="agen+" class="nav-logo"/></a>
+    <div class="nav-actions">
+      <a href="/login" class="nav-link">Entrar</a>
+      <a href="/cadastro" class="btn btn-amber">Criar minha agenda</a>
+    </div>
   </div>
 </nav>
 
@@ -664,7 +671,7 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
     curG=(curG+1)%slidesG.length;
     slidesG[curG].classList.add('active');
   }
-  setInterval(nextG,2000);
+  setTimeout(function(){ setInterval(nextG,2000); }, 1000);
 })();
 </script>
 </body>
