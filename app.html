@@ -1496,18 +1496,18 @@ function renderGestao(empInicial){
           const statusCor = ag.status==='confirmado' ? '#16a34a' : ag.status==='cancelado' ? '#dc2626' : '#6b7280';
           const statusLabel = ag.status==='confirmado' ? 'Confirmado' : ag.status==='cancelado' ? 'Cancelado' : 'Não confirmado';
           const nomeStyle = ag.status==='cancelado' ? 'text-decoration:line-through;' : '';
-          const BTN = 'font-family:inherit;height:26px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:3px;';
+          const BTN = 'font-family:inherit;height:28px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;border:0.5px solid #ccc;background:#fff;color:#555;';
           const botoesPassado = `
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;">
-              <button style="${BTN}border:1px solid #d1d5db;background:#fff;color:#374151;" onclick="editarAgendamento('${ag.id}')">${ICO_PEN} Editar</button>
-              <button style="${BTN}border:1px solid #fca5a5;background:#fff;color:#dc2626;" onclick="excluirAgendamento('${ag.id}')">${ICO_X} Excluir</button>
+              <button style="${BTN}" onclick="editarAgendamento('${ag.id}')">Editar</button>
+              <button style="${BTN}border-color:#fca5a5;color:#dc2626;" onclick="excluirAgendamento('${ag.id}')">Excluir</button>
             </div>`;
           const botoesAtivo = `
             <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;">
-              <button style="${BTN}border:1px solid #d1d5db;background:#fff;color:#374151;" onclick="editarAgendamento('${ag.id}')">${ICO_PEN} Editar</button>
-              <button style="${BTN}border:1px solid #fca5a5;background:#fff;color:#dc2626;" onclick="excluirAgendamento('${ag.id}')">${ICO_X} Excluir</button>
+              <button style="${BTN}" onclick="editarAgendamento('${ag.id}')">Editar</button>
+              <button style="${BTN}border-color:#fca5a5;color:#dc2626;" onclick="excluirAgendamento('${ag.id}')">Excluir</button>
               <div style="position:relative;">
-                <button style="${BTN}width:100%;border:1px solid #86efac;background:#f0fdf4;color:#16a34a;" onclick="toggleWaMenu('${ag.id}')">${ICO_WAG} WhatsApp</button>
+                <button style="${BTN}width:100%;border-color:#86efac;color:#16a34a;" onclick="toggleWaMenu('${ag.id}')">WhatsApp</button>
                 ${_waMenuId === ag.id ? `<div style="position:absolute;top:calc(100% + 4px);right:0;min-width:130px;background:#fff;border:0.5px solid #d1d5db;border-radius:9px;overflow:hidden;z-index:50;box-shadow:0 4px 12px rgba(0,0,0,.10);">
                   <button class="ag-wa-dd-item" onclick="waAcao('${ag.id}','conversar','${emp.id}')">Conversar</button>
                   <button class="ag-wa-dd-item" onclick="waAcao('${ag.id}','confirmacao','${emp.id}')">Confirmação ${ag.confirmacaoEnviada ? '<span style="color:#22c55e">&#10003;</span>' : ''}</button>
@@ -1886,6 +1886,7 @@ function renderGestao(empInicial){
           ${mkItem("configurarIr('personalizar')","#fdf4ff", ICO_LINK,  'Personalize seu link',     'Nome, textos, logo, cor e botões')}
           ${mkItem("configurarIr('mensagens')",    '#fff7ed', ICO_MSG,   'Configurar mensagens',     'Personalize mensagens automáticas')}
           ${mkItem("configurarIr('cancelamento')","#fff1f2", `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#e53935" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>`, 'Cancelamento', 'Prazo mínimo para cancelar agendamento')}
+          ${mkItem("configurarIr('relatorios')", '#f0fdf4', G_ICO.relatorios, 'Relatórios', 'Financeiro e agendamentos por mês')}
           ${mkItem("toggleLinkMenu()", '#f0f9ff', `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0ea5e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>`, 'Link público', 'Compartilhar, copiar ou abrir seu link', false)}
         </div>
         ${_linkMenuAberto ? `
@@ -1944,6 +1945,9 @@ function renderGestao(empInicial){
       `;
     }
 
+    if(configurarSub === 'relatorios'){
+      return relatoriosBody();
+    }
     if(configurarSub === 'cancelamento'){
       const horas = emp.cancelamentoHoras || 0;
       return `
@@ -2241,7 +2245,6 @@ function renderGestao(empInicial){
     { id: null,           label: 'Agenda',     ico: G_ICO.agendamentos },
     { id: 'clientes',     label: 'Clientes',   ico: G_ICO.clientes },
     { id: 'financeiro',   label: 'Financeiro', ico: G_ICO.financeiro },
-    { id: 'relatorios',   label: 'Relatórios', ico: G_ICO.relatorios },
     { id: 'configurar',   label: 'Configurar', ico: G_ICO.configurar },
   ];
 
@@ -2802,8 +2805,10 @@ function renderGestao(empInicial){
       const ICO_FIN = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>`;
       const ICO_CAL2 = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`;
       return `
-        <div style="display:flex;align-items:center;margin-bottom:16px;padding:0 4px;">
-          <div style="font-size:22px;font-weight:700;color:#1a1a1a;">Relatórios</div>
+        <div style="position:relative;display:flex;align-items:center;margin-bottom:16px;min-height:36px;">
+          <button onclick="configurarIr(null)" style="background:none;border:none;font-size:14px;font-weight:600;color:#555;cursor:pointer;padding:0;font-family:inherit;display:flex;align-items:center;gap:4px;">&#8249; Voltar</button>
+          <div style="position:absolute;left:0;right:0;text-align:center;font-weight:700;font-size:16px;pointer-events:none;">Relatórios</div>
+          <div></div>
         </div>
         <div style="background:#fff;border-radius:22px;box-shadow:0 2px 16px rgba(0,0,0,0.06);overflow:hidden;">
           ${mkCard("setRelAba('financeiro')",   '#f0fdf4', ICO_FIN,  'Financeiro',    'Receitas, despesas e saldo por mês')}
