@@ -152,12 +152,6 @@ nav{
   font-weight:800;line-height:1.04;letter-spacing:-0.035em;
   color:var(--cream);margin-bottom:24px;
 }
-@supports (background-clip:text) and (animation:shinePass 1s){
-  .hero-headline{
-    -webkit-background-clip:text;background-clip:text;
-    -webkit-text-fill-color:transparent;
-  }
-}
 .hero-sub{
   font-size:clamp(1rem,2vw,1.2rem);
   line-height:1.7;color:var(--muted-2);
@@ -515,33 +509,9 @@ footer{
   to{opacity:1;transform:translateY(0);}
 }
 
-/* OVERDRIVE — headline shine */
-@property --shine-x{syntax:'<percentage>';inherits:false;initial-value:-40%;}
-@keyframes shinePass{
-  0%{--shine-x:-40%;}
-  65%{--shine-x:130%;}
-  100%{--shine-x:130%;}
-}
-.hero-headline{
-  background:linear-gradient(
-    108deg,
-    var(--cream) 0%,
-    var(--cream) calc(var(--shine-x) - 18%),
-    rgba(255,252,230,0.98) calc(var(--shine-x) - 4%),
-    #fffef0 var(--shine-x),
-    rgba(255,252,230,0.98) calc(var(--shine-x) + 10%),
-    var(--cream) calc(var(--shine-x) + 26%),
-    var(--cream) 100%
-  );
-  animation:heroUp 0.85s cubic-bezier(0.22,1,0.36,1) both,
-            shinePass 9s ease-in-out 1.6s infinite;
-}
+.hero-headline{animation:heroUp 0.85s cubic-bezier(0.22,1,0.36,1) both;}
 .hero-sub{animation:heroUp 0.85s cubic-bezier(0.22,1,0.36,1) 0.1s both;}
 .hero-cta-row{animation:heroUp 0.85s cubic-bezier(0.22,1,0.36,1) 0.2s both;}
-
-@media(prefers-reduced-motion:reduce){
-  .hero-headline{animation:none;background:none;-webkit-text-fill-color:var(--cream);}
-}
 
 /* DELIGHT — cursor em "tem horario?" */
 @keyframes blink{0%,100%{opacity:1;}50%{opacity:0;}}
@@ -837,7 +807,7 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
     for(var hi=0;hi<hN;hi++){
       var hcx=Math.random()*heroCanvas.width;
       var hcy=Math.random()*heroCanvas.height;
-      hpts.push({x:hcx,y:hcy,ox:hcx,oy:hcy,vx:(Math.random()-.5)*.4,vy:(Math.random()-.5)*.4,r:Math.random()*1.4+.4,o:Math.random()*.18+.07});
+      hpts.push({x:hcx,y:hcy,ox:hcx,oy:hcy,vx:(Math.random()-.5)*.4,vy:(Math.random()-.5)*.4,r:Math.random()*2.5+1,o:Math.random()*.3+.15});
     }
     var heroSection=heroCanvas.parentElement;
     heroSection.addEventListener('mousemove',function(e){
