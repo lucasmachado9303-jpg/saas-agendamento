@@ -1887,24 +1887,7 @@ function renderGestao(empInicial){
           ${mkItem("configurarIr('mensagens')",    '#fff7ed', ICO_MSG,   'Configurar mensagens',     'Personalize mensagens automáticas')}
           ${mkItem("configurarIr('cancelamento')","#fff1f2", `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#e53935" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>`, 'Cancelamento', 'Prazo mínimo para cancelar agendamento')}
           ${mkItem("configurarIr('relatorios')", '#f0fdf4', G_ICO.relatorios, 'Relatórios', 'Financeiro e agendamentos por mês')}
-          ${mkItem("toggleLinkMenu()", '#f0f9ff', `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0ea5e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>`, 'Link público', 'Compartilhar, copiar ou abrir seu link', false)}
-        </div>
-        ${_linkMenuAberto ? `
-        <div style="background:#fff;border-radius:14px;overflow:hidden;border:0.5px solid #e5e5ea;margin-top:8px;">
-          <button onclick="linkAcao('abrir')" style="display:flex;align-items:center;gap:12px;padding:12px 16px;width:100%;background:#fff;border:none;border-bottom:0.5px solid #f0f0f0;cursor:pointer;font-family:inherit;" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background='#fff'">
-            <div style="width:30px;height:30px;border-radius:8px;background:#f0fdf4;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></div>
-            <span style="font-size:13px;font-weight:600;color:#1a1a1a;">Abrir</span>
-          </button>
-          <button onclick="linkAcao('copiar')" style="display:flex;align-items:center;gap:12px;padding:12px 16px;width:100%;background:#fff;border:none;border-bottom:0.5px solid #f0f0f0;cursor:pointer;font-family:inherit;" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background='#fff'">
-            <div style="width:30px;height:30px;border-radius:8px;background:#eff6ff;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></div>
-            <span style="font-size:13px;font-weight:600;color:#1a1a1a;">Copiar</span>
-          </button>
-          <button onclick="linkAcao('compartilhar')" style="display:flex;align-items:center;gap:12px;padding:12px 16px;width:100%;background:#fff;border:none;cursor:pointer;font-family:inherit;" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background='#fff'">
-            <div style="width:30px;height:30px;border-radius:8px;background:#f5f3ff;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></div>
-            <span style="font-size:13px;font-weight:600;color:#1a1a1a;">Compartilhar</span>
-          </button>
-        </div>` : ''}
-        <div style="display:none">
+          ${mkItem("configurarIr('link')", '#f0f9ff', `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0ea5e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>`, 'Link público', 'Compartilhar, copiar ou abrir seu link', false)}
         </div>
         <div style="text-align:center;margin-top:40px;">
           <button onclick="${sairAction}" style="background:none;border:none;font-size:13px;font-weight:500;color:#8e8e93;cursor:pointer;padding:8px 16px;font-family:inherit;">Sair da conta</button>
@@ -1945,6 +1928,28 @@ function renderGestao(empInicial){
       `;
     }
 
+    if(configurarSub === 'link'){
+      const url = `https://${emp.slug}.agenplus.com.br`;
+      const mkLinkItem = (onclick, bg, stroke, icoPath, label, divider=true) => `
+        <button onclick="${onclick}" style="display:flex;align-items:center;gap:14px;padding:0 20px;min-height:64px;background:#fff;border:none;text-align:left;cursor:pointer;width:100%;font-family:inherit;transition:background 150ms ease;" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background='#fff'">
+          <div style="width:34px;height:34px;border-radius:10px;background:${bg};display:flex;align-items:center;justify-content:center;flex-shrink:0;">${icoPath}</div>
+          <div style="flex:1;font-size:16px;font-weight:600;color:#1a1a1a;">${label}</div>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#c7c7cc" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+        ${divider ? `<div style="height:1px;background:#f2f2f7;margin-left:68px;"></div>` : ''}`;
+      return `
+        <div style="position:relative;display:flex;align-items:center;margin-bottom:16px;min-height:36px;">
+          <button onclick="configurarIr(null)" style="background:none;border:none;font-size:14px;font-weight:600;color:#555;cursor:pointer;padding:0;font-family:inherit;display:flex;align-items:center;gap:4px;">&#8249; Voltar</button>
+          <div style="position:absolute;left:0;right:0;text-align:center;font-weight:700;font-size:16px;pointer-events:none;">Link público</div>
+          <div></div>
+        </div>
+        <div style="background:#f7f7f7;border-radius:12px;padding:10px 16px;margin-bottom:14px;word-break:break-all;font-size:13px;color:#8e8e93;font-weight:500;">${url}</div>
+        <div style="background:#fff;border-radius:22px;box-shadow:0 2px 16px rgba(0,0,0,0.06);overflow:hidden;">
+          ${mkLinkItem(`linkAcao('abrir')`,         '#f0fdf4', '#16a34a', `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>`, 'Abrir')}
+          ${mkLinkItem(`linkAcao('copiar')`,        '#eff6ff', '#3b82f6', `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`, 'Copiar link')}
+          ${mkLinkItem(`linkAcao('compartilhar')`,  '#f5f3ff', '#8b5cf6', `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>`, 'Compartilhar', false)}
+        </div>`;
+    }
     if(configurarSub === 'relatorios'){
       return relatoriosBody();
     }
