@@ -419,12 +419,24 @@ nav{
 /* CLOSE / FINAL CTA */
 .close-section{
   background:var(--gold);
-  padding:100px max(24px,5vw);
+  padding:0 max(24px,5vw) 0;
+  overflow:hidden;
 }
-.close-inner{max-width:640px;margin:0 auto;text-align:center;}
+.close-inner{
+  max-width:1000px;margin:0 auto;
+  display:grid;grid-template-columns:1fr 1fr;
+  gap:40px;align-items:flex-end;
+}
+.close-model{display:flex;align-items:flex-end;justify-content:center;}
+.close-model img{
+  max-height:520px;width:auto;max-width:100%;
+  display:block;
+  mix-blend-mode:multiply;
+}
+.close-text{padding:80px 0 80px;text-align:left;}
 .close-h{
   font-family:'Bricolage Grotesque',system-ui,sans-serif;
-  font-size:clamp(2.5rem,8vw,5.5rem);
+  font-size:clamp(2rem,5vw,4rem);
   font-weight:800;letter-spacing:-0.04em;line-height:1.03;
   color:#000;margin-bottom:20px;
 }
@@ -433,6 +445,12 @@ nav{
   margin-bottom:40px;line-height:1.5;
 }
 .risk-dark{font-size:13px;color:rgba(0,0,0,0.45);margin-top:16px;}
+@media(max-width:640px){
+  .close-section{padding:0 max(24px,5vw) 0;}
+  .close-inner{grid-template-columns:1fr;}
+  .close-model{display:none;}
+  .close-text{padding:60px 0;text-align:center;}
+}
 
 /* FOOTER */
 footer{
@@ -625,9 +643,15 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
 
 <section class="close-section">
   <div class="close-inner">
-    <h2 class="close-h">Sua agenda online em 10 minutos.</h2>
-    <p class="close-sub">Crie sua página de agendamentos em menos de 10 minutos.</p>
-    <a href="/cadastro" class="btn btn-ink">Criar minha agenda grátis</a>
+    <div class="close-model">
+      <img src="/assets/imagens/modelo-celular.png" alt="Gestora usando a agen+"/>
+    </div>
+    <div class="close-text">
+      <h2 class="close-h">Sua agenda online em 10 minutos.</h2>
+      <p class="close-sub">Crie sua página de agendamentos em menos de 10 minutos.</p>
+      <a href="/cadastro" class="btn btn-ink">Criar minha agenda grátis</a>
+      <p class="risk-dark">7 dias grátis &middot; Sem cartão de crédito</p>
+    </div>
   </div>
 </section>
 
@@ -665,7 +689,7 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
     current=(current+1)%slides.length;
     slides[current].classList.add('active');
   }
-  setInterval(next,2000);
+  setInterval(next,2500);
 
 })();
 </script>
