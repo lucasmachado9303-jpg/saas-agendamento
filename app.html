@@ -1437,7 +1437,7 @@ function renderGestao(empInicial){
   let _clientePerfilEditando = false;
   // Inativos
   let _clientesAba = 'todos'; // 'todos' | 'inativos'
-  let _clientesInativosFiltro = 30;
+  let _clientesInativosFiltro = 15;
   let _clientesBannerDismissed = false;
 
   // Estado do bloco de notas (dashboard)
@@ -1754,12 +1754,7 @@ function renderGestao(empInicial){
 
     // Calcular inativos
     const inativos30 = _clientes.filter(c => { const d=_diasSemVoltar(c); return d!==null && d>=30; });
-    const clientesInativos = _clientes.filter(c => {
-      const d=_diasSemVoltar(c);
-      if(d===null) return false;
-      if(_clientesInativosFiltro===45) return d>=45;
-      return d>=_clientesInativosFiltro && d<_clientesInativosFiltro+15;
-    });
+    const clientesInativos = _clientes.filter(c => { const d=_diasSemVoltar(c); return d!==null && d>=_clientesInativosFiltro; });
 
     // Banner
     const banner = (!_clientesBannerDismissed && inativos30.length && _clientesAba==='todos') ? `
