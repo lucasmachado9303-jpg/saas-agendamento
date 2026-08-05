@@ -4384,6 +4384,44 @@ function renderMasterPanel(){
       .m-form-title { font-size:20px; font-weight:800; color:var(--ink); margin-bottom:24px; }
       .m-form-actions { display:flex; flex-direction:column; gap:8px; margin-top:24px; }
 
+      /* Edit form novo */
+      .m-emp-header { display:flex; align-items:center; gap:14px; margin-bottom:24px; }
+      .m-emp-avatar { width:50px; height:50px; border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:18px; font-weight:800; color:#fff; flex-shrink:0; }
+      .m-emp-header-name { font-size:21px; font-weight:800; color:var(--ink); letter-spacing:-0.4px; }
+      .m-emp-header-link { font-size:12px; color:var(--ink-soft); margin-top:2px; }
+      .m-section { background:var(--paper); border:1px solid var(--line); border-radius:14px; overflow:hidden; margin-bottom:12px; }
+      .m-section-title { font-size:11px; font-weight:700; color:var(--ink-soft); text-transform:uppercase; letter-spacing:0.06em; padding:12px 16px 0; }
+      .m-field-row { padding:10px 16px; border-bottom:0.5px solid var(--line); }
+      .m-field-row:last-child { border-bottom:none; }
+      .m-field-lbl { font-size:11px; font-weight:700; color:var(--ink-soft); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:4px; }
+      .m-field-inp { width:100%; border:none; outline:none; font-size:15px; color:var(--ink); font-family:inherit; background:transparent; padding:0; }
+      .m-field-inp::placeholder { color:var(--ink-soft); }
+      .m-field-hint { font-size:11px; color:var(--ink-soft); margin-top:3px; }
+      .m-link-row { display:flex; align-items:center; gap:3px; }
+      .m-link-pfx { font-size:13px; color:var(--ink-soft); white-space:nowrap; }
+      .m-link-inp { flex:1; border:none; outline:none; font-size:15px; color:var(--accent); font-family:inherit; background:transparent; font-weight:600; min-width:0; }
+      .m-status-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; padding:12px 16px; }
+      .m-status-opt { border:2px solid var(--line); border-radius:12px; padding:10px 6px; text-align:center; cursor:pointer; transition:all .14s; background:var(--paper); }
+      .m-status-opt:hover { border-color:#c4b5c0; }
+      .m-status-opt.s-ativa     { border-color:#16a34a; background:#dcfce7; }
+      .m-status-opt.s-trial     { border-color:#f59e0b; background:#fef3c7; }
+      .m-status-opt.s-bloqueada { border-color:#dc2626; background:#fee2e2; }
+      .m-status-dot { width:8px; height:8px; border-radius:50%; margin:0 auto 5px; background:var(--line); }
+      .m-status-opt.s-ativa     .m-status-dot { background:#16a34a; }
+      .m-status-opt.s-trial     .m-status-dot { background:#f59e0b; }
+      .m-status-opt.s-bloqueada .m-status-dot { background:#dc2626; }
+      .m-status-lbl { font-size:13px; font-weight:700; color:var(--ink-soft); }
+      .m-status-opt.s-ativa     .m-status-lbl { color:#16a34a; }
+      .m-status-opt.s-trial     .m-status-lbl { color:#b45309; }
+      .m-status-opt.s-bloqueada .m-status-lbl { color:#dc2626; }
+      .m-status-sub { font-size:11px; color:var(--ink-soft); margin-top:2px; }
+      .m-btn-save { width:100%; height:46px; background:var(--accent); color:#fff; border:none; border-radius:12px; font-size:15px; font-weight:700; cursor:pointer; font-family:inherit; margin-bottom:10px; }
+      .m-acoes-sec { display:flex; gap:8px; }
+      .m-btn-sec { flex:1; height:38px; border:1.5px solid var(--line); border-radius:10px; background:var(--paper); font-size:13px; font-weight:600; color:var(--ink-soft); cursor:pointer; font-family:inherit; }
+      .m-btn-sec:hover { border-color:#c4b5c0; color:var(--ink); }
+      .m-btn-del { flex:1; height:38px; border:1.5px solid #fca5a5; border-radius:10px; background:var(--paper); font-size:13px; font-weight:600; color:#dc2626; cursor:pointer; font-family:inherit; }
+      .m-btn-del:hover { background:#fee2e2; }
+
       /* Color swatches */
       .m-swatches { display:grid; grid-template-columns:repeat(6,1fr); gap:8px; margin-bottom:10px; }
       .m-sw { width:100%; aspect-ratio:1; border-radius:8px; cursor:pointer; border:3px solid transparent; box-sizing:border-box; transition:border-color .1s; }
@@ -4514,30 +4552,62 @@ function renderMasterPanel(){
 
     // Formulario de editar — substitui a lista
     if(masterDrawerMode === 'editar' && editing){
+      const initiais = (editing.nome||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+      const stAtual = _empStatus(editing);
+      const diasTrial = editing.trialExpiraEm ? _diasTrialRestantes(editing) : null;
+      const statusSub = {
+        ativa:     'acesso completo',
+        trial:     diasTrial !== null ? `${diasTrial}d restantes` : 'periodo de teste',
+        bloqueada: 'sem acesso',
+      };
       drawMasterShell(`
         <button class="m-back" onclick="masterFecharDrawer()">${ICO_BACK} Voltar</button>
-        <div class="m-form-title">${escapeHtml(editing.nome)}</div>
-        <div class="field"><label>Nome</label><input value="${escapeAttr(editing.nome)}" onchange="masterUpd('nome',this.value)"/></div>
-        <div class="field"><label>WhatsApp</label><input type="tel" inputmode="numeric" maxlength="16" value="${escapeAttr(fmtTelStr(editing.whatsapp))}" onkeydown="if(event.key.length===1&&!/[0-9]/.test(event.key))event.preventDefault()" oninput="maskTel(this);masterUpd('whatsapp',this.value)"/></div>
-        <div class="field">
-          <label>Link público</label>
-          <div style="display:flex;gap:6px;align-items:center;">
-            <span style="font-size:13px;color:var(--ink-soft);white-space:nowrap;">https://</span>
-            <input id="masterSlugInput" value="${escapeAttr(editing.slug)}" placeholder="seu-link" style="flex:1;" oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9-]/g,'')"/>
-            <span style="font-size:13px;color:var(--ink-soft);white-space:nowrap;">.agenplus.com.br</span>
+        <div class="m-emp-header">
+          <div class="m-emp-avatar" style="background:${escapeAttr(editing.corPrincipal||'#3d1f3a')}">${initiais}</div>
+          <div>
+            <div class="m-emp-header-name">${escapeHtml(editing.nome)}</div>
+            <div class="m-emp-header-link">${escapeHtml(editing.slug)}.agenplus.com.br</div>
           </div>
-          <div style="font-size:11px;color:var(--ink-soft);margin-top:4px;">Alterar o link quebra o endereço antigo.</div>
         </div>
-        <div class="field">
-          <label>E-mail do gestor</label>
-          <input id="masterEmailInput" type="email" value="${escapeAttr(editing.gestorEmail||'')}"/>
-          <button class="btn ghost" style="width:100%;margin-top:6px;" onclick="masterSalvarEmail()">Salvar e-mail</button>
+        <div class="m-section">
+          <div class="m-section-title">Dados</div>
+          <div class="m-field-row">
+            <div class="m-field-lbl">Nome</div>
+            <input class="m-field-inp" id="editNome" value="${escapeAttr(editing.nome)}"/>
+          </div>
+          <div class="m-field-row">
+            <div class="m-field-lbl">WhatsApp</div>
+            <input class="m-field-inp" id="editWhats" type="tel" inputmode="numeric" maxlength="16" value="${escapeAttr(fmtTelStr(editing.whatsapp))}" onkeydown="if(event.key.length===1&&!/[0-9]/.test(event.key))event.preventDefault()" oninput="maskTel(this)"/>
+          </div>
+          <div class="m-field-row">
+            <div class="m-field-lbl">Link publico</div>
+            <div class="m-link-row">
+              <span class="m-link-pfx">https://</span>
+              <input class="m-link-inp" id="masterSlugInput" value="${escapeAttr(editing.slug)}" oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9-]/g,'')"/>
+              <span class="m-link-pfx">.agenplus.com.br</span>
+            </div>
+            <div class="m-field-hint">Alterar o link quebra o endereco antigo.</div>
+          </div>
+          <div class="m-field-row">
+            <div class="m-field-lbl">E-mail do gestor</div>
+            <input class="m-field-inp" id="masterEmailInput" type="email" value="${escapeAttr(editing.gestorEmail||'')}"/>
+          </div>
         </div>
-        <div class="m-form-actions">
-          <button class="btn" style="width:100%;" onclick="masterSalvarEdicao()">Salvar alterações</button>
-          <button class="btn ghost" style="width:100%;" onclick="masterToggleBloqueio()">${_empStatus(editing)==='bloqueada'?'Desbloquear empresa':'Bloquear empresa'}</button>
-          <button class="btn ghost" style="width:100%;" onclick="masterRedefinirSenha()">Redefinir senha do gestor</button>
-          <button class="btn danger" style="width:100%;" onclick="masterExcluir('${editing.slug}')">Excluir empresa</button>
+        <div class="m-section">
+          <div class="m-section-title">Status da conta</div>
+          <div class="m-status-grid">
+            ${['trial','ativa','bloqueada'].map(s=>`
+              <div class="m-status-opt${stAtual===s?' s-'+s:''}" onclick="masterSelStatus(this,'${s}')">
+                <div class="m-status-dot"></div>
+                <div class="m-status-lbl">${s.charAt(0).toUpperCase()+s.slice(1)}</div>
+                <div class="m-status-sub">${statusSub[s]}</div>
+              </div>`).join('')}
+          </div>
+        </div>
+        <button class="m-btn-save" onclick="masterSalvarEdicao()">Salvar alteracoes</button>
+        <div class="m-acoes-sec">
+          <button class="m-btn-sec" onclick="masterRedefinirSenha()">Redefinir senha</button>
+          <button class="m-btn-del" onclick="masterExcluir('${editing.slug}')">Excluir empresa</button>
         </div>
       `);
       return;
@@ -4847,15 +4917,32 @@ function renderMasterPanel(){
       if(data?.email){ emp.gestorEmail = data.email; emp.gestorUserId = data.id; draw(); }
     }
   };
+  window.masterSelStatus = (el, novoStatus) => {
+    document.querySelectorAll('.m-status-opt').forEach(o => o.className = 'm-status-opt');
+    el.classList.add('s-' + novoStatus);
+  };
   window.masterSalvarEdicao = async ()=>{
     const e = empresas.find(x=>x.slug===editingSlug);
     if(!e){ editingSlug=null; draw(); return; }
 
-    const novoSlug = (document.getElementById('masterSlugInput')?.value||'').trim();
-    const RESERVADOS = ['api','app','admin','master','login','logout','static','assets','sw','manifest','index','null','undefined','favicon'];
+    // Ler campos do novo formulario
+    const novoNome  = (document.getElementById('editNome')?.value||'').trim();
+    const novoWhats = (document.getElementById('editWhats')?.value||'').trim();
+    const novoSlug  = (document.getElementById('masterSlugInput')?.value||'').trim();
+    const novoEmail = (document.getElementById('masterEmailInput')?.value||'').trim();
+    const selOpt    = document.querySelector('.m-status-opt.s-ativa,.m-status-opt.s-trial,.m-status-opt.s-bloqueada');
+    const novoStatus = selOpt ? ['ativa','trial','bloqueada'].find(s=>selOpt.classList.contains('s-'+s)) : null;
 
+    if(novoNome) e.nome = novoNome;
+    if(novoWhats !== undefined){ let _wd = novoWhats.replace(/\D/g,''); if(_wd.startsWith('55') && _wd.length>11) _wd=_wd.slice(2); if(_wd.startsWith('0')) _wd=_wd.slice(1); e.whatsapp = _wd; }
+    if(novoStatus && novoStatus !== e.status){
+      e.status = novoStatus;
+      e.bloqueada = novoStatus === 'bloqueada';
+    }
+
+    const RESERVADOS = ['api','app','admin','master','login','logout','static','assets','sw','manifest','index','null','undefined','favicon'];
     if(novoSlug && novoSlug !== editingSlug){
-      if(!novoSlug || !/^[a-z0-9][a-z0-9-]*[a-z0-9]$|^[a-z0-9]$/.test(novoSlug)){
+      if(!/^[a-z0-9][a-z0-9-]*[a-z0-9]$|^[a-z0-9]$/.test(novoSlug)){
         toast('Link inválido. Use apenas letras minúsculas, números e hífens.','err'); return;
       }
       if(RESERVADOS.includes(novoSlug)){ toast('Esse link é reservado pelo sistema.','err'); return; }
@@ -4865,7 +4952,6 @@ function renderMasterPanel(){
       e.slug = novoSlug;
       await saveEmpresas();
 
-      // Move imagens no Storage para o novo caminho
       for(const bucket of ['logos','backgrounds']){
         const file = bucket==='logos' ? 'logo.jpg' : 'background.jpg';
         try{
@@ -4879,13 +4965,25 @@ function renderMasterPanel(){
           }
         }catch(_){}
       }
-      await saveEmpresas();
-
       agendamentos = agendamentos.map(a=> a.slug===antigoSlug ? {...a, slug:novoSlug} : a);
       editingSlug = novoSlug;
-      toast('Link alterado com sucesso!','ok');
     }
 
+    await saveEmpresas();
+
+    // Salvar email se mudou
+    if(novoEmail && novoEmail !== e.gestorEmail && e.gestorUserId){
+      const resp = await fetch('/api/update-email', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ user_id: e.gestorUserId, email: novoEmail })
+      });
+      const json = await resp.json().catch(()=>({}));
+      if(!resp.ok){ toast(json.error||'Dados salvos, mas erro ao atualizar e-mail.','err'); }
+      else { e.gestorEmail = novoEmail; }
+    }
+
+    toast('Alteracoes salvas!','ok');
     editingSlug = null; masterDrawerMode = null; draw();
   };
   window.masterUpd = async (field,val)=>{
