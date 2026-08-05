@@ -4064,7 +4064,11 @@ window.tentarLoginUnificado = async ()=>{
   const senha = document.getElementById('loginSenha').value;
   if(!email || !senha){ toast('Preencha e-mail e senha.','err'); return; }
 
+  const btn = document.querySelector('button[onclick="tentarLoginUnificado()"]');
+  if(btn){ btn.disabled = true; btn.textContent = 'Entrando...'; }
+
   const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password: senha });
+  if(error && btn){ btn.disabled = false; btn.textContent = 'Entrar com email'; }
   if(error){ toast('E-mail ou senha incorretos.','err'); return; }
 
   const { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', data.user.id).single();
