@@ -4478,8 +4478,8 @@ function renderMasterPanel(){
       .m-acoes-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; padding:12px 16px; }
       .m-acao-btn { display:flex; align-items:center; gap:10px; padding:11px 12px; border:1.5px solid var(--line); border-radius:12px; background:var(--paper); cursor:pointer; font-family:inherit; transition:border-color .12s,background .12s; text-align:left; }
       .m-acao-btn:hover { border-color:#c4b5c0; background:#faf9fc; }
-      .m-acao-btn.danger { border-color:#fca5a5; }
-      .m-acao-btn.danger:hover { background:#fee2e2; }
+      .m-acao-btn.danger { border-color:var(--line); }
+      .m-acao-btn.danger:hover { background:#fff5f5; }
       .m-acao-icon { width:32px; height:32px; border-radius:9px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
       .m-acao-label { font-size:13px; font-weight:700; color:var(--ink); line-height:1.2; }
       .m-acao-sub { font-size:11px; color:var(--ink-soft); margin-top:2px; }
@@ -4787,7 +4787,6 @@ function renderMasterPanel(){
         drawMasterShell(`
           <button class="m-back" onclick="masterVoltarEmpresas()">${ICO_BACK} Empresas</button>
           <div class="m-det-header">
-            <div class="m-det-av" style="background:${cor}">${empIniciais(e.nome)}</div>
             <div class="m-det-info">
               <div class="m-det-nome">${escapeHtml(e.nome)}</div>
               <div class="m-det-slug">${e.slug}.agenplus.com.br</div>
