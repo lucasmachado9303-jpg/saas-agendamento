@@ -18,7 +18,7 @@ export default async function middleware(request) {
   apiUrl.pathname = '/api/subdomain-page';
 
   const res = await fetch(apiUrl.toString(), {
-    headers: { host },
+    headers: { host, 'x-original-url': url.toString() },
   });
 
   return new Response(await res.text(), {

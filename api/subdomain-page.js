@@ -58,7 +58,7 @@ module.exports = async function handler(req, res) {
   // Monta titulo e descricao
   const empNome   = emp ? emp.nome : 'Agen+';
   const ogImage   = (emp && emp.logo) ? emp.logo : 'https://saas-agendamento-seven.vercel.app/icon.svg';
-  const currentUrl = `https://${host}${req.url}`;
+  const currentUrl = req.headers['x-original-url'] || `https://${host}${req.url}`;
 
   let ogTitle, ogDesc;
   if (ag) {
