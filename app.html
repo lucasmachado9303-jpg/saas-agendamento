@@ -1563,6 +1563,7 @@ function renderGestao(empInicial){
   // Perfil do cliente
   let _clientePerfilId = null;
   let _clientePerfilEditando = false;
+  let _excluirClienteModal = null; // id do cliente aguardando confirmação de exclusão
   // Inativos
   let _clientesAba = 'todos'; // 'todos' | 'inativos'
   let _clientesInativosFiltro = 30;
@@ -1838,8 +1839,19 @@ function renderGestao(empInicial){
         <div style="font-size:15px;font-weight:700;color:#1a1a1a;margin-bottom:10px;padding:0 4px;">Histórico</div>
         <div style="background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.06);">${histRows}</div>`;
 
+      const modalExcluir = _excluirClienteModal === c.id ? `
+        <div style="position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9999;display:flex;align-items:flex-end;justify-content:center;">
+          <div style="background:#fff;border-radius:22px 22px 0 0;padding:24px 20px 32px;width:100%;max-width:480px;box-shadow:0 -4px 32px rgba(0,0,0,0.15);">
+            <div style="font-size:17px;font-weight:700;color:#1a1a1a;margin-bottom:6px;">Excluir cliente</div>
+            <div style="font-size:14px;color:#8e8e93;margin-bottom:20px;">O que deseja fazer com os agendamentos deste cliente?</div>
+            <button onclick="confirmarExcluirCliente('${c.id}', false)" style="width:100%;padding:14px;border-radius:12px;border:1.5px solid #e5e5ea;background:#fff;font-size:15px;font-weight:600;color:#1a1a1a;cursor:pointer;font-family:inherit;margin-bottom:10px;">Manter os agendamentos</button>
+            <button onclick="confirmarExcluirCliente('${c.id}', true)" style="width:100%;padding:14px;border-radius:12px;border:none;background:#ff3b30;font-size:15px;font-weight:600;color:#fff;cursor:pointer;font-family:inherit;margin-bottom:14px;">Excluir cliente e agendamentos</button>
+            <button onclick="cancelarExcluirCliente()" style="width:100%;padding:12px;border-radius:12px;border:none;background:none;font-size:15px;font-weight:600;color:#8e8e93;cursor:pointer;font-family:inherit;">Cancelar</button>
+          </div>
+        </div>` : '';
+
       if(_clientePerfilEditando) {
-        return `
+        return modalExcluir + `
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;padding:0 4px;">
             <button onclick="toggleEditarPerfil()" style="background:none;border:none;color:#1a1a1a;cursor:pointer;padding:4px;display:flex;align-items:center;">${ICO_BACK}</button>
             <div style="font-size:18px;font-weight:700;color:#1a1a1a;">Editar cliente</div>
@@ -3578,10 +3590,24 @@ function renderGestao(empInicial){
     _clientes.sort((a,b)=>a.nome.localeCompare(b.nome));
     _clientePerfilEditando=false; draw(); toast('Cliente atualizado.','ok');
   };
-  window.excluirClienteDoPerfil = async (id)=>{
-    if(!confirm('Excluir este cliente?')) return;
+  window.excluirClienteDoPerfil = (id)=>{
+    _excluirClienteModal = id; draw();
+  };
+  window.cancelarExcluirCliente = ()=>{
+    _excluirClienteModal = null; draw();
+  };
+  window.confirmarExcluirCliente = async (id, excluirAgs)=>{
+    _excluirClienteModal = null;
+    if(excluirAgs){
+      const idsAg = agendamentos.filter(a=>a.slug===emp.slug && _clientes.find(c=>c.id===id && c.nome===a.nome && c.telefone===a.telefone)).map(a=>a.id);
+      if(idsAg.length){
+        const { error: eAg } = await supabaseClient.from('agendamentos').delete().in('id', idsAg);
+        if(eAg){ toast('Erro ao excluir agendamentos.','err'); return; }
+        agendamentos = agendamentos.filter(a=>!idsAg.includes(a.id));
+      }
+    }
     const { error } = await supabaseClient.from('clientes').delete().eq('id', id);
-    if(error){ toast('Erro ao excluir.','err'); return; }
+    if(error){ toast('Erro ao excluir cliente.','err'); return; }
     _clientes = _clientes.filter(c=>c.id!==id);
     _clientePerfilId=null; _clientePerfilEditando=false;
     draw(); toast('Cliente removido.','ok');
