@@ -3334,8 +3334,8 @@ function renderGestao(empInicial){
     if(!nome){ toast('Preencha o nome.','err'); return; }
     if(telRaw.length!==11 || telRaw[2]!=='9'){ toast('Telefone inválido. Ex: (11) 98765-4321','err'); return; }
     const telefone = '0'+telRaw;
-    const existe = _clientes.find(c=>c.nome===nome && c.telefone===telefone);
-    if(existe){ toast('Já existe um cliente com este nome e telefone.','err'); return; }
+    const existe = _clientes.find(c=>c.telefone===telefone);
+    if(existe){ toast(`Já existe um cliente com este número: ${existe.nome}.`,'err'); return; }
     const { data, error } = await supabaseClient.from('clientes').insert({ empresa_id:emp.id, nome, telefone }).select().single();
     if(error){ toast('Erro ao cadastrar cliente.','err'); return; }
     _clientes.push({ id:data.id, nome:data.nome, telefone:data.telefone });
@@ -3348,6 +3348,8 @@ function renderGestao(empInicial){
     if(!nome){ toast('Preencha o nome.','err'); return; }
     if(telRaw.length!==11 || telRaw[2]!=='9'){ toast('Telefone inválido. Ex: (11) 98765-4321','err'); return; }
     const telefone = '0'+telRaw;
+    const existe = _clientes.find(c=>c.telefone===telefone && c.id!==id);
+    if(existe){ toast(`Já existe um cliente com este número: ${existe.nome}.`,'err'); return; }
     const { error } = await supabaseClient.from('clientes').update({ nome, telefone }).eq('id', id);
     if(error){ toast('Erro ao salvar.','err'); return; }
     const c = _clientes.find(x=>x.id===id);
