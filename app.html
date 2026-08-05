@@ -3215,7 +3215,6 @@ function renderGestao(empInicial){
       data, hora, token_curto: gerarTokenCurto()
     }).select().single();
     if(error){ toast(friendlyError(error,'Erro ao agendar.'),'err'); return; }
-    console.log('[ag insert] token_curto do banco:', row.token_curto);
     agendamentos.push({
       id:row.id, slug:emp.slug,
       nome:row.nome_cliente, telefone:row.telefone,
