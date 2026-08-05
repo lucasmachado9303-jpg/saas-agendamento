@@ -2699,11 +2699,7 @@ function renderGestao(empInicial){
     _gFinCarregando = false;
     if(!error && data){
       _gFinLancamentos = data;
-      const lsKey = 'gfin_lancados_'+emp.id;
-      const saved = JSON.parse(localStorage.getItem(lsKey)||'[]');
-      saved.forEach(id=>_gFinAgLancados.add(id));
-      data.filter(l=>l.agendamento_id).forEach(l=>_gFinAgLancados.add(l.agendamento_id));
-      localStorage.setItem(lsKey, JSON.stringify([..._gFinAgLancados]));
+      _gFinAgLancados = new Set(data.filter(l=>l.agendamento_id).map(l=>l.agendamento_id));
     }
     if(corner === 'financeiro' || corner === 'dashboard') draw();
   }
@@ -3199,7 +3195,6 @@ function renderGestao(empInicial){
       ({ error } = await supabaseClient.from('lancamentos_financeiros').insert(payload));
       if(!error && m.agId){
         _gFinAgLancados.add(m.agId);
-        localStorage.setItem('gfin_lancados_'+emp.id, JSON.stringify([..._gFinAgLancados]));
       }
     }
     if(error){ toast('Erro ao salvar: '+error.message,'err'); _gFinModal=m; draw(); return; }
