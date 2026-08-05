@@ -1549,7 +1549,7 @@ function renderGestao(empInicial){
   let _gFinAgLancados = new Set(); // IDs de agendamentos já lançados — nunca removido ao excluir lançamento
 
   // Estado de relatórios
-  let _relAba = null; // null = menu | 'financeiro' | 'agendamentos'
+  let _relAba = null; // null = menu | 'financeiro' | 'agendamentos' | 'clientes' | 'servicos'
   let _relMes = isoData(new Date()).slice(0,7); // YYYY-MM
 
   // Estado de clientes
@@ -2929,8 +2929,10 @@ function renderGestao(empInicial){
           </div>
           ${ICO_CHEV}
         </button>`;
-      const ICO_FIN = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>`;
-      const ICO_CAL2 = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`;
+      const ICO_FIN   = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>`;
+      const ICO_CAL2  = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`;
+      const ICO_PESS  = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`;
+      const ICO_SERV  = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ea580c" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>`;
       return `
         <div style="position:relative;display:flex;align-items:center;margin-bottom:16px;min-height:36px;">
           <button onclick="configurarIr(null)" style="background:none;border:none;font-size:14px;font-weight:600;color:#555;cursor:pointer;padding:0;font-family:inherit;display:flex;align-items:center;gap:4px;">&#8249; Voltar</button>
@@ -2938,8 +2940,10 @@ function renderGestao(empInicial){
           <div></div>
         </div>
         <div style="background:#fff;border-radius:22px;box-shadow:0 2px 16px rgba(0,0,0,0.06);overflow:hidden;">
-          ${mkCard("setRelAba('financeiro')",   '#f0fdf4', ICO_FIN,  'Financeiro',    'Receitas, despesas e saldo por mês')}
-          ${mkCard("setRelAba('agendamentos')", '#eff6ff', ICO_CAL2, 'Agendamentos',  'Todos os agendamentos do mês')}
+          ${mkCard("setRelAba('financeiro')",   '#f0fdf4', ICO_FIN,   'Financeiro',    'Receitas, despesas e saldo por mês')}
+          ${mkCard("setRelAba('agendamentos')", '#eff6ff', ICO_CAL2,  'Agendamentos',  'Todos os agendamentos do mês')}
+          ${mkCard("setRelAba('clientes')",     '#f5f3ff', ICO_PESS,  'Clientes',      'Clientes ativos e frequência no mês')}
+          ${mkCard("setRelAba('servicos')",     '#fff7ed', ICO_SERV,  'Serviços',      'Serviços mais agendados no mês')}
         </div>`;
     }
 
@@ -2948,7 +2952,7 @@ function renderGestao(empInicial){
     const mesLabel = MESES_PT[mes-1] + ' ' + ano;
     const prevMes = (()=>{ const d=new Date(ano,mes-2,1); return isoData(d).slice(0,7); })();
     const nextMes = (()=>{ const d=new Date(ano,mes,1);   return isoData(d).slice(0,7); })();
-    const titulo = _relAba==='financeiro' ? 'Financeiro' : 'Agendamentos';
+    const titulo = _relAba==='financeiro' ? 'Financeiro' : _relAba==='agendamentos' ? 'Agendamentos' : _relAba==='clientes' ? 'Clientes' : 'Serviços';
 
     const cabecalho = `
       <div style="position:relative;display:flex;align-items:center;margin-bottom:16px;min-height:36px;">
@@ -3023,6 +3027,84 @@ function renderGestao(empInicial){
         ? `<div style="background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.05);margin-bottom:16px;">${linhas}</div>`
         : `<div style="margin-bottom:16px;">${linhas}</div>`;
       conteudo = resumo + lista + `<button onclick="exportarRelCSV('agendamentos')" style="width:100%;height:44px;border-radius:12px;border:1.5px solid #d1d5db;background:#fff;color:#1a1a1a;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;">${ICO_DOWN} Exportar CSV</button>`;
+    }
+
+    if(_relAba === 'clientes'){
+      const ags = agendamentos.filter(a=>a.slug===emp.slug && a.data.startsWith(_relMes));
+      // agrupa por cliente (nome+telefone)
+      const mapa = {};
+      ags.forEach(a=>{
+        const key = (a.telefone||a.nome||'').trim() || a.nome;
+        if(!mapa[key]) mapa[key] = { nome: a.nome||'-', telefone: a.telefone||'', count: 0 };
+        mapa[key].count++;
+      });
+      const lista_cli = Object.values(mapa).sort((a,b)=>b.count-a.count);
+      const totalAgs  = ags.length;
+      const totalCli  = lista_cli.length;
+      const resumo = `
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;">
+          <div style="background:#fff;border:0.5px solid #eee;border-radius:10px;padding:12px;text-align:center;">
+            <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#8e8e93;margin-bottom:4px;">Clientes ativos</div>
+            <div style="font-size:28px;font-weight:700;color:#7c3aed;line-height:1;">${totalCli}</div>
+          </div>
+          <div style="background:#fff;border:0.5px solid #eee;border-radius:10px;padding:12px;text-align:center;">
+            <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#8e8e93;margin-bottom:4px;">Agendamentos</div>
+            <div style="font-size:28px;font-weight:700;color:#1a1a1a;line-height:1;">${totalAgs}</div>
+          </div>
+        </div>`;
+      const linhas_cli = lista_cli.length === 0
+        ? `<div style="text-align:center;padding:28px;color:#aaa;font-size:13px;">Nenhum cliente neste mês</div>`
+        : lista_cli.map(c=>`
+            <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:0.5px solid #f2f2f7;">
+              <div style="width:34px;height:34px;border-radius:50%;background:#f5f3ff;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;font-weight:700;color:#7c3aed;">${(c.nome||'?')[0].toUpperCase()}</div>
+              <div style="flex:1;min-width:0;">
+                <div style="font-size:14px;font-weight:600;color:#1a1a1a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(c.nome)}</div>
+                <div style="font-size:12px;color:#8e8e93;">${c.telefone||'sem telefone'}</div>
+              </div>
+              <div style="font-size:13px;font-weight:700;color:#7c3aed;flex-shrink:0;">${c.count} ${c.count===1?'vez':'vezes'}</div>
+            </div>`).join('');
+      const bloco_cli = lista_cli.length
+        ? `<div style="background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.05);margin-bottom:16px;">${linhas_cli}</div>`
+        : `<div style="margin-bottom:16px;">${linhas_cli}</div>`;
+      conteudo = resumo + bloco_cli;
+    }
+
+    if(_relAba === 'servicos'){
+      const ags = agendamentos.filter(a=>a.slug===emp.slug && a.data.startsWith(_relMes));
+      const total = ags.length;
+      // agrupa por serviço
+      const mapa_svc = {};
+      ags.forEach(a=>{
+        const key = a.servicoNome||'Sem serviço';
+        if(!mapa_svc[key]) mapa_svc[key] = { nome: key, count: 0 };
+        mapa_svc[key].count++;
+      });
+      const lista_svc = Object.values(mapa_svc).sort((a,b)=>b.count-a.count);
+      const maxCount  = lista_svc.length ? lista_svc[0].count : 1;
+      const resumo_svc = `
+        <div style="background:#fff;border:0.5px solid #eee;border-radius:10px;padding:12px;text-align:center;margin-bottom:16px;">
+          <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#8e8e93;margin-bottom:4px;">Total de agendamentos</div>
+          <div style="font-size:28px;font-weight:700;color:#1a1a1a;line-height:1;">${total}</div>
+        </div>`;
+      const linhas_svc = lista_svc.length === 0
+        ? `<div style="text-align:center;padding:28px;color:#aaa;font-size:13px;">Nenhum agendamento neste mês</div>`
+        : lista_svc.map((s,i)=>{
+            const pct = total>0 ? Math.round(s.count/total*100) : 0;
+            const barW = Math.round(s.count/maxCount*100);
+            return `
+            <div style="padding:12px 14px;border-bottom:0.5px solid #f2f2f7;">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+                <div style="font-size:14px;font-weight:600;color:#1a1a1a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0;">${escapeHtml(s.nome)}</div>
+                <div style="flex-shrink:0;margin-left:10px;font-size:13px;font-weight:700;color:#ea580c;">${s.count} <span style="font-weight:400;color:#8e8e93;font-size:12px;">(${pct}%)</span></div>
+              </div>
+              <div style="height:5px;border-radius:99px;background:#f2f2f7;overflow:hidden;">
+                <div style="height:100%;border-radius:99px;background:#ea580c;width:${barW}%;transition:width .3s;"></div>
+              </div>
+            </div>`;}).join('');
+      const bloco_svc = lista_svc.length
+        ? `<div style="background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.05);margin-bottom:16px;">${linhas_svc}</div>`
+        : `<div style="margin-bottom:16px;">${linhas_svc}</div>`;
+      conteudo = resumo_svc + bloco_svc;
     }
 
     return `${cabecalho}${conteudo}`;
