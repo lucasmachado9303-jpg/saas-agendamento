@@ -520,20 +520,21 @@ window.maskTel = (input)=>{
   input.value = fmtTelStr(input.value);
 };
 
-let _pollInterval = null;
 let _pollFn = null;
 function iniciarPolling(fn){
   pararPolling();
   _pollFn = fn;
-  _pollInterval = setInterval(async ()=>{
-    if(document.hidden) return;
-    await loadData();
-    if(_pollFn) _pollFn();
-  }, 30000);
 }
 function pararPolling(){
-  if(_pollInterval){ clearInterval(_pollInterval); _pollInterval = null; _pollFn = null; }
+  _pollFn = null;
 }
+// Recarrega dados quando o usuário volta para a aba
+document.addEventListener('visibilitychange', async ()=>{
+  if(!document.hidden && _pollFn){
+    await loadData();
+    _pollFn();
+  }
+});
 
 // ---------- INIT ----------
 let _appInitialized = false;
