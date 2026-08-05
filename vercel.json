@@ -6,7 +6,7 @@
     {
       "source": "/",
       "has": [{ "type": "host", "value": "(?<slug>(?!www)[^.]+)\\.agenplus\\.com\\.br" }],
-      "destination": "/app.html"
+      "destination": "/api/subdomain-page"
     },
     {
       "source": "/:path*",
