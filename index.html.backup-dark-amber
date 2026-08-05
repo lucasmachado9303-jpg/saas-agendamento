@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<script>(function(){var h=location.hostname.split('.');if(h.length>=4&&h[0]!=='www'){var pg=location.pathname.replace(/^\/+|\/+$/g,'');var q=pg&&pg!=='app.html'?'?_p='+encodeURIComponent(pg):'';location.replace('/app.html'+q+location.hash);}})();</script>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<title>agen+ — Agendamentos no link da bio</title>
+<meta name="description" content="Crie sua página de agendamentos em minutos. Coloque na bio, compartilhe o link e deixe seus clientes agendarem sozinhos."/>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&display=swap" rel="stylesheet">
+<link rel="manifest" href="/manifest.json"/>
+<link rel="icon" type="image/svg+xml" href="/icon.svg"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+
+:root{
+  --ink:#0A0A09;
+  --ink-2:#141210;
+  --ink-3:#1C1A18;
+  --cream:#F0EBE3;
+  --cream-2:#E6DED5;
+  --muted:#706C67;
+  --muted-2:#9E9990;
+  --gold:#E8952A;
+  --gold-deep:#CC7E1C;
+  --line:rgba(240,235,227,0.07);
+  --line-mid:rgba(240,235,227,0.12);
+  --r:10px;
+}
+
+body{
+  font-family:system-ui,-apple-system,'Segoe UI',sans-serif;
+  background:var(--ink);
+  color:var(--cream);
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+  line-height:1.6;
+}
+
+/* NAV */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  height:60px;
+  background:rgba(10,10,9,0.88);
+  backdrop-filter:blur(20px);
+  -webkit-backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--line);
+}
+.nav-inner{
+  max-width:1200px;margin:0 auto;height:100%;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 max(24px,5vw);
+}
+.logo-link{display:flex;align-items:center;text-decoration:none;}
+.nav-logo{height:48px;width:auto;display:block;}
+.footer-logo{height:36px;width:auto;display:block;opacity:0.5;}
+.wordmark{
+  font-family:'Bricolage Grotesque',system-ui,sans-serif;
+  font-weight:800;font-size:22px;letter-spacing:-0.04em;
+  color:var(--cream-2);text-decoration:none;
+}
+.nav-actions{display:flex;align-items:center;gap:8px;}
+.nav-link{
+  color:var(--muted-2);text-decoration:none;
+  font-size:14px;font-weight:500;padding:12px 14px;border-radius:99px;
+  transition:color 0.15s,background 0.15s;
+}
+.nav-link:hover{color:var(--cream);background:rgba(240,235,227,0.06);}
+
+/* BUTTONS */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;
+  border:none;border-radius:99px;font-weight:700;cursor:pointer;
+  text-decoration:none;transition:background 0.15s,transform 0.1s;
+  font-family:inherit;
+}
+.btn:active{transform:scale(0.97);}
+.btn-amber{
+  background:var(--gold);color:#000;
+  padding:10px 22px;font-size:14px;
+}
+.btn-amber:hover{background:var(--gold-deep);}
+.btn-amber-lg{
+  background:var(--gold);color:#000;
+  padding:15px 32px;font-size:17px;font-weight:800;letter-spacing:-0.01em;
+}
+.btn-amber-lg:hover{background:var(--gold-deep);}
+.btn-ink{
+  background:var(--ink);color:var(--cream);
+  padding:15px 32px;font-size:17px;font-weight:800;letter-spacing:-0.01em;
+}
+.btn-ink:hover{background:var(--ink-2);}
+
+/* HERO */
+.hero-section{
+  background:var(--ink);
+  background-image:repeating-linear-gradient(
+    to bottom,
+    transparent 0,transparent 39px,
+    var(--line) 39px,var(--line) 40px
+  );
+  background-attachment:local;
+  min-height:100svh;
+  display:flex;align-items:center;
+}
+.hero{
+  width:100%;max-width:1200px;margin:0 auto;
+  padding:80px max(24px,5vw) 80px;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:60px;
+  align-items:center;
+}
+@media(max-width:800px){
+  .hero{grid-template-columns:1fr;gap:48px;padding-top:100px;}
+  .close-section{padding:60px max(24px,5vw);}
+}
+@media(max-width:480px){
+  .nav-link{display:none;}
+  .btn-amber-lg{width:100%;text-align:center;}
+  footer{flex-direction:column;align-items:flex-start;gap:20px;}
+  .close-section{padding:48px 24px;}
+  .phone-wrap{max-width:calc(100vw - 48px);}
+  .phone-frame{max-width:100%;}
+}
+@media(prefers-reduced-motion:reduce){
+  .phone-frame{animation:none;}
+  .hero-headline,.hero-sub,.hero-cta-row,.phone-wrap{animation:none;}
+}
+.hero-headline{
+  font-family:'Bricolage Grotesque',system-ui,sans-serif;
+  font-size:clamp(2.75rem,7vw,5.5rem);
+  font-weight:800;line-height:1.04;letter-spacing:-0.035em;
+  color:var(--cream);margin-bottom:24px;
+}
+.hero-sub{
+  font-size:clamp(1rem,2vw,1.2rem);
+  line-height:1.7;color:var(--muted-2);
+  margin-bottom:36px;max-width:52ch;
+}
+.hero-cta-row{display:flex;flex-direction:column;align-items:flex-start;gap:14px;}
+.risk-copy{font-size:13px;color:var(--muted);letter-spacing:0.01em;}
+
+/* PHONE MOCKUP */
+.phone-wrap{
+  display:flex;justify-content:center;align-items:center;
+  animation:heroUp 0.9s cubic-bezier(0.22,1,0.36,1) 0.15s both;
+}
+.phone-frame{
+  position:relative;
+  display:inline-block;
+  animation:phonefloat 5s ease-in-out infinite;
+}
+/* botao power (direita) */
+.phone-frame::after{
+  content:'';
+  position:absolute;
+  right:-3px;top:120px;
+  width:3px;height:52px;
+  background:linear-gradient(to bottom,#2a2a2a,#1a1a1a 40%,#2a2a2a);
+  border-radius:0 2px 2px 0;
+}
+/* botoes de volume (esquerda) */
+.phone-frame::before{
+  content:'';
+  position:absolute;
+  left:-3px;top:100px;
+  width:3px;height:32px;
+  background:linear-gradient(to bottom,#2a2a2a,#1a1a1a 40%,#2a2a2a);
+  border-radius:2px 0 0 2px;
+  box-shadow:0 42px 0 #1e1e1e;
+}
+.phone{
+  width:272px;height:548px;
+  background:#f6f6f6;
+  border-radius:44px;
+  border:none;
+  outline:2.5px solid #2c2c2c;
+  overflow:hidden;position:relative;
+  box-shadow:
+    0 0 0 1px #111,
+    0 0 0 3.5px #242424,
+    0 0 0 4px rgba(255,255,255,0.06),
+    0 32px 72px rgba(0,0,0,0.7),
+    0 8px 24px rgba(0,0,0,0.4),
+    inset 0 1px 0 rgba(255,255,255,0.1),
+    inset 0 -1px 0 rgba(0,0,0,0.5);
+}
+@keyframes phonefloat{
+  0%,100%{transform:translateY(0);}
+  50%{transform:translateY(-5px);}
+}
+.phone-notch{
+  position:absolute;top:10px;left:50%;transform:translateX(-50%);
+  width:68px;height:20px;
+  background:#000;
+  border-radius:20px;
+  z-index:10;
+}
+.phone-notch::after{
+  content:'';
+  position:absolute;right:8px;top:50%;transform:translateY(-50%);
+  width:8px;height:8px;
+  border-radius:50%;
+  background:#1a1a1a;
+  border:1.5px solid #2a2a2a;
+}
+.phone-screen{
+  position:absolute;inset:0;
+  border-radius:42px;
+  overflow:hidden;
+}
+.phone-slide{
+  position:absolute;inset:0;
+  opacity:0;
+  transform:translateY(8px) scale(0.98);
+  transition:opacity 0.6s ease, transform 0.6s cubic-bezier(0.22,1,0.36,1);
+  will-change:opacity,transform;
+}
+.phone-slide.active{
+  opacity:1;
+  transform:translateY(0) scale(1);
+}
+.phone-slide img{
+  width:100%;height:100%;
+  object-fit:contain;
+  object-position:center;
+  background:#fff;
+  display:block;
+}
+
+/* PAIN */
+.pain-section{
+  background:var(--ink-2);
+  border-top:1px solid var(--line);
+  border-bottom:1px solid var(--line);
+  padding:80px max(24px,5vw);
+}
+.pain-inner{max-width:700px;margin:0 auto;text-align:center;}
+.pain-q{
+  font-family:'Bricolage Grotesque',system-ui,sans-serif;
+  font-size:clamp(1.5rem,4vw,2.6rem);
+  font-weight:700;letter-spacing:-0.03em;
+  color:var(--cream);line-height:1.35;margin-bottom:20px;
+}
+.pain-q em{font-style:normal;color:rgba(240,235,227,0.45);}
+.pain-a{
+  font-size:clamp(1rem,2vw,1.15rem);
+  color:var(--gold);font-weight:600;line-height:1.5;
+}
+
+/* HOW IT WORKS */
+.how-section{
+  background:var(--cream);
+  padding:80px max(24px,5vw);
+}
+.how-inner{max-width:1000px;margin:0 auto;}
+.section-h{
+  font-family:'Bricolage Grotesque',system-ui,sans-serif;
+  font-size:clamp(1.6rem,4vw,2.75rem);
+  font-weight:800;letter-spacing:-0.035em;
+  margin-bottom:56px;color:var(--ink);
+}
+.steps{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:40px;
+}
+@media(max-width:640px){.steps{grid-template-columns:1fr;gap:28px;}}
+.step-num{
+  width:34px;height:34px;border-radius:50%;
+  background:var(--ink);color:var(--cream);
+  font-family:'Bricolage Grotesque',system-ui,sans-serif;
+  font-weight:800;font-size:14px;
+  display:flex;align-items:center;justify-content:center;
+  margin-bottom:16px;flex-shrink:0;
+}
+.step-title{
+  font-family:'Bricolage Grotesque',system-ui,sans-serif;
+  font-size:1.05rem;font-weight:700;
+  color:var(--ink);margin-bottom:8px;letter-spacing:-0.01em;
+}
+.step-desc{font-size:1rem;color:rgba(10,10,9,0.5);line-height:1.65;}
+
+/* FEATURES */
+.features-section{background:var(--ink);padding:100px max(24px,5vw);}
+.features-inner{max-width:760px;margin:0 auto;}
+.features-section .section-h{color:var(--cream);}
+.feat-list{border-top:1px solid var(--line-mid);}
+.feat-item{
+  padding:28px 0;
+  border-bottom:1px solid var(--line-mid);
+}
+.feat-name{
+  font-family:'Bricolage Grotesque',system-ui,sans-serif;
+  font-size:clamp(1.1rem,3vw,1.4rem);font-weight:700;
+  color:var(--cream);letter-spacing:-0.02em;margin-bottom:8px;
+}
+.feat-item:first-child .feat-name{font-size:clamp(1.3rem,3.5vw,1.7rem);}
+.feat-desc{font-size:1rem;color:var(--muted-2);line-height:1.65;max-width:58ch;}
+
+/* GESTOR SECTION */
+.gestor-section{
+  background:var(--ink-2);
+  border-top:1px solid var(--line);
+  border-bottom:1px solid var(--line);
+  padding:80px max(24px,5vw);
+}
+.gestor-inner{
+  max-width:1200px;margin:0 auto;
+  display:grid;grid-template-columns:1fr 1.2fr;gap:60px;align-items:center;
+}
+@media(max-width:800px){
+  .gestor-inner{grid-template-columns:1fr;gap:48px;}
+  .gestor-img-wrap{margin-left:calc(-1 * max(24px,5vw));margin-right:calc(-1 * max(24px,5vw));}
+  .gestor-img-wrap img{max-width:100%;}
+}
+.gestor-img-wrap{display:flex;align-items:center;justify-content:center;}
+.gestor-img-wrap img{
+  width:100%;max-width:680px;height:auto;
+  filter:drop-shadow(0 24px 64px rgba(0,0,0,0.55));
+  animation:heroUp 0.9s cubic-bezier(0.22,1,0.36,1) 0.2s both;
+}
+.gestor-tag{
+  display:inline-block;
+  font-size:12px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;
+  color:var(--gold);margin-bottom:16px;
+}
+.gestor-h{
+  font-family:'Bricolage Grotesque',system-ui,sans-serif;
+  font-size:clamp(1.8rem,4vw,3rem);
+  font-weight:800;letter-spacing:-0.035em;line-height:1.08;
+  color:var(--cream);margin-bottom:16px;
+}
+.gestor-sub{
+  font-size:1rem;color:var(--muted-2);line-height:1.7;
+  margin-bottom:32px;max-width:42ch;
+}
+.gestor-feats{list-style:none;display:flex;flex-direction:column;gap:12px;}
+.gestor-feats li{
+  display:flex;align-items:center;gap:10px;
+  font-size:0.95rem;color:var(--cream-2);line-height:1.4;
+}
+.gestor-feats li::before{
+  content:'';
+  flex-shrink:0;
+  width:7px;height:7px;border-radius:50%;
+  background:var(--gold);
+}
+
+/* PRICING */
+.price-section{
+  background:var(--ink-3);
+  border-top:1px solid var(--line);
+  border-bottom:1px solid var(--line);
+  padding:80px max(24px,5vw);
+}
+.price-inner{max-width:480px;margin:0 auto;text-align:center;}
+.price-tag{
+  display:inline-block;
+  font-size:12px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;
+  color:var(--gold);margin-bottom:20px;
+}
+.price-card{
+  background:var(--ink-2);
+  border:1px solid var(--line-mid);
+  border-radius:20px;
+  padding:40px 36px;
+}
+.price-plan{
+  font-family:'Bricolage Grotesque',system-ui,sans-serif;
+  font-size:13px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;
+  color:var(--muted-2);margin-bottom:16px;
+}
+.price-value{
+  display:flex;align-items:flex-start;justify-content:center;gap:4px;
+  margin-bottom:6px;
+}
+.price-currency{
+  font-family:'Bricolage Grotesque',system-ui,sans-serif;
+  font-size:1.4rem;font-weight:700;color:var(--cream);
+  margin-top:10px;
+}
+.price-number{
+  font-family:'Bricolage Grotesque',system-ui,sans-serif;
+  font-size:4rem;font-weight:800;letter-spacing:-0.04em;
+  color:var(--cream);line-height:1;
+}
+.price-period{
+  font-size:0.95rem;color:var(--muted-2);
+  margin-top:12px;
+  align-self:flex-end;padding-bottom:6px;
+}
+.price-trial{
+  font-size:13px;color:var(--gold);font-weight:600;
+  margin-bottom:28px;
+}
+.price-divider{
+  border:none;border-top:1px solid var(--line-mid);
+  margin:24px 0;
+}
+.price-feats{
+  list-style:none;display:flex;flex-direction:column;gap:10px;
+  margin-bottom:32px;text-align:left;
+}
+.price-feats li{
+  display:flex;align-items:center;gap:10px;
+  font-size:0.9rem;color:var(--cream-2);
+}
+.price-feats li::before{
+  content:'';flex-shrink:0;
+  width:6px;height:6px;border-radius:50%;
+  background:var(--gold);
+}
+.price-cancel{
+  font-size:12px;color:var(--muted);margin-top:14px;
+}
+
+/* CLOSE / FINAL CTA */
+.close-section{
+  background:var(--gold);
+  padding:0 max(24px,5vw) 0;
+  overflow:hidden;
+}
+.close-inner{
+  max-width:1000px;margin:0 auto;
+  display:grid;grid-template-columns:1fr 1fr;
+  gap:40px;align-items:flex-end;
+}
+.close-model{display:flex;align-items:flex-end;justify-content:center;}
+.close-model img{
+  max-height:560px;width:auto;max-width:100%;
+  display:block;
+  vertical-align:bottom;
+}
+.close-text{padding:80px 0 80px;text-align:left;}
+.close-h{
+  font-family:'Bricolage Grotesque',system-ui,sans-serif;
+  font-size:clamp(2rem,5vw,4rem);
+  font-weight:800;letter-spacing:-0.04em;line-height:1.03;
+  color:#000;margin-bottom:20px;
+}
+.close-sub{
+  font-size:1.05rem;color:rgba(0,0,0,0.55);
+  margin-bottom:40px;line-height:1.5;
+}
+.risk-dark{font-size:13px;color:rgba(0,0,0,0.45);margin-top:16px;}
+@media(max-width:640px){
+  .close-section{padding:0 max(24px,5vw) 0;}
+  .close-inner{grid-template-columns:1fr;}
+  .close-model{justify-content:center;}
+  .close-model img{max-height:360px;}
+  .close-text{padding:0 0 60px;text-align:center;}
+}
+
+/* FOOTER */
+footer{
+  background:var(--ink);
+  border-top:1px solid var(--line);
+  padding:36px max(24px,5vw) max(36px,calc(36px + env(safe-area-inset-bottom)));
+  display:flex;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;gap:16px;
+}
+.footer-mark{
+  font-family:'Bricolage Grotesque',system-ui,sans-serif;
+  font-weight:800;font-size:18px;color:rgba(240,235,227,0.35);
+  letter-spacing:-0.03em;
+}
+.footer-links{display:flex;gap:20px;flex-wrap:wrap;}
+.footer-link{
+  font-size:13px;color:var(--muted);text-decoration:none;
+  transition:color 0.15s;
+}
+.footer-link:hover{color:var(--cream);}
+.footer-cr{
+  width:100%;font-size:12px;color:rgba(240,235,227,0.22);
+}
+
+/* ANIMATIONS — one authored moment: the hero arrival */
+@keyframes heroUp{
+  from{opacity:0;transform:translateY(18px);}
+  to{opacity:1;transform:translateY(0);}
+}
+.hero-headline{animation:heroUp 0.85s cubic-bezier(0.22,1,0.36,1) both;}
+.hero-sub{animation:heroUp 0.85s cubic-bezier(0.22,1,0.36,1) 0.1s both;}
+.hero-cta-row{animation:heroUp 0.85s cubic-bezier(0.22,1,0.36,1) 0.2s both;}
+</style>
+</head>
+<body>
+<!--
+THESIS: agen+ is the appointment book every service business already knows, made shareable in one link. Refuses the category indigo-gradient hero and the cream-serif bookshop default.
+OWN-WORLD: Near-black ground (#0A0A09). Warm amber accent (#E8952A) on CTAs and active states. Warm off-white text (#F0EBE3). Bricolage Grotesque variable display. Faint horizontal rules as background texture. Final CTA section fully drenched in amber.
+STORY: Visitor recognises the problem, sees the mechanism (one link, client books themselves), and creates an account. Risk removed at CTA.
+FIRST VIEWPORT: Full-height dark hero. agen+ wordmark top-left. Strong headline left. Phone mockup right on desktop, below on mobile. Amber CTA.
+FORM: Premium appointment ledger translated to dark web. Candidate 3 of 7. Seed key 54f29fba.
+FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, and DESIGN.md.
+-->
+<nav>
+  <div class="nav-inner">
+    <a href="/" class="logo-link"><img src="/logoagen+.png" alt="agen+" class="nav-logo"/></a>
+    <div class="nav-actions">
+      <a href="/login" class="nav-link">Entrar</a>
+      <a href="/cadastro" class="btn btn-amber">Criar minha agenda</a>
+    </div>
+  </div>
+</nav>
+
+<section class="hero-section">
+  <div class="hero">
+    <div class="hero-text">
+      <h1 class="hero-headline">Sua agenda,<br>no link<br>da bio.</h1>
+      <p class="hero-sub">Compartilhe o link com seus clientes. Eles agendam sozinhos, 24 horas por dia. Sem app, sem complicação.</p>
+      <div class="hero-cta-row">
+        <a href="/cadastro" class="btn btn-amber-lg">Criar minha agenda</a>
+      </div>
+    </div>
+    <div class="phone-wrap">
+      <div class="phone-frame">
+        <div class="phone" id="phoneMockup">
+          <div class="phone-notch"></div>
+          <div class="phone-screen">
+            <div class="phone-slide active" id="slide-0"><img src="/assets/imagens/passo-1-inicio.jpg" alt="Tela inicial da página de agendamento"/></div>
+            <div class="phone-slide" id="slide-1"><img src="/assets/imagens/passo-2-servico.jpg" alt="Escolha do serviço"/></div>
+            <div class="phone-slide" id="slide-2"><img src="/assets/imagens/passo-3-horario.jpg" alt="Escolha do horário disponível"/></div>
+            <div class="phone-slide" id="slide-3"><img src="/assets/imagens/passo-4-dados.jpg" alt="Preenchimento dos dados do cliente"/></div>
+            <div class="phone-slide" id="slide-4"><img src="/assets/imagens/passo-5-confirmacao.jpg" alt="Confirmação do agendamento"/></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="pain-section">
+  <div class="pain-inner">
+    <p class="pain-q">Quanto tempo você perde respondendo <em>"tem horário?"</em> pelo WhatsApp?</p>
+    <p class="pain-a">Com a agen+, seus clientes agendam sozinhos. Você só gerencia.</p>
+  </div>
+</section>
+
+<section class="how-section">
+  <div class="how-inner">
+    <h2 class="section-h">Como funciona</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-title">Configure em 10 minutos</div>
+        <p class="step-desc">Cadastre seus serviços, preços e horários. Nenhum conhecimento técnico necessário.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-title">Compartilhe o link</div>
+        <p class="step-desc">Coloque na bio do Instagram, nas redes sociais e compartilhe no WhatsApp. Um link para tudo.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-title">Receba os agendamentos</div>
+        <p class="step-desc">Seus clientes escolhem o horário e agendam sozinhos. O agendamento cai direto no seu painel.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="features-section">
+  <div class="features-inner">
+    <h2 class="section-h">O que você ganha</h2>
+    <div class="feat-list">
+      <div class="feat-item">
+        <div class="feat-name">Agendamentos 24h, sem você precisar responder</div>
+        <p class="feat-desc">Sua página recebe pedidos 24h por dia. Você foca no atendimento, não nas mensagens.</p>
+      </div>
+      <div class="feat-item">
+        <div class="feat-name">Sua marca, do seu jeito</div>
+        <p class="feat-desc">Logo, cor, foto, serviços e horários, tudo configurado por você, sem depender de ninguém.</p>
+      </div>
+      <div class="feat-item">
+        <div class="feat-name">Tudo num lugar só</div>
+        <p class="feat-desc">Agendamentos do dia, bloqueio de horários e configurações num lugar só. Sem planilha.</p>
+      </div>
+      <div class="feat-item">
+        <div class="feat-name">Controle financeiro</div>
+        <p class="feat-desc">Registre entradas, acompanhe o faturamento e veja o resumo do seu negócio.</p>
+      </div>
+      <div class="feat-item">
+        <div class="feat-name">Lembretes no WhatsApp</div>
+        <p class="feat-desc">Mensagens de confirmação e lembrete prontas para enviar. Um toque e o cliente recebe tudo.</p>
+      </div>
+      <div class="feat-item">
+        <div class="feat-name">Bloco de notas</div>
+        <p class="feat-desc">Anote tarefas e recados direto no painel, sem precisar de outro app.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="gestor-section">
+  <div class="gestor-inner">
+    <div>
+      <div class="gestor-tag">Para você, gestor</div>
+      <h2 class="gestor-h">Tudo que você precisa para gerenciar sua agenda.</h2>
+      <p class="gestor-sub">Abra o painel e veja tudo: agendamentos do dia, clientes, financeiro e lembretes. Sem planilha, sem app extra.</p>
+      <ul class="gestor-feats">
+        <li>Dashboard com resumo do dia</li>
+        <li>Agenda completa e bloqueio de horários</li>
+        <li>Cadastro de clientes</li>
+        <li>Clientes que não voltaram</li>
+        <li>Lembretes no WhatsApp</li>
+        <li>Link para o cliente confirmar ou cancelar o agendamento</li>
+        <li>Controle financeiro</li>
+        <li>Configuração personalizada da sua página</li>
+      </ul>
+    </div>
+    <div class="gestor-img-wrap">
+      <picture>
+        <source srcset="/assets/imagens/telas-gestor.webp" type="image/webp"/>
+        <img src="/assets/imagens/telas-gestor.png" alt="Painel de gestão da agen+ em celulares e desktop"/>
+      </picture>
+    </div>
+  </div>
+</section>
+
+<section class="price-section">
+  <div class="price-inner">
+    <div class="price-tag">Preço simples, sem surpresa</div>
+    <div class="price-card">
+      <div class="price-plan">Plano único</div>
+      <div class="price-value">
+        <span class="price-currency">R$</span>
+        <span class="price-number">29</span>
+        <span class="price-period">,90&nbsp;/&nbsp;mês</span>
+      </div>
+      <p class="price-trial">7 dias grátis &mdash; sem cartão de crédito</p>
+      <hr class="price-divider"/>
+      <ul class="price-feats">
+        <li>Página de agendamento personalizada</li>
+        <li>Agendamentos ilimitados</li>
+        <li>Painel de gestão completo</li>
+        <li>Controle financeiro</li>
+        <li>Lembretes no WhatsApp</li>
+        <li>Cadastro de clientes</li>
+      </ul>
+      <a href="/cadastro" class="btn btn-amber-lg" style="width:100%;">Criar minha agenda grátis</a>
+      <p class="price-cancel">Cancele quando quiser. Sem multa.</p>
+    </div>
+  </div>
+</section>
+
+<section class="close-section">
+  <div class="close-inner">
+    <div class="close-model">
+      <picture>
+        <source srcset="/assets/imagens/modelo-celular.webp" type="image/webp"/>
+        <img src="/assets/imagens/modelo-celular.png" alt="Gestora usando a agen+"/>
+      </picture>
+    </div>
+    <div class="close-text">
+      <h2 class="close-h">Sua agenda online em 10 minutos.</h2>
+      <p class="close-sub">Crie sua página de agendamentos em menos de 10 minutos.</p>
+      <a href="/cadastro" class="btn btn-ink">Criar minha agenda grátis</a>
+      <p class="risk-dark">7 dias grátis &middot; Sem cartão de crédito</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <img src="/logoagen+.png" alt="agen+" class="footer-logo"/>
+  <div class="footer-links">
+    <a href="#" class="footer-link">Termos de uso</a>
+    <a href="#" class="footer-link">Privacidade</a>
+    <a href="/login" class="footer-link">Entrar</a>
+  </div>
+  <p class="footer-cr">&copy; 2026 AgenPlus</p>
+</footer>
+
+<script>
+(function(){
+  var images=[
+    '/assets/imagens/passo-1-inicio.jpg',
+    '/assets/imagens/passo-2-servico.jpg',
+    '/assets/imagens/passo-3-horario.jpg',
+    '/assets/imagens/passo-4-dados.jpg',
+    '/assets/imagens/passo-5-confirmacao.jpg',
+    '/assets/imagens/passo-6.png',
+    '/assets/imagens/passo-7.png',
+    '/assets/imagens/passo-8.png',
+    '/assets/imagens/passo-9.png',
+    '/assets/imagens/passo-10.png',
+    '/assets/imagens/passo-11.png'
+  ];
+  images.forEach(function(src){var i=new Image();i.src=src;});
+
+  var slides=document.querySelectorAll('#phoneMockup .phone-slide');
+  var current=0;
+  function next(){
+    slides[current].classList.remove('active');
+    current=(current+1)%slides.length;
+    slides[current].classList.add('active');
+  }
+  setInterval(next,2500);
+
+})();
+</script>
+</body>
+</html>

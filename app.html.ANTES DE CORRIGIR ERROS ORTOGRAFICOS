@@ -268,8 +268,6 @@ async function loadData(){
       whatsapp:             e.whatsapp              || '',
 
       bloqueada:            e.bloqueada,
-      status:               e.status || 'ativa',
-      trialExpiraEm:        e.trial_expira_em || null,
       // Campos de personalização (Fase 2)
       descricao:            e.descricao             || '',
       logo:                 e.logo                  || '',
@@ -278,7 +276,6 @@ async function loadData(){
       // Mensagens de lembrete
       msgConfirmacao:       e.msg_confirmacao       || '',
       msgLembrete:          e.msg_lembrete          || '',
-      msgInativo:           e.msg_inativo           || '',
       // Relações
       servicos:             [],
       horariosPorMes:       {},
@@ -356,8 +353,7 @@ async function loadData(){
           criadoEm:            a.criado_em,
           confirmacaoEnviada:  a.confirmacao_enviada || false,
           lembreteEnviado:     a.lembrete_enviado    || false,
-          status:              a.status || 'nao_confirmado',
-          tokenCurto:          a.token_curto || null
+          status:              a.status || 'nao_confirmado'
         };
       });
     } else {
@@ -386,14 +382,11 @@ async function saveEmpresas(){
     whatsapp:              e.whatsapp              || null,
 
     bloqueada:             e.bloqueada,
-    status:                e.status || 'ativa',
-    trial_expira_em:       e.trialExpiraEm || null,
     // Campos de personalização (Fase 2)
     descricao:             e.descricao             || null,
     logo:                  e.logo                  || null,
     cor_principal:         e.corPrincipal          || '#3d1f3a',
     texto_destaque:        e.textoDestaque         || null,
-    cancelamento_horas:    e.cancelamentoHoras != null ? e.cancelamentoHoras : 2,
   });
 
   const novas     = empresas.filter(e => !e.id);
@@ -471,7 +464,7 @@ window.addEventListener('popstate', e => {
 
 function defaultEmpresa(){
   return {
-    slug:"", nome:"", fotoUrl:"", whatsapp:"", bloqueada:false, msgInativo:"",
+    slug:"", nome:"", fotoUrl:"", whatsapp:"", bloqueada:false,
     descricao:"", logo:"", corPrincipal:"#3d1f3a", textoDestaque:"",
     servicos:[], horariosPorMes:{}, bloqueios:[], botoes:[], cancelamentoHoras:0
   };
@@ -490,13 +483,6 @@ function horariosDoMes(emp, key){
 }
 function isoData(d){
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-}
-
-function gerarTokenCurto(){
-  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
-  let t = '';
-  for(let i=0;i<6;i++) t += chars[Math.floor(Math.random()*chars.length)];
-  return t;
 }
 
 const root = document.getElementById('root');
@@ -533,21 +519,20 @@ window.maskTel = (input)=>{
   input.value = fmtTelStr(input.value);
 };
 
+let _pollInterval = null;
 let _pollFn = null;
 function iniciarPolling(fn){
   pararPolling();
   _pollFn = fn;
+  _pollInterval = setInterval(async ()=>{
+    if(document.hidden) return;
+    await loadData();
+    if(_pollFn) _pollFn();
+  }, 30000);
 }
 function pararPolling(){
-  _pollFn = null;
+  if(_pollInterval){ clearInterval(_pollInterval); _pollInterval = null; _pollFn = null; }
 }
-// Recarrega dados quando o usuário volta para a aba
-document.addEventListener('visibilitychange', async ()=>{
-  if(!document.hidden && _pollFn){
-    await loadData();
-    _pollFn();
-  }
-});
 
 // ---------- INIT ----------
 let _appInitialized = false;
@@ -558,22 +543,8 @@ async function init(){
   const _hp = new URLSearchParams(location.hash.slice(1));
   const _at = _hp.get('access_token'), _rt = _hp.get('refresh_token');
   if(_at && _rt){
-    try { await supabaseClient.auth.setSession({ access_token: _at, refresh_token: _rt }); } catch(e){}
+    await supabaseClient.auth.setSession({ access_token: _at, refresh_token: _rt });
     history.replaceState(null, '', location.pathname + location.search);
-    // Busca perfil e roteia diretamente, sem depender do onAuthStateChange
-    const { data: { session: _s } } = await supabaseClient.auth.getSession();
-    if(_s?.user){
-      currentUser = _s.user;
-      const { data: _p } = await supabaseClient.from('profiles').select('*').eq('id', _s.user.id).single();
-      currentProfile = _p || null;
-      await loadData();
-      if(currentProfile?.role === 'master'){
-        goto({ master: 1 }); _appInitialized = true; return;
-      } else if(currentProfile?.role === 'owner_empresa'){
-        const _e = empresas.find(e => e.id === currentProfile.empresa_id);
-        if(_e){ goto({ empresa: _e.slug, page: 'gestao' }); _appInitialized = true; return; }
-      }
-    }
   }
 
   // Escuta mudanças de auth (inclui PASSWORD_RECOVERY vindo do e-mail)
@@ -642,16 +613,12 @@ async function init(){
     // _p vem do redirect do index.html quando o rewrite do Vercel não pega
     const _pParam = new URLSearchParams(location.search).get('_p') || '';
     const subPage = _pParam || (path === 'app.html' ? '' : path);
-    const agParam = new URLSearchParams(location.search).get('ag');
-    if(agParam){ currentRoute.page = 'ag'; currentRoute.agId = agParam; }
-    else if(subPage === 'gestao')      currentRoute.page = 'gestao';
+    if(subPage === 'gestao')      currentRoute.page = 'gestao';
     else if(subPage === 'agendar')     currentRoute.page = 'agendar';
     else if(subPage === 'confirmacao') currentRoute.page = 'confirmacao';
     // Limpa /app.html da URL para ficar estetico
     if(path === 'app.html' || _pParam){
-      const cleanPath = currentRoute.page === 'ag'
-        ? '/?ag=' + encodeURIComponent(currentRoute.agId)
-        : (currentRoute.page ? '/' + currentRoute.page : '/');
+      const cleanPath = currentRoute.page ? '/' + currentRoute.page : '/';
       history.replaceState(currentRoute, '', cleanPath);
     }
   } else if(path === 'cadastro'){
@@ -689,7 +656,8 @@ function route(){
     if(!emp){ renderNotFound(); return; }
     if(page==="agendar") renderAgendar(emp);
     else if(page==="confirmacao") renderConfirmacao(emp);
-    else if(page==="ag") renderAgConfirmar(emp, currentRoute.agId);
+    else if(page==="confirmar") renderClienteLogin(emp);
+    else if(page==="confirmar-lista") renderMeusAgendamentos(emp);
     else if(page==="gestao"){
       const isMaster = currentProfile?.role === 'master';
       const isOwner  = currentProfile?.role === 'owner_empresa'
@@ -757,7 +725,7 @@ function renderHome(emp){
 
   const botoesHtml = botoesAtivos.map(b => {
     const target = b.abrirNovaAba ? 'target="_blank" rel="noopener noreferrer"' : '';
-    return `<a href="${escapeAttr(linkSeguro(b.link))}" ${target} style="text-decoration:none;display:block;width:100%;max-width:240px;margin:0 auto 10px;">
+    return `<a href="${escapeAttr(linkSeguro(b.link))}" ${target} style="text-decoration:none;display:block;width:100%;max-width:360px;margin:0 auto 10px;">
       <div style="background:#fff;border:1.5px solid var(--line);border-radius:14px;padding:14px 20px;font-size:15px;font-weight:600;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,0.06);color:var(--ink);display:flex;align-items:center;justify-content:center;gap:8px;">
         ${b.icone ? `<span style="font-size:18px;">${escapeHtml(b.icone)}</span>` : ''}${escapeHtml(b.nome)}
       </div>
@@ -786,13 +754,20 @@ function renderHome(emp){
         <div style="height:24px;"></div>
 
         <!-- Botão principal de agendamento -->
-        <div style="width:100%;max-width:240px;margin:0 auto 10px;">
+        <div style="width:100%;max-width:360px;margin:0 auto 10px;">
           <button onclick="goto({empresa:'${emp.slug}', page:'agendar'})"
             style="width:100%;background:${cor};color:#fff;border:none;border-radius:14px;padding:16px 20px;font-size:16px;font-weight:700;font-family:'Nunito',sans-serif;cursor:pointer;text-align:center;box-shadow:0 4px 16px rgba(0,0,0,0.15);">
             Agendar horário
           </button>
         </div>
 
+        <!-- Ver meus agendamentos -->
+        <div style="width:100%;max-width:360px;margin:0 auto 12px;">
+          <button onclick="goto({empresa:'${emp.slug}', page:'confirmar'})"
+            style="width:100%;background:#fff;color:var(--ink);border:1.5px solid var(--line);border-radius:14px;padding:14px 20px;font-size:15px;font-weight:600;font-family:'Nunito',sans-serif;cursor:pointer;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
+            Ver meus agendamentos
+          </button>
+        </div>
 
         <!-- Botões personalizados -->
         ${botoesHtml}
@@ -803,7 +778,7 @@ function renderHome(emp){
       <div style="text-align:center;padding:16px 20px calc(16px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--line);margin-top:24px;">
         <button class="icon-btn" onclick="goto({empresa:'${emp.slug}', page:'gestao'})"
           style="font-size:12px;color:var(--ink-soft);opacity:0.7;letter-spacing:.04em;text-decoration:underline;text-underline-offset:3px;">
-          Gestor
+          Área da empresa
         </button>
       </div>
 
@@ -975,7 +950,7 @@ function renderAgendar(emp){
         <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:18px;">${cabHtml}${cellsHtml}</div>
         ${bookingState.data
           ? `<div style="font-size:13px;font-weight:600;color:#555;margin-bottom:10px;text-transform:capitalize;">${diaLabel}</div>
-             <div class="wiz-horas" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">${slotsHtml}</div>`
+             <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">${slotsHtml}</div>`
           : `<p style="font-size:14px;color:#aaa;text-align:center;padding:8px 0;">Selecione um dia no calendário</p>`}
       </div>
       <div style="padding:16px 22px 34px;border-top:1px solid #f3f4f6;background:#fff;position:sticky;bottom:0;">
@@ -1080,7 +1055,7 @@ function renderAgendar(emp){
   };
   window.wizNext    = ()=>{ bookingState._step = Math.min(3, bookingState._step+1); draw(); };
   window.wizBack    = ()=>{ bookingState._step = Math.max(1, bookingState._step-1); draw(); };
-  window.wizSelDia  = (iso)=>{ bookingState.data=iso; bookingState.hora=null; draw(); setTimeout(()=>{ document.querySelector('.wiz-horas')?.scrollIntoView({behavior:'smooth',block:'nearest'}); window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'}); },80); };
+  window.wizSelDia  = (iso)=>{ bookingState.data=iso; bookingState.hora=null; draw(); };
   window.wizSelHora = (h)=>{ bookingState.hora=h; draw(); };
   window.wizCalMes  = (key)=>{ bookingState._calMes=key; draw(); };
   window.wizAtualizaBtn = ()=>{
@@ -1149,8 +1124,7 @@ function renderAgendar(emp){
       data:          bookingState.data,
       hora:          bookingState.hora,
       nome_cliente:  bookingState.nome.trim(),
-      telefone:      bookingState.telefone.trim(),
-      token_curto:   gerarTokenCurto()
+      telefone:      bookingState.telefone.trim()
     });
     if(error){
       if(btn){ btn.disabled=false; btn.innerHTML='Confirmar'; }
@@ -1217,124 +1191,6 @@ function renderConfirmacao(emp){
   `);
 }
 
-// ---------- LINK DIRETO DE AGENDAMENTO (?ag=UUID) ----------
-async function renderAgConfirmar(emp, agId){
-  applyAccent(emp.corPrincipal);
-  const cor = emp.corPrincipal || '#3d1f3a';
-
-  // Tela de carregamento
-  render(`<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--paper);"><div style="font-size:14px;color:#aaa;">Carregando...</div></div>`);
-
-  // Busca o agendamento pelo UUID via API (service key, contorna RLS)
-  let ag = null;
-  try {
-    const r = await fetch('/api/ag-get?ag_id=' + encodeURIComponent(agId));
-    if(r.ok) ag = await r.json();
-  } catch(e){}
-
-  if(!ag){
-    render(`
-      <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--paper);padding:24px;">
-        <div style="background:#fff;border-radius:20px;padding:32px 24px;max-width:360px;width:100%;box-shadow:0 4px 24px rgba(0,0,0,0.10);text-align:center;">
-          <div style="font-size:40px;margin-bottom:12px;">?</div>
-          <div style="font-size:17px;font-weight:700;color:var(--ink);margin-bottom:8px;">Agendamento não encontrado</div>
-          <div style="font-size:14px;color:#8e8e93;margin-bottom:24px;">Este link pode ter expirado ou o agendamento foi removido.</div>
-          <button onclick="goto({empresa:'${emp.slug}'})" style="background:${cor};color:#fff;border:none;border-radius:14px;padding:14px 24px;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;width:100%;">Fazer novo agendamento</button>
-        </div>
-      </div>
-    `);
-    return;
-  }
-
-  const diasSemana = ['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'];
-  const meses = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
-  const dtObj = new Date(ag.data + 'T00:00:00');
-  const dataFmt = `${diasSemana[dtObj.getDay()]}, ${dtObj.getDate()} de ${meses[dtObj.getMonth()]}`;
-
-  const statusLabels = { confirmado: 'Confirmado', cancelado: 'Cancelado', agendado: 'Aguardando confirmação' };
-  const statusColors = { confirmado: { bg:'#f0fdf4', text:'#16a34a', dot:'#16a34a', border:'#bbf7d0' }, cancelado: { bg:'#fef2f2', text:'#dc2626', dot:'#dc2626', border:'#fecaca' }, agendado: { bg:'#fff8ec', text:'#d97706', dot:'#d97706', border:'#fde68a' } };
-  const sc = statusColors[ag.status] || statusColors.agendado;
-  const sl = statusLabels[ag.status] || 'Aguardando confirmação';
-
-  const jaDefinido = ag.status === 'confirmado' || ag.status === 'cancelado';
-
-  render(`
-    <div style="min-height:100vh;background:var(--paper);display:flex;align-items:center;justify-content:center;padding:24px 16px;">
-      <div style="background:#fff;border-radius:20px;padding:32px 24px 28px;max-width:360px;width:100%;box-shadow:0 4px 24px rgba(0,0,0,0.10);">
-        <div style="display:flex;align-items:flex-start;gap:14px;margin-bottom:18px;">
-          <div style="width:36px;height:36px;border-radius:10px;background:#f5f5f5;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-          </div>
-          <div><div style="font-size:11px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:2px;">Cliente</div><div style="font-size:16px;font-weight:600;color:var(--ink);">${escapeHtml(ag.nome_cliente||'')}</div></div>
-        </div>
-
-        <div style="display:flex;align-items:flex-start;gap:14px;margin-bottom:18px;">
-          <div style="width:36px;height:36px;border-radius:10px;background:#f5f5f5;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 10c-.83 0-1.5-.67-1.5-1.5v-5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5v5c0 .83-.67 1.5-1.5 1.5z"/><path d="M20.5 10H19V8.5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/><path d="M9.5 14c.83 0 1.5.67 1.5 1.5v5c0 .83-.67 1.5-1.5 1.5S8 21.33 8 20.5v-5c0-.83.67-1.5 1.5-1.5z"/><path d="M3.5 14H5v1.5c0 .83-.67 1.5-1.5 1.5S2 16.33 2 15.5 2.67 14 3.5 14z"/><path d="M14 14.5c0-.83.67-1.5 1.5-1.5h5c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5h-5c-.83 0-1.5-.67-1.5-1.5z"/><path d="M15.5 19H14v1.5c0 .83.67 1.5 1.5 1.5s1.5-.67 1.5-1.5-.67-1.5-1.5-1.5z"/><path d="M10 9.5C10 8.67 9.33 8 8.5 8h-5C2.67 8 2 8.67 2 9.5S2.67 11 3.5 11h5c.83 0 1.5-.67 1.5-1.5z"/><path d="M8.5 5H10V3.5C10 2.67 9.33 2 8.5 2S7 2.67 7 3.5 7.67 5 8.5 5z"/></svg>
-          </div>
-          <div><div style="font-size:11px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:2px;">Servico</div><div style="font-size:16px;font-weight:600;color:var(--ink);">${escapeHtml(ag.servico_nome||'')}</div></div>
-        </div>
-
-        <div style="display:flex;align-items:flex-start;gap:14px;margin-bottom:18px;">
-          <div style="width:36px;height:36px;border-radius:10px;background:#f5f5f5;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-          </div>
-          <div><div style="font-size:11px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:2px;">Data</div><div style="font-size:16px;font-weight:600;color:var(--ink);">${dataFmt}</div></div>
-        </div>
-
-        <div style="display:flex;align-items:flex-start;gap:14px;margin-bottom:0;">
-          <div style="width:36px;height:36px;border-radius:10px;background:#f5f5f5;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>
-          </div>
-          <div><div style="font-size:11px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:2px;">Horario</div><div style="font-size:16px;font-weight:600;color:var(--ink);">${escapeHtml(ag.hora||'')}</div></div>
-        </div>
-
-        ${jaDefinido ? `
-        <div style="margin-top:28px;text-align:center;font-size:14px;color:#aaa;">
-          Este agendamento já foi ${ag.status === 'confirmado' ? 'confirmado' : 'cancelado'}.
-        </div>
-        ` : `
-        <div style="margin-top:28px;display:flex;flex-direction:column;align-items:center;gap:14px;" id="agActionArea">
-          <button id="btnConfirmarAg" onclick="agConfirmar('${agId}','confirmar','${emp.slug}')"
-            style="width:100%;background:#16a34a;color:#fff;border:none;border-radius:14px;padding:17px 24px;font-size:16px;font-weight:700;font-family:inherit;cursor:pointer;box-shadow:0 4px 16px rgba(22,163,74,0.25);">
-            Confirmar agendamento
-          </button>
-          <button onclick="agConfirmar('${agId}','cancelar','${emp.slug}')"
-            style="background:none;border:none;color:#aaa;font-size:13px;font-weight:500;font-family:inherit;cursor:pointer;padding:4px 8px;text-decoration:underline;text-underline-offset:3px;">
-            cancelar agendamento
-          </button>
-        </div>
-        `}
-      </div>
-    </div>
-  `);
-}
-
-window.agConfirmar = async (agId, acao, empSlug) => {
-  const btnConfirmar = document.getElementById('btnConfirmarAg');
-  const area = document.getElementById('agActionArea');
-  if(area) area.style.opacity = '0.5';
-  if(btnConfirmar) btnConfirmar.disabled = true;
-  try {
-    const res = await fetch('/api/ag-action', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ag_id: agId, acao })
-    });
-    const data = await res.json();
-    if(!res.ok) throw new Error(data.error || 'Erro');
-    const msg = acao === 'confirmar' ? 'Agendamento confirmado!' : 'Agendamento cancelado.';
-    if(area){
-      area.innerHTML = `<div style="text-align:center;font-size:15px;font-weight:600;color:${acao==='confirmar'?'#16a34a':'#8e8e93'};padding:8px 0;">${msg}</div>`;
-      area.style.opacity = '1';
-    }
-  } catch(e) {
-    if(area) area.style.opacity = '1';
-    if(btnConfirmar) btnConfirmar.disabled = false;
-    alert('Erro ao processar. Tente novamente.');
-  }
-};
-
 // ---------- CLIENTE LOGIN / MEUS AGENDAMENTOS ----------
 let _clienteSession = null; // { nome, telefone, agendamentos: [] }
 
@@ -1378,7 +1234,7 @@ window.clienteLoginSubmit = async (slug)=>{
   const telRaw = (document.getElementById('cliLoginTel')?.value||'').replace(/\D/g,'').replace(/^(55|0)/,'');
   const errEl = document.getElementById('cliLoginErr');
   if(!nome||telRaw.length!==11||telRaw[2]!=='9'){
-    if(errEl){ errEl.style.display='block'; errEl.textContent='Preencha nome e telefone válidos.'; } return;
+    if(errEl){ errEl.style.display='block'; errEl.textContent='Preencha nome e telefone validos.'; } return;
   }
   const telefone = '0'+telRaw;
   if(errEl){ errEl.style.display='none'; }
@@ -1400,7 +1256,7 @@ window.clienteLoginSubmit = async (slug)=>{
     _clienteSession = { nome, telefone, agendamentos: json.agendamentos || [] };
     goto({ empresa: slug, page: 'confirmar-lista' });
   }catch(e){
-    if(errEl){ errEl.style.display='block'; errEl.textContent='Erro de conexão. Tente novamente.'; }
+    if(errEl){ errEl.style.display='block'; errEl.textContent='Erro de conexao. Tente novamente.'; }
     if(btn){ btn.disabled=false; btn.textContent='Entrar'; }
   }
 };
@@ -1427,7 +1283,7 @@ function renderMeusAgendamentos(emp){
     const dentroPrazo = cancelamentoHoras > 0 && Date.now() < limiteCancelMs;
     const status = a.status || 'nao_confirmado';
     const statusCor = status==='confirmado' ? '#16a34a' : status==='cancelado' ? '#dc2626' : '#1a1a1a';
-    const statusLabel = status==='confirmado' ? 'Confirmado' : status==='cancelado' ? 'Cancelado' : 'Não confirmado';
+    const statusLabel = status==='confirmado' ? 'Confirmado' : status==='cancelado' ? 'Cancelado' : 'Nao confirmado';
     const nomeStyle = status==='cancelado' ? 'text-decoration:line-through;' : '';
     const cardOpacity = status==='cancelado' ? 'opacity:0.6;' : '';
     const linkReagendar = 'https://' + emp.slug + '.agenplus.com.br/agendar';
@@ -1448,12 +1304,12 @@ function renderMeusAgendamentos(emp){
           Reagendar</a>
       </div>` : '';
     return `
-      <div style="background:#fff;border:0.5px solid #e4e4e7;border-radius:14px;padding:16px;box-shadow:0 1px 6px rgba(0,0,0,0.07);margin-bottom:10px;box-shadow:0 1px 6px rgba(0,0,0,0.07);${cardOpacity}">
+      <div style="background:#fff;border:0.5px solid #e4e4e7;border-radius:14px;padding:16px;margin-bottom:10px;${cardOpacity}">
         <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">
-          <div style="font-size:16px;font-weight:700;color:#1a1a1a;margin-bottom:4px;${nomeStyle}">${escapeHtml(a.servico_nome||'Serviço')}</div>
+          <div style="font-size:16px;font-weight:700;color:#1a1a1a;margin-bottom:4px;${nomeStyle}">${escapeHtml(a.servico_nome||'Servico')}</div>
           <div style="font-size:12px;font-weight:600;color:${statusCor};white-space:nowrap;margin-top:2px;">${statusLabel}</div>
         </div>
-        <div style="font-size:14px;color:#8e8e93;text-transform:capitalize;">${dataFmt} às ${a.hora}</div>
+        <div style="font-size:14px;color:#8e8e93;text-transform:capitalize;">${dataFmt} as ${a.hora}</div>
         ${botoesHtml}
       </div>`;
   };
@@ -1476,10 +1332,10 @@ function renderMeusAgendamentos(emp){
         </div>
       </div>
       <div style="max-width:480px;margin:0 auto;padding:20px 16px 0;">
-        <div style="font-size:13px;font-weight:700;color:#8e8e93;letter-spacing:.05em;text-transform:uppercase;margin-bottom:10px;">Próximos</div>
+        <div style="font-size:13px;font-weight:700;color:#8e8e93;letter-spacing:.05em;text-transform:uppercase;margin-bottom:10px;">Proximos</div>
         ${futHtml}
         ${passados.length ? `
-          <div style="font-size:13px;font-weight:700;color:#8e8e93;letter-spacing:.05em;text-transform:uppercase;margin:20px 0 10px;">Histórico</div>
+          <div style="font-size:13px;font-weight:700;color:#8e8e93;letter-spacing:.05em;text-transform:uppercase;margin:20px 0 10px;">Historico</div>
           ${pastHtml}` : ''}
       </div>
     </div>
@@ -1548,8 +1404,6 @@ function renderGestao(empInicial){
   let novoAgState = null;
   let configurarSub = null; // null | 'servicos' | 'horarios' | 'personalizar' | 'mensagens'
   let _waMenuId = null; // id do agendamento com dropdown WA aberto
-  let _inativoWaMenuId = null; // id do cliente inativo com dropdown WA aberto
-
   let personalizarDirty = false;
   let mesHorario = mesKey(new Date());
   let novoBotaoState = null;
@@ -1568,10 +1422,6 @@ function renderGestao(empInicial){
   let _gFinCarregando = false;
   let _gFinAgLancados = new Set(); // IDs de agendamentos já lançados — nunca removido ao excluir lançamento
 
-  // Estado de relatórios
-  let _relAba = null; // null = menu | 'financeiro' | 'agendamentos' | 'clientes' | 'servicos'
-  let _relMes = isoData(new Date()).slice(0,7); // YYYY-MM
-
   // Estado de clientes
   let _clientes = [];
   let _clientesBusca = '';
@@ -1583,17 +1433,16 @@ function renderGestao(empInicial){
   // Perfil do cliente
   let _clientePerfilId = null;
   let _clientePerfilEditando = false;
-  let _excluirClienteModal = null; // id do cliente aguardando confirmação de exclusão
   // Inativos
-  let _clientesAba = 'todos'; // 'todos' | 'ausentes'
-  let _clientesInativosFiltro = 15; // faixa selecionada: 15 | 30 | 45
+  let _clientesAba = 'todos'; // 'todos' | 'inativos'
+  let _clientesInativosFiltro = 30;
   let _clientesBannerDismissed = false;
 
   // Estado do bloco de notas (dashboard)
   let _notas = [];          // registros da tabela notas
   let _notaModal = null;    // { texto, cor, editId? }
   let _notasCarregando = false;
-  let _dashInativosFiltro = 30;
+  let _dashInativosFiltro = 15;
 
   function agendamentosBody(){
     if(diaSelecionado===null){
@@ -1637,38 +1486,30 @@ function renderGestao(empInicial){
           const ICO_PEN = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
           const ICO_X   = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>`;
           const ICO_WAG = `<svg width="11" height="11" viewBox="0 0 32 32" fill="currentColor"><path d="M16 0C7.163 0 0 7.163 0 16c0 2.82.736 5.469 2.027 7.773L0 32l8.418-2.002A15.94 15.94 0 0 0 16 32c8.837 0 16-7.163 16-16S24.837 0 16 0zm0 29.333a13.27 13.27 0 0 1-6.77-1.848l-.485-.29-5.001 1.19 1.226-4.866-.317-.5A13.267 13.267 0 0 1 2.667 16C2.667 8.636 8.636 2.667 16 2.667S29.333 8.636 29.333 16 23.364 29.333 16 29.333zm7.27-9.98c-.398-.199-2.354-1.162-2.719-1.295-.365-.133-.631-.199-.897.2-.265.398-1.03 1.295-1.263 1.56-.232.266-.465.3-.863.1-.398-.2-1.68-.619-3.2-1.974-1.183-1.054-1.981-2.355-2.213-2.753-.232-.398-.025-.613.174-.811.179-.178.398-.465.597-.697.2-.232.266-.398.398-.663.133-.266.067-.498-.033-.697-.1-.2-.897-2.163-1.23-2.962-.324-.778-.652-.672-.897-.685l-.764-.013c-.266 0-.697.1-1.063.498-.365.398-1.395 1.362-1.395 3.325s1.428 3.857 1.627 4.123c.2.265 2.812 4.292 6.815 6.02.953.411 1.696.657 2.276.841.956.305 1.827.262 2.515.159.767-.115 2.354-.962 2.686-1.892.333-.93.333-1.728.233-1.893-.1-.165-.365-.265-.763-.464z"/></svg>`;
-          const cardStyle2 = ag.status==='cancelado' ? 'opacity:0.3;filter:grayscale(1);background:#f7f7f7;' : passadoHora ? 'opacity:0.3;filter:grayscale(1);background:#f7f7f7;' : 'box-shadow:0 2px 12px rgba(0,0,0,0.15);';
+          const cardOpacity = ag.status==='cancelado' ? 'opacity:0.5;' : passadoHora ? 'opacity:0.4;' : '';
           const statusCor = ag.status==='confirmado' ? '#16a34a' : ag.status==='cancelado' ? '#dc2626' : '#6b7280';
-          const statusLabel = ag.status==='confirmado' ? 'Confirmado' : ag.status==='cancelado' ? 'Cancelado' : 'Não confirmado';
+          const statusLabel = ag.status==='confirmado' ? 'Confirmado' : ag.status==='cancelado' ? 'Cancelado' : 'Nao confirmado';
           const nomeStyle = ag.status==='cancelado' ? 'text-decoration:line-through;' : '';
-          const BTN = 'font-family:inherit;height:28px;width:72px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;border:0.5px solid #ccc;background:#fff;color:#555;';
-          const botoesPassado = `
-            <div style="display:flex;gap:5px;justify-content:flex-end;">
-              <button style="${BTN}" onclick="editarAgendamento('${ag.id}')">Editar</button>
-              <button style="${BTN}border-color:#fca5a5;color:#dc2626;" onclick="excluirAgendamento('${ag.id}')">Excluir</button>
-            </div>`;
-          const botoesAtivo = `
-            <div style="display:flex;gap:5px;justify-content:flex-end;">
-              <button style="${BTN}" onclick="editarAgendamento('${ag.id}')">Editar</button>
-              <button style="${BTN}border-color:#fca5a5;color:#dc2626;" onclick="excluirAgendamento('${ag.id}')">Excluir</button>
-              <div style="position:relative;">
-                <button style="${BTN}border-color:#86efac;color:#16a34a;" onclick="toggleWaMenu('${ag.id}')">WhatsApp</button>
-                ${_waMenuId === ag.id ? `<div style="position:absolute;top:calc(100% + 4px);right:0;min-width:130px;background:#fff;border:0.5px solid #d1d5db;border-radius:9px;overflow:hidden;z-index:50;box-shadow:0 4px 12px rgba(0,0,0,.10);">
-                  <button class="ag-wa-dd-item" onclick="waAcao('${ag.id}','conversar','${emp.id}')">Conversar</button>
-                  <button class="ag-wa-dd-item" onclick="waAcao('${ag.id}','confirmacao','${emp.id}')">Confirmação ${ag.confirmacaoEnviada ? '<span style="color:#22c55e">&#10003;</span>' : ''}</button>
-                  <button class="ag-wa-dd-item" onclick="waAcao('${ag.id}','lembrete','${emp.id}')">Lembrete ${ag.lembreteEnviado ? '<span style="color:#22c55e">&#10003;</span>' : ''}</button>
-                </div>` : ''}
-              </div>
-            </div>`;
-          parts.push(`<div style="padding:10px 12px;margin-bottom:6px;border-radius:9px;border:0.5px solid #e4e4e7;background:var(--card);display:flex;flex-direction:column;gap:8px;${cardStyle2}">
+          parts.push(`<div style="padding:10px 12px;margin-bottom:6px;border-radius:9px;border:0.5px solid #e4e4e7;background:var(--card);display:flex;flex-direction:column;gap:8px;${cardOpacity}">
             <div>
               <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
                 <div style="font-weight:700;font-size:15px;${nomeStyle}">${h} — ${escapeHtml(ag.nome)}</div>
-                ${(!passadoHora || ag.status==='cancelado') ? `<div style="font-size:11px;font-weight:600;white-space:nowrap;color:${statusCor};">${statusLabel}</div>` : ''}
+                <div style="font-size:11px;font-weight:600;white-space:nowrap;color:${statusCor};">${statusLabel}</div>
               </div>
               <div class="muted" style="font-size:13px;margin-top:2px;">${escapeHtml(ag.servicoNome)}</div>
             </div>
-            ${passadoHora || ag.status==='cancelado' ? botoesPassado : botoesAtivo}
+            <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;">
+              <button class="ag-btn ag-btn-edit" onclick="editarAgendamento('${ag.id}')">${ICO_PEN} Editar</button>
+              <button class="ag-btn ag-btn-cancel" onclick="excluirAgendamento('${ag.id}')">${ICO_X} Excluir</button>
+              <div style="position:relative;">
+                <button class="ag-btn ag-btn-wa" style="width:100%;" onclick="toggleWaMenu('${ag.id}')">${ICO_WAG} WhatsApp</button>
+                ${_waMenuId === ag.id ? `<div style="position:absolute;top:calc(100% + 4px);right:0;min-width:130px;background:#fff;border:0.5px solid #d1d5db;border-radius:9px;overflow:hidden;z-index:50;box-shadow:0 4px 12px rgba(0,0,0,.10);">
+                  <button class="ag-wa-dd-item" onclick="waAcao('${ag.id}','conversar','${emp.id}')">Conversar</button>
+                  <button class="ag-wa-dd-item" onclick="waAcao('${ag.id}','confirmacao','${emp.id}')">Confirmacao ${ag.confirmacaoEnviada ? '<span style="color:#22c55e">&#10003;</span>' : ''}</button>
+                  <button class="ag-wa-dd-item" onclick="waAcao('${ag.id}','lembrete','${emp.id}')">Lembrete ${ag.lembreteEnviado ? '<span style="color:#22c55e">&#10003;</span>' : ''}</button>
+                </div>` : ''}
+              </div>
+            </div>
           </div>`); continue;
         }
         if(bloqueado){
@@ -1704,8 +1545,8 @@ function renderGestao(empInicial){
               }
             </div>
             <div class="row">
-              <div class="field"><label>Serviço</label><select id="novoServico">${servicoOpts}</select></div>
-              <div class="field"><label>Horário</label><div style="padding:10px 12px;border:1.5px solid #e5e7eb;border-radius:10px;font-size:14px;font-weight:600;color:#1a1a1a;background:#f9f9f9;">${novoAgState.hora}</div></div>
+              <div class="field"><label>Servico</label><select id="novoServico">${servicoOpts}</select></div>
+              <div class="field"><label>Horario</label><select id="novoHora">${horariosOpts}</select></div>
             </div>
             <div class="row">
               <button class="btn ghost" onclick="cancelarNovoAg()">Cancelar</button>
@@ -1714,11 +1555,11 @@ function renderGestao(empInicial){
           </div>`); continue;
         }
         // Slot livre
-        parts.push(`<div style="padding:10px 12px;margin-bottom:6px;border-radius:9px;border:0.5px solid #e0e0e0;display:flex;align-items:center;justify-content:space-between;${passadoHora?'opacity:0.3;filter:grayscale(1);background:#f7f7f7;':'background:var(--card);box-shadow:0 2px 12px rgba(0,0,0,0.15);'}">
+        parts.push(`<div style="padding:10px 12px;margin-bottom:6px;border-radius:9px;border:0.5px solid #e0e0e0;background:var(--card);display:flex;align-items:center;justify-content:space-between;${passadoHora?'opacity:0.4;':''}">
           <span style="font-weight:700;font-size:15px;color:#1a1a1a;">${h} — <span style="color:#1a1a1a;font-weight:400;">Livre</span></span>
           <div style="display:flex;gap:4px;">
-            <button style="font-family:inherit;height:28px;width:72px;border-radius:6px;border:0.5px solid #ccc;background:#fff;color:#555;font-size:11px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;" onclick="novoAgendamento('${diaSelecionado}','${h}')">Agendar</button>
-            ${!passadoHora ? `<button style="font-family:inherit;height:28px;width:72px;border-radius:6px;border:0.5px solid #ccc;background:#fff;color:#555;font-size:11px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;" onclick="bloquearHorario('${diaSelecionado}','${h}')">Bloquear</button>` : ''}
+            <button style="font-family:inherit;height:28px;border-radius:6px;border:0.5px solid #ccc;background:#fff;color:#555;font-size:11px;font-weight:600;cursor:pointer;" onclick="novoAgendamento('${diaSelecionado}','${h}')">Agendar</button>
+            <button style="font-family:inherit;height:28px;border-radius:6px;border:0.5px solid #ccc;background:#fff;color:#555;font-size:11px;font-weight:600;cursor:pointer;" onclick="bloquearHorario('${diaSelecionado}','${h}')">Bloquear</button>
           </div>
         </div>`);
       }
@@ -1856,22 +1697,11 @@ function renderGestao(empInicial){
         : `<p class="muted" style="text-align:center;padding:24px 0;">Nenhum agendamento encontrado.</p>`;
 
       const histSection = `
-        <div style="font-size:15px;font-weight:700;color:#1a1a1a;margin-bottom:10px;padding:0 4px;">Histórico</div>
+        <div style="font-size:15px;font-weight:700;color:#1a1a1a;margin-bottom:10px;padding:0 4px;">Historico</div>
         <div style="background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.06);">${histRows}</div>`;
 
-      const modalExcluir = _excluirClienteModal === c.id ? `
-        <div style="position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9999;display:flex;align-items:flex-end;justify-content:center;">
-          <div style="background:#fff;border-radius:22px 22px 0 0;padding:24px 20px 32px;width:100%;max-width:480px;box-shadow:0 -4px 32px rgba(0,0,0,0.15);">
-            <div style="font-size:17px;font-weight:700;color:#1a1a1a;margin-bottom:6px;">Excluir cliente</div>
-            <div style="font-size:14px;color:#8e8e93;margin-bottom:20px;">O que deseja fazer com os agendamentos deste cliente?</div>
-            <button onclick="confirmarExcluirCliente('${c.id}', false)" style="width:100%;padding:14px;border-radius:12px;border:1.5px solid #e5e5ea;background:#fff;font-size:15px;font-weight:600;color:#1a1a1a;cursor:pointer;font-family:inherit;margin-bottom:10px;">Manter os agendamentos</button>
-            <button onclick="confirmarExcluirCliente('${c.id}', true)" style="width:100%;padding:14px;border-radius:12px;border:none;background:#ff3b30;font-size:15px;font-weight:600;color:#fff;cursor:pointer;font-family:inherit;margin-bottom:14px;">Excluir cliente e agendamentos</button>
-            <button onclick="cancelarExcluirCliente()" style="width:100%;padding:12px;border-radius:12px;border:none;background:none;font-size:15px;font-weight:600;color:#8e8e93;cursor:pointer;font-family:inherit;">Cancelar</button>
-          </div>
-        </div>` : '';
-
       if(_clientePerfilEditando) {
-        return modalExcluir + `
+        return `
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;padding:0 4px;">
             <button onclick="toggleEditarPerfil()" style="background:none;border:none;color:#1a1a1a;cursor:pointer;padding:4px;display:flex;align-items:center;">${ICO_BACK}</button>
             <div style="font-size:18px;font-weight:700;color:#1a1a1a;">Editar cliente</div>
@@ -1920,17 +1750,14 @@ function renderGestao(empInicial){
         </div>`;
     }
 
-    // Calcular ausentes (faixas exclusivas)
+    // Calcular inativos
     const inativos30 = _clientes.filter(c => { const d=_diasSemVoltar(c); return d!==null && d>=30; });
-    const ausentesFaixa15 = _clientes.filter(c => { const d=_diasSemVoltar(c); return d!==null && d>=16 && d<=30; });
-    const ausentesFaixa30 = _clientes.filter(c => { const d=_diasSemVoltar(c); return d!==null && d>=31 && d<=45; });
-    const ausentesFaixa45 = _clientes.filter(c => { const d=_diasSemVoltar(c); return d!==null && d>=46; });
-    const clientesAusentes = _clientesInativosFiltro===15 ? ausentesFaixa15 : _clientesInativosFiltro===30 ? ausentesFaixa30 : ausentesFaixa45;
+    const clientesInativos = _clientes.filter(c => { const d=_diasSemVoltar(c); return d!==null && d>=_clientesInativosFiltro; });
 
     // Banner
     const banner = (!_clientesBannerDismissed && inativos30.length && _clientesAba==='todos') ? `
       <div style="background:#fffbea;border:1px solid #fcd34d;border-radius:14px;padding:12px 14px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
-        <div style="font-size:14px;color:#92400e;font-weight:500;">${inativos30.length} cliente${inativos30.length!==1?'s':''} sem voltar há 30 dias ou mais.</div>
+        <div style="font-size:14px;color:#92400e;font-weight:500;">${inativos30.length} cliente${inativos30.length!==1?'s':''} sem voltar ha 30 dias ou mais.</div>
         <button onclick="dispensarBannerClientes()" style="background:none;border:none;color:#92400e;cursor:pointer;font-size:20px;line-height:1;padding:0 4px;">&times;</button>
       </div>` : '';
 
@@ -1938,51 +1765,40 @@ function renderGestao(empInicial){
     const tabs = `
       <div style="display:flex;gap:0;background:#f2f2f7;border-radius:12px;padding:3px;margin-bottom:14px;">
         <button onclick="setClientesAba('todos')" style="flex:1;padding:7px 0;border-radius:9px;border:none;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;${_clientesAba==='todos'?'background:#fff;color:#1a1a1a;box-shadow:0 1px 4px rgba(0,0,0,0.1);':'background:transparent;color:#8e8e93;'}">Todos</button>
-        <button onclick="setClientesAba('ausentes')" style="flex:1;padding:7px 0;border-radius:9px;border:none;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;${_clientesAba==='ausentes'?'background:#fff;color:#1a1a1a;box-shadow:0 1px 4px rgba(0,0,0,0.1);':'background:transparent;color:#8e8e93;'}">Ausentes${inativos30.length?` <span style="background:#ef4444;color:#fff;border-radius:99px;font-size:11px;padding:1px 6px;margin-left:4px;vertical-align:middle;">${inativos30.length}</span>`:''}</button>
+        <button onclick="setClientesAba('inativos')" style="flex:1;padding:7px 0;border-radius:9px;border:none;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;${_clientesAba==='inativos'?'background:#fff;color:#1a1a1a;box-shadow:0 1px 4px rgba(0,0,0,0.1);':'background:transparent;color:#8e8e93;'}">Inativos${inativos30.length?` <span style="background:#ef4444;color:#fff;border-radius:99px;font-size:11px;padding:1px 6px;margin-left:4px;vertical-align:middle;">${inativos30.length}</span>`:''}</button>
       </div>`;
 
-    // VIEW: AUSENTES
-    if(_clientesAba === 'ausentes') {
-      const diaColor = d => d>=46?'#dc2626':d>=31?'#f97316':'#d97706';
-      const faixaBtns = `
-        <div style="display:flex;gap:8px;margin-bottom:14px;">
-          <button onclick="setInativosFiltro(15)" style="flex:1;padding:7px 0;border-radius:9px;border:1.5px solid ${_clientesInativosFiltro===15?'#1a1a1a':'#e4e4e7'};font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;background:${_clientesInativosFiltro===15?'#1a1a1a':'#fff'};color:${_clientesInativosFiltro===15?'#fff':'#8e8e93'};">+15 dias<br><span style="font-size:11px;font-weight:400;">${ausentesFaixa15.length}</span></button>
-          <button onclick="setInativosFiltro(30)" style="flex:1;padding:7px 0;border-radius:9px;border:1.5px solid ${_clientesInativosFiltro===30?'#1a1a1a':'#e4e4e7'};font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;background:${_clientesInativosFiltro===30?'#1a1a1a':'#fff'};color:${_clientesInativosFiltro===30?'#fff':'#8e8e93'};">+30 dias<br><span style="font-size:11px;font-weight:400;">${ausentesFaixa30.length}</span></button>
-          <button onclick="setInativosFiltro(45)" style="flex:1;padding:7px 0;border-radius:9px;border:1.5px solid ${_clientesInativosFiltro===45?'#1a1a1a':'#e4e4e7'};font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;background:${_clientesInativosFiltro===45?'#1a1a1a':'#fff'};color:${_clientesInativosFiltro===45?'#fff':'#8e8e93'};">+45 dias<br><span style="font-size:11px;font-weight:400;">${ausentesFaixa45.length}</span></button>
-        </div>`;
-      const ausenteRows = clientesAusentes.length
-        ? clientesAusentes.map(c=>{
+    // VIEW: INATIVOS
+    if(_clientesAba === 'inativos') {
+      const filtros = [15,30,45].map(d=>`
+        <button onclick="setInativosFiltro(${d})" style="padding:6px 14px;border-radius:99px;border:none;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;${_clientesInativosFiltro===d?'background:#1a1a1a;color:#fff;':'background:#f2f2f7;color:#3a3a3a;'}">${d}+ dias</button>`).join('');
+      const diaColor = d => d>=45?'#dc2626':d>=30?'#f97316':'#f59e0b';
+      const inativoRows = clientesInativos.length
+        ? clientesInativos.map(c=>{
             const dias=_diasSemVoltar(c);
             return `
-              <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:0.5px solid #f2f2f7;" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background=''">
-                <div onclick="abrirPerfilCliente('${c.id}')" style="flex:1;min-width:0;cursor:pointer;">
+              <div onclick="abrirPerfilCliente('${c.id}')" style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:0.5px solid #f2f2f7;cursor:pointer;" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background=''">
+                <div style="flex:1;min-width:0;">
                   <div style="font-size:15px;font-weight:600;color:#1a1a1a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(c.nome)}</div>
                   <div style="font-size:13px;color:#8e8e93;margin-top:2px;">${telFmt(c.telefone)}</div>
                 </div>
-                <div style="text-align:center;min-width:42px;">
+                <div style="text-align:center;min-width:48px;">
                   <div style="font-size:18px;font-weight:700;color:${diaColor(dias)};">${dias}</div>
                   <div style="font-size:11px;color:#8e8e93;">dias</div>
                 </div>
-                <div style="position:relative;">
-                  <button onclick="event.stopPropagation();toggleWaMenuInativo('${c.id}')" class="ag-btn ag-btn-wa" style="padding:6px 10px;">${ICO_WA}</button>
-                  ${_inativoWaMenuId === c.id ? `<div style="position:absolute;top:calc(100% + 4px);right:0;min-width:130px;background:#fff;border:0.5px solid #d1d5db;border-radius:9px;overflow:hidden;z-index:50;box-shadow:0 4px 12px rgba(0,0,0,.10);" onclick="event.stopPropagation()">
-                    <button class="ag-wa-dd-item" onclick="waAcaoInativo('${c.id}','conversar','${emp.id}')">Conversar</button>
-                    <button class="ag-wa-dd-item" style="border-bottom:none;" onclick="waAcaoInativo('${c.id}','inativo','${emp.id}')">Ausente ${c.ausenteEnviadoEm ? '<span style="color:#22c55e">&#10003;</span>' : ''}</button>
-                  </div>` : ''}
-                </div>
               </div>`;
           }).join('')
-        : `<p class="muted" style="text-align:center;padding:24px 0;">Nenhum cliente nesta faixa.</p>`;
-      const wrapI = clientesAusentes.length
-        ? `<div style="background:#fff;border-radius:16px;box-shadow:0 2px 12px rgba(0,0,0,0.06);">${ausenteRows}</div>`
-        : ausenteRows;
+        : `<p class="muted" style="text-align:center;padding:24px 0;">Nenhum cliente inativo neste periodo.</p>`;
+      const wrapI = clientesInativos.length
+        ? `<div style="background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.06);">${inativoRows}</div>`
+        : inativoRows;
       return `
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding:0 4px;">
           <div style="font-size:22px;font-weight:700;color:#1a1a1a;">Clientes</div>
           <button onclick="abrirNovoCliente()" style="display:flex;align-items:center;gap:6px;height:36px;padding:0 14px;border-radius:10px;border:none;background:#1a1a1a;color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;">${ICO_PLUS} Novo</button>
         </div>
         ${tabs}
-        ${faixaBtns}
+        <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">${filtros}</div>
         ${wrapI}`;
     }
 
@@ -2017,10 +1833,10 @@ function renderGestao(empInicial){
       ${banner}
       ${tabs}
       <div style="margin-bottom:14px;">
-        <input id="clientesBuscaInput" type="search" value="${escapeAttr(_clientesBusca)}" placeholder="Buscar por nome ou telefone..." oninput="filtrarClientesLive(this.value)"
+        <input type="search" value="${escapeAttr(_clientesBusca)}" placeholder="Buscar por nome ou telefone..." oninput="filtrarClientes(this.value)"
           style="width:100%;border:0.5px solid #e4e4e7;border-radius:12px;padding:10px 14px;font-size:15px;font-family:inherit;color:#1a1a1a;background:#fff;box-sizing:border-box;"/>
       </div>
-      <div id="clientesListaWrap">${listaHtml}</div>
+      ${listaHtml}
       <div style="text-align:center;margin-top:12px;color:#8e8e93;font-size:13px;">${_clientes.length} cliente${_clientes.length!==1?'s':''} cadastrado${_clientes.length!==1?'s':''}</div>
     `;
   }
@@ -2050,10 +1866,26 @@ function renderGestao(empInicial){
           ${mkItem("configurarIr('servicos')",   '#eff6ff', ICO_BRIEF, 'Serviços oferecidos',      'Configure os serviços disponíveis')}
           ${mkItem("configurarIr('horarios')",   '#f0fdf4', ICO_CAL,   'Horários de agendamento',  'Defina dias e horários de agendamento')}
           ${mkItem("configurarIr('personalizar')","#fdf4ff", ICO_LINK,  'Personalize seu link',     'Nome, textos, logo, cor e botões')}
-          ${mkItem("configurarIr('mensagens')",    '#fff7ed', ICO_MSG,   'Configurar mensagens',     'Personalize mensagens automáticas')}
-          ${mkItem("configurarIr('cancelamento')","#fff1f2", `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#e53935" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>`, 'Cancelamento', 'Prazo mínimo para cancelar agendamento')}
-          ${mkItem("configurarIr('relatorios')", '#f0fdf4', G_ICO.relatorios, 'Relatórios', 'Financeiro e agendamentos por mês')}
-          ${mkItem("configurarIr('link')", '#f0f9ff', `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0ea5e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>`, 'Link público', 'Compartilhar, copiar ou abrir seu link', false)}
+          ${mkItem("configurarIr('mensagens')",    '#fff7ed', ICO_MSG,   'Configurar mensagens',     'Personalize mensagens automaticas')}
+          ${mkItem("configurarIr('cancelamento')","#fff1f2", `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#e53935" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>`, 'Cancelamento', 'Prazo minimo para cancelar agendamento')}
+          ${mkItem("toggleLinkMenu()", '#f0f9ff', `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0ea5e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>`, 'Link público', 'Compartilhar, copiar ou abrir seu link', false)}
+        </div>
+        ${_linkMenuAberto ? `
+        <div style="background:#fff;border-radius:14px;overflow:hidden;border:0.5px solid #e5e5ea;margin-top:8px;">
+          <button onclick="linkAcao('abrir')" style="display:flex;align-items:center;gap:12px;padding:12px 16px;width:100%;background:#fff;border:none;border-bottom:0.5px solid #f0f0f0;cursor:pointer;font-family:inherit;" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background='#fff'">
+            <div style="width:30px;height:30px;border-radius:8px;background:#f0fdf4;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></div>
+            <span style="font-size:13px;font-weight:600;color:#1a1a1a;">Abrir</span>
+          </button>
+          <button onclick="linkAcao('copiar')" style="display:flex;align-items:center;gap:12px;padding:12px 16px;width:100%;background:#fff;border:none;border-bottom:0.5px solid #f0f0f0;cursor:pointer;font-family:inherit;" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background='#fff'">
+            <div style="width:30px;height:30px;border-radius:8px;background:#eff6ff;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></div>
+            <span style="font-size:13px;font-weight:600;color:#1a1a1a;">Copiar</span>
+          </button>
+          <button onclick="linkAcao('compartilhar')" style="display:flex;align-items:center;gap:12px;padding:12px 16px;width:100%;background:#fff;border:none;cursor:pointer;font-family:inherit;" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background='#fff'">
+            <div style="width:30px;height:30px;border-radius:8px;background:#f5f3ff;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></div>
+            <span style="font-size:13px;font-weight:600;color:#1a1a1a;">Compartilhar</span>
+          </button>
+        </div>` : ''}
+        <div style="display:none">
         </div>
         <div style="text-align:center;margin-top:40px;">
           <button onclick="${sairAction}" style="background:none;border:none;font-size:13px;font-weight:500;color:#8e8e93;cursor:pointer;padding:8px 16px;font-family:inherit;">Sair da conta</button>
@@ -2061,9 +1893,8 @@ function renderGestao(empInicial){
       `;
     }
     if(configurarSub === 'mensagens'){
-      const msgConfirm   = emp.msgConfirmacao || 'Olá, {nome}!\nConfirme seu agendamento de {servico} para {data} às {hora}.\nAcesse o link abaixo, faça o login e confirme ou cancele:\n{link}';
-      const msgLembrete  = emp.msgLembrete   || 'Olá, {nome}! \nPassando pra lembrar do seu agendamento! \n{servico}\n{data} - {hora}.\nAté lá!';
-      const msgInativoTx = emp.msgInativo    || 'Olá, {nome}! \nFaz um tempinho desde o seu último atendimento.\nQue tal agendar um novo horário? Estamos à disposição.\nAgende pelo link:\n{link}';
+      const msgConfirm = emp.msgConfirmacao || 'Ola, {nome}!\nConfirme seu agendamento de {servico} para hoje as {hora}.\nAcesse o link abaixo, faca o login e confirme ou cancele:\n{link}';
+      const msgLembrete = emp.msgLembrete || 'Ola, {nome}! Lembrando do seu agendamento de {servico} amanha as {hora}. Ate la!';
       return `
         <div style="position:relative;display:flex;align-items:center;margin-bottom:16px;min-height:36px;">
           <button onclick="configurarIr(null)" style="background:none;border:none;font-size:14px;font-weight:600;color:#555;cursor:pointer;padding:0;font-family:inherit;display:flex;align-items:center;gap:4px;">&#8249; Voltar</button>
@@ -2071,71 +1902,40 @@ function renderGestao(empInicial){
           <div></div>
         </div>
         <div style="display:flex;flex-direction:column;gap:14px;">
-          <div style="background:#fff;border:0.5px solid #e4e4e7;border-radius:12px;padding:14px;box-shadow:0 1px 6px rgba(0,0,0,0.07);">
+          <div style="background:#fff;border:0.5px solid #e4e4e7;border-radius:12px;padding:14px;">
             <div style="font-size:13px;font-weight:700;color:#1a1a1a;margin-bottom:3px;">Mensagem de confirmacao</div>
-            <div style="font-size:12px;color:#8e8e93;margin-bottom:10px;">Enviada ao clicar em "Confirmação" no agendamento.</div>
+            <div style="font-size:12px;color:#8e8e93;margin-bottom:10px;">Enviada ao clicar em "Confirmacao" no agendamento.</div>
             <textarea id="msgConfirmacao" rows="5" style="width:100%;font-family:inherit;font-size:13px;border:0.5px solid #d1d5db;border-radius:8px;padding:10px 12px;resize:none;line-height:1.5;color:#1a1a1a;background:#f9f9f7;">${escapeHtml(msgConfirm)}</textarea>
             <div style="font-size:11px;color:#8e8e93;margin-top:6px;">Variaveis: {nome} {hora} {servico} {data} {link}</div>
           </div>
-          <div style="background:#fff;border:0.5px solid #e4e4e7;border-radius:12px;padding:14px;box-shadow:0 1px 6px rgba(0,0,0,0.07);">
+          <div style="background:#fff;border:0.5px solid #e4e4e7;border-radius:12px;padding:14px;">
             <div style="font-size:13px;font-weight:700;color:#1a1a1a;margin-bottom:3px;">Mensagem de lembrete</div>
             <div style="font-size:12px;color:#8e8e93;margin-bottom:10px;">Enviada ao clicar em "Lembrete" no agendamento.</div>
             <textarea id="msgLembrete" rows="5" style="width:100%;font-family:inherit;font-size:13px;border:0.5px solid #d1d5db;border-radius:8px;padding:10px 12px;resize:none;line-height:1.5;color:#1a1a1a;background:#f9f9f7;">${escapeHtml(msgLembrete)}</textarea>
             <div style="font-size:11px;color:#8e8e93;margin-top:6px;">Variaveis: {nome} {hora} {servico} {data}</div>
-          </div>
-          <div style="background:#fff;border:0.5px solid #e4e4e7;border-radius:12px;padding:14px;box-shadow:0 1px 6px rgba(0,0,0,0.07);">
-            <div style="font-size:13px;font-weight:700;color:#1a1a1a;margin-bottom:3px;">Mensagem de cliente ausente</div>
-            <div style="font-size:12px;color:#8e8e93;margin-bottom:10px;">Enviada ao clicar em "Ausente" na aba Clientes ausentes.</div>
-            <textarea id="msgInativo" rows="6" style="width:100%;font-family:inherit;font-size:13px;border:0.5px solid #d1d5db;border-radius:8px;padding:10px 12px;resize:none;line-height:1.5;color:#1a1a1a;background:#f9f9f7;">${escapeHtml(msgInativoTx)}</textarea>
-            <div style="font-size:11px;color:#8e8e93;margin-top:6px;">Variaveis: {nome} {link}</div>
           </div>
           <button class="btn" onclick="salvarMensagens('${emp.id}')">Salvar mensagens</button>
         </div>
       `;
     }
 
-    if(configurarSub === 'link'){
-      const url = `https://${emp.slug}.agenplus.com.br`;
-      const mkLinkItem = (onclick, bg, stroke, icoPath, label, divider=true) => `
-        <button onclick="${onclick}" style="display:flex;align-items:center;gap:14px;padding:0 20px;min-height:64px;background:#fff;border:none;text-align:left;cursor:pointer;width:100%;font-family:inherit;transition:background 150ms ease;" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background='#fff'">
-          <div style="width:34px;height:34px;border-radius:10px;background:${bg};display:flex;align-items:center;justify-content:center;flex-shrink:0;">${icoPath}</div>
-          <div style="flex:1;font-size:16px;font-weight:600;color:#1a1a1a;">${label}</div>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#c7c7cc" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-        </button>
-        ${divider ? `<div style="height:1px;background:#f2f2f7;margin-left:68px;"></div>` : ''}`;
-      return `
-        <div style="position:relative;display:flex;align-items:center;margin-bottom:16px;min-height:36px;">
-          <button onclick="configurarIr(null)" style="background:none;border:none;font-size:14px;font-weight:600;color:#555;cursor:pointer;padding:0;font-family:inherit;display:flex;align-items:center;gap:4px;">&#8249; Voltar</button>
-          <div style="position:absolute;left:0;right:0;text-align:center;font-weight:700;font-size:16px;pointer-events:none;">Link público</div>
-          <div></div>
-        </div>
-        <div style="background:#f7f7f7;border-radius:12px;padding:10px 16px;margin-bottom:14px;word-break:break-all;font-size:13px;color:#8e8e93;font-weight:500;">${url}</div>
-        <div style="background:#fff;border-radius:22px;box-shadow:0 2px 16px rgba(0,0,0,0.06);overflow:hidden;">
-          ${mkLinkItem(`linkAcao('abrir')`,         '#f0fdf4', '#16a34a', `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>`, 'Abrir')}
-          ${mkLinkItem(`linkAcao('copiar')`,        '#eff6ff', '#3b82f6', `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`, 'Copiar link')}
-          ${mkLinkItem(`linkAcao('compartilhar')`,  '#f5f3ff', '#8b5cf6', `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>`, 'Compartilhar', false)}
-        </div>`;
-    }
-    if(configurarSub === 'relatorios'){
-      return relatoriosBody();
-    }
     if(configurarSub === 'cancelamento'){
-      const horas = emp.cancelamentoHoras != null && emp.cancelamentoHoras !== '' ? emp.cancelamentoHoras : 2;
+      const horas = emp.cancelamentoHoras || 0;
       return `
         <div style="position:relative;display:flex;align-items:center;margin-bottom:16px;min-height:36px;">
           <button onclick="configurarIr(null)" style="background:none;border:none;font-size:14px;font-weight:600;color:#555;cursor:pointer;padding:0;font-family:inherit;display:flex;align-items:center;gap:4px;">&#8249; Voltar</button>
           <div style="position:absolute;left:0;right:0;text-align:center;font-weight:700;font-size:16px;pointer-events:none;">Cancelamento</div>
           <div></div>
         </div>
-        <div style="background:#fff;border:0.5px solid #e4e4e7;border-radius:16px;padding:18px;margin-bottom:14px;box-shadow:0 1px 6px rgba(0,0,0,0.07);">
-          <div style="font-size:15px;font-weight:700;color:#1a1a1a;margin-bottom:6px;">Prazo mínimo para cancelar</div>
-          <div style="font-size:13px;color:#8e8e93;margin-bottom:14px;line-height:1.5;">Quantas horas antes do horário o cliente pode cancelar pelo link público. Use 0 para desativar o cancelamento pelo cliente.</div>
+        <div style="background:#fff;border:0.5px solid #e4e4e7;border-radius:16px;padding:18px;margin-bottom:14px;">
+          <div style="font-size:15px;font-weight:700;color:#1a1a1a;margin-bottom:6px;">Prazo minimo para cancelar</div>
+          <div style="font-size:13px;color:#8e8e93;margin-bottom:14px;line-height:1.5;">Quantas horas antes do horario o cliente pode cancelar pelo link publico. Use 0 para desativar o cancelamento pelo cliente.</div>
           <div class="field" style="margin:0;">
-            <label>Horas de antecedência</label>
+            <label>Horas de antecedencia</label>
             <input id="cancelamentoHoras" type="number" min="0" max="168" step="1" value="${horas}" placeholder="0"
               style="width:100%;border:0.5px solid #d1d5db;border-radius:10px;padding:10px 12px;font-size:16px;font-family:inherit;color:#1a1a1a;"/>
           </div>
-          <div style="font-size:12px;color:#8e8e93;margin-top:8px;line-height:1.6;">Exemplo: 0 = Você não aceita cancelamentos<br>Exemplo: 2 = O cliente pode cancelar até 2 horas antes</div>
+          <div style="font-size:12px;color:#8e8e93;margin-top:8px;">Exemplo: 2 = o cliente pode cancelar ate 2 horas antes.</div>
         </div>
         <button class="btn" onclick="salvarCancelamentoHoras('${emp.id}')">Salvar</button>
       `;
@@ -2291,55 +2091,57 @@ function renderGestao(empInicial){
       </div>
     `).join('')}</div>` : `<p class="muted" style="text-align:center;padding:16px 0;">Nenhum botão cadastrado ainda.</p>`;
 
-    const BINFO = {
-      whatsapp: { label:'Número',  desc:'Digite o número com DDD', ph:'(xx) xxxxx-xxxx' },
-      instagram:{ label:'Link',    desc:'Cole aqui o link do seu Instagram', ph:'https://instagram.com/seuusuario' },
-      maps:     { label:'Link',    desc:'Pesquise seu endereço no Google Maps e cole o link aqui', ph:'https://maps.app.goo.gl/...' },
-      site:     { label:'Link',    desc:'Cole o link do seu site, caso tenha', ph:'https://seusite.com.br' },
-    };
-    const mkBotaoModal = (titulo, tipoSel, valorLink, tipoIdEl, linkIdEl, hintIdEl, onCancelar, onSalvar, salvarLabel) => {
-      const bi = BINFO[tipoSel] || BINFO.whatsapp;
-      const isWa = tipoSel === 'whatsapp';
-      return `<div style="position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9000;display:flex;align-items:flex-end;justify-content:center;" onclick="if(event.target===this){${onCancelar}}">
-        <div style="background:#fff;border-radius:18px 18px 0 0;padding:28px 24px 40px;width:100%;max-width:520px;">
-          <h3 style="font-family:inherit;font-weight:700;font-size:18px;margin:0 0 20px;">${titulo}</h3>
-          <div class="field"><label>Tipo</label>
-            <select id="${tipoIdEl}" onchange="atualizarCampoBotao('${tipoIdEl}','${linkIdEl}','${hintIdEl}','${tipoIdEl}LabelEl','${tipoIdEl}DescEl')">
-              <option value="whatsapp" ${tipoSel==='whatsapp'?'selected':''}>WhatsApp</option>
-              <option value="instagram" ${tipoSel==='instagram'?'selected':''}>Instagram</option>
-              <option value="maps" ${tipoSel==='maps'?'selected':''}>Google Maps</option>
-              <option value="site" ${tipoSel==='site'?'selected':''}>Site</option>
-            </select>
-          </div>
-          <div class="field">
-            <label id="${tipoIdEl}LabelEl">${bi.label}</label>
-            <div id="${tipoIdEl}DescEl" style="font-size:12px;color:#8e8e93;margin-bottom:8px;">${bi.desc}</div>
-            <input id="${linkIdEl}" value="${escapeAttr(valorLink)}" placeholder="${bi.ph}" ${isWa?'type="tel" inputmode="numeric" maxlength="16" oninput="maskTel(this)"':'type="text" maxlength="500"'}/>
-            <div id="${hintIdEl}" style="font-size:12px;color:var(--danger);margin-top:6px;display:none;">Número inválido. Ex: (11) 98765-4321</div>
-          </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px;">
-            <button class="btn ghost" onclick="${onCancelar}">Cancelar</button>
-            <button class="btn" onclick="${onSalvar}">${salvarLabel}</button>
-          </div>
+    const formNovoBotao = novoBotaoState !== null ? `
+      <div style="background:var(--paper);border-radius:12px;padding:20px 16px;margin-top:12px;border:1.5px solid var(--line);">
+        <div class="eyebrow" style="margin-bottom:14px;color:#1a1a1a;">Novo botão</div>
+        <div class="field"><label>Tipo</label>
+          <select id="bTipo" onchange="atualizarCampoBotao('bTipo','bLink','bLinkHint')">
+            <option value="whatsapp">WhatsApp</option>
+            <option value="instagram">Instagram</option>
+            <option value="maps">Google Maps</option>
+            <option value="site">Site</option>
+          </select>
         </div>
-      </div>`;
-    };
-    const formNovoBotao = novoBotaoState !== null
-      ? mkBotaoModal('Novo botão', 'whatsapp', '', 'bTipo', 'bLink', 'bLinkHint', 'cancelarNovoBotao()', 'salvarNovoBotao()', 'Adicionar')
-      : editandoBotaoId !== null ? (()=>{ const eb = emp.botoes.find(x=>x.id===editandoBotaoId)||{tipo:'whatsapp'};
-          return mkBotaoModal('Editar botão', eb.tipo||'whatsapp', eb.tipo==='whatsapp'?fmtTelStr(eb.link):eb.link||'', 'ebTipo', 'ebLink', 'ebLinkHint', 'cancelarEdicaoBotao()', `salvarEdicaoBotao('${editandoBotaoId}')`, 'Salvar');
-        })()
-      : `<button onclick="iniciarNovoBotao()" style="width:100%;margin-top:14px;padding:14px;border:2px dashed #bbb;border-radius:12px;background:none;font-size:14px;font-weight:600;color:#888;cursor:pointer;letter-spacing:.01em;">+ Adicionar botão</button>`;
+        <div class="field"><label>Link / Número</label>
+          <input id="bLink" placeholder="(xx) xxxxx-xxxx" type="tel" inputmode="numeric" maxlength="16" oninput="maskTel(this)"/>
+          <div id="bLinkHint" style="font-size:12px;color:var(--danger);margin-top:6px;display:none;">Número inválido. Ex: (11) 98765-4321</div>
+        </div>
+        <div class="row">
+          <button class="btn ghost" onclick="cancelarNovoBotao()">Cancelar</button>
+          <button class="btn" onclick="salvarNovoBotao()">Adicionar</button>
+        </div>
+      </div>
+    ` : editandoBotaoId !== null ? (()=>{ const eb = emp.botoes.find(x=>x.id===editandoBotaoId)||{}; return `
+      <div style="background:var(--paper);border-radius:12px;padding:20px 16px;margin-top:12px;border:1.5px solid var(--line);">
+        <div class="eyebrow" style="margin-bottom:14px;color:#1a1a1a;">Editar botão</div>
+        <div class="field"><label>Tipo</label>
+          <select id="ebTipo" onchange="atualizarCampoBotao('ebTipo','ebLink','ebLinkHint')">
+            <option value="whatsapp" ${eb.tipo==='whatsapp'?'selected':''}>WhatsApp</option>
+            <option value="instagram" ${eb.tipo==='instagram'?'selected':''}>Instagram</option>
+            <option value="maps" ${eb.tipo==='maps'?'selected':''}>Google Maps</option>
+            <option value="site" ${eb.tipo==='site'?'selected':''}>Site</option>
+          </select>
+        </div>
+        <div class="field"><label>Link / Número</label>
+          <input id="ebLink" value="${escapeAttr(eb.tipo==='whatsapp'?fmtTelStr(eb.link):eb.link||'')}" placeholder="${eb.tipo==='whatsapp'?'(xx) xxxxx-xxxx':'https://'}" ${eb.tipo==='whatsapp'?'type="tel" inputmode="numeric" maxlength="16" oninput="maskTel(this)"':''}/>
+          <div id="ebLinkHint" style="font-size:12px;color:var(--danger);margin-top:6px;display:none;">Número inválido. Ex: (11) 98765-4321</div>
+        </div>
+        <div class="row">
+          <button class="btn ghost" onclick="cancelarEdicaoBotao()">Cancelar</button>
+          <button class="btn" onclick="salvarEdicaoBotao('${editandoBotaoId}')">Salvar</button>
+        </div>
+      </div>
+    `; })() : `<button onclick="iniciarNovoBotao()" style="width:100%;margin-top:14px;padding:14px;border:2px dashed #bbb;border-radius:12px;background:none;font-size:14px;font-weight:600;color:#888;cursor:pointer;letter-spacing:.01em;">+ Adicionar botão</button>`;
 
     const hsl = hexToHsl(cor);
     const corH = hsl[0], corL = hsl[2];
     const hueGrad = 'linear-gradient(to right,hsl(0,70%,45%),hsl(30,70%,45%),hsl(60,70%,45%),hsl(90,70%,45%),hsl(120,70%,45%),hsl(150,70%,45%),hsl(180,70%,45%),hsl(210,70%,45%),hsl(240,70%,45%),hsl(270,70%,45%),hsl(300,70%,45%),hsl(330,70%,45%),hsl(360,70%,45%))';
     const lightGrad = 'linear-gradient(to right,hsl('+corH+',70%,15%),hsl('+corH+',70%,50%),hsl('+corH+',70%,85%))';
-    const corSliderHtml = '<div style="background:#fff;border:0.5px solid #e4e4e7;border-radius:14px;padding:16px;box-shadow:0 1px 6px rgba(0,0,0,0.07);">'
+    const corSliderHtml = '<div style="background:#fff;border:0.5px solid #e4e4e7;border-radius:14px;padding:16px;">'
       + '<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">'
       + '<div id="pCorPreview" style="width:44px;height:44px;border-radius:12px;background:'+cor+';flex-shrink:0;border:0.5px solid rgba(0,0,0,0.1);"></div>'
       + '<div><div style="font-size:15px;font-weight:600;color:#1a1a1a;" id="pCorHex">'+cor+'</div>'
-      + '<div style="font-size:12px;color:#8e8e93;margin-top:2px;">Usada nos botões e destaques</div></div></div>'
+      + '<div style="font-size:12px;color:#8e8e93;margin-top:2px;">Usada nos botoes e destaques</div></div></div>'
       + '<div style="margin-bottom:14px;"><div style="font-size:12px;font-weight:600;color:#8e8e93;margin-bottom:8px;">Tom</div>'
       + '<input type="range" class="cor-slider" id="pCorHue" min="0" max="360" value="'+corH+'" style="background:'+hueGrad+';" oninput="atualizarCorPersonalizar()"/></div>'
       + '<div><div style="font-size:12px;font-weight:600;color:#8e8e93;margin-bottom:8px;">Claridade</div>'
@@ -2348,14 +2150,14 @@ function renderGestao(empInicial){
       + '</div>';
 
     const slugHtml = '<div class="field">'
-      + '<label>Link público</label>'
+      + '<label>Link publico</label>'
       + '<div style="display:flex;align-items:center;gap:6px;">'
       + '<span style="font-size:13px;color:#8e8e93;white-space:nowrap;flex-shrink:0;">https://</span>'
       + '<input id="pSlug" value="'+escapeAttr(emp.slug)+'" placeholder="seu-link" style="flex:1;min-width:0;" oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9-]/g,\'\')"/>'
       + '<span style="font-size:13px;color:#8e8e93;white-space:nowrap;flex-shrink:0;">.agenplus.com.br</span>'
       + '</div>'
       + '<div style="display:flex;align-items:center;justify-content:space-between;margin-top:6px;">'
-      + '<div style="font-size:12px;color:#8e8e93;">Alterar quebra o endereço antigo.</div>'
+      + '<div style="font-size:12px;color:#8e8e93;">Alterar quebra o endereco antigo.</div>'
       + '<button onclick="salvarSlugEmpresa()" style="font-family:inherit;font-size:12px;font-weight:700;color:#1a1a1a;background:#f4f4f5;border:none;border-radius:7px;padding:4px 10px;cursor:pointer;">Salvar link</button>'
       + '</div></div>';
 
@@ -2406,7 +2208,6 @@ function renderGestao(empInicial){
     sair:         `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:100%;height:100%;"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>`,
     voltar:       `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:100%;height:100%;"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>`,
     clientes:     `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:100%;height:100%;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
-    relatorios:   `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:100%;height:100%;"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>`,
   };
 
   const GESTAO_NAV = [
@@ -2420,11 +2221,11 @@ function renderGestao(empInicial){
   const GESTAO_CSS = `<style>
     .g-layout { display:flex; flex-direction:column; min-height:calc(100vh - 52px); }
     .g-content { flex:1; min-width:0; padding-bottom:72px; }
-    .g-dash-card { background:#fff; border:0.5px solid #ececee; border-radius:14px; padding:12px; display:flex; flex-direction:column; justify-content:center; box-shadow:0 1px 6px rgba(0,0,0,0.07); }
+    .g-dash-card { background:#fff; border:0.5px solid #ececee; border-radius:14px; padding:12px; display:flex; flex-direction:column; justify-content:center; }
     .g-dash-ico { width:30px; height:30px; border-radius:9px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
     .g-dash-label { font-size:11px; color:#8e8e93; line-height:1.25; font-weight:600; }
     .g-dash-val { font-size:21px; font-weight:700; color:#1a1a1a; letter-spacing:-.02em; margin-top:8px; line-height:1.1; }
-    .g-dash-panel { background:#fff; border:0.5px solid #ececee; border-radius:14px; padding:12px; box-shadow:0 1px 6px rgba(0,0,0,0.07); }
+    .g-dash-panel { background:#fff; border:0.5px solid #ececee; border-radius:14px; padding:12px; }
     .g-dash-ttl { font-size:14px; font-weight:700; color:#1a1a1a; }
     .g-ag-row { padding:7px 0; }
     .g-ag-row + .g-ag-row { border-top:0.5px solid #f4f4f5; }
@@ -2554,20 +2355,24 @@ function renderGestao(empInicial){
         const dias = Math.floor(diffMin / 1440);
         const horas = Math.floor((diffMin % 1440) / 60);
         const mins = diffMin % 60;
-        if (dias > 0) proxVal = 'em ' + dias + 'd e ' + horas + 'h';
-        else if (horas > 0) proxVal = 'em ' + horas + 'h ' + mins + 'min';
-        else proxVal = 'em ' + mins + 'min';
+        if (dias > 0) proxVal = 'falta ' + dias + 'd e ' + horas + 'h';
+        else if (horas > 0) proxVal = 'falta ' + horas + 'h ' + mins + 'min';
+        else proxVal = 'falta ' + mins + 'min';
       }
     }
 
-    // Clientes inativos — usa a tabela de clientes cadastrados, igual à aba Clientes
-    function diasSemVoltarDash(c) {
-      const cAgs = agendamentos.filter(a => a.slug===emp.slug && a.nome===c.nome && a.telefone===c.telefone);
-      if(!cAgs.length) return null;
-      const ultima = cAgs.map(a=>a.data).sort().pop();
-      return Math.floor((new Date() - new Date(ultima+'T00:00:00')) / 86400000);
+    // Clientes inativos
+    const clientesMap = {};
+    ags.forEach(a => {
+      const chave = (a.nome||'') + '||' + (a.telefone||'');
+      if (!clientesMap[chave] || a.data > clientesMap[chave]) clientesMap[chave] = a.data;
+    });
+    function contarInativos(dias) {
+      const limite = new Date(); limite.setDate(limite.getDate() - dias);
+      const limiteStr = isoData(limite);
+      return Object.values(clientesMap).filter(ultima => ultima < limiteStr).length;
     }
-    const inativosAtual = _clientes.filter(c => { const d=diasSemVoltarDash(c); return d!==null && d>=_dashInativosFiltro; }).length;
+    const inativosAtual = contarInativos(_dashInativosFiltro);
 
     // Faturamento de hoje
     const fatHoje = _gFinLancamentos.filter(l=>l.tipo==='receita' && l.data===hoje)
@@ -2603,10 +2408,10 @@ function renderGestao(empInicial){
       ? agsHoje.map(a=>{
           const passou = a.hora < horaAgora;
           const ehProx = prox && a.id === prox.id;
-          return `<div class="g-ag-row" style="${passou?'opacity:0.3;':''}">
+          return `<div class="g-ag-row" style="${passou?'opacity:.45;':''}">
             <div style="display:flex;align-items:baseline;gap:7px;">
               <span class="g-ag-hora">${a.hora.slice(0,5)}</span>
-              <span class="g-ag-nome">${escapeHtml(a.nome)}</span>
+              <span class="g-ag-nome" style="${ehProx?'font-weight:700;':''}">${escapeHtml(a.nome)}</span>
             </div>
             <div class="g-ag-serv">${escapeHtml(a.servicoNome||'')}</div>
           </div>`;
@@ -2662,7 +2467,13 @@ function renderGestao(empInicial){
               <div class="g-dash-ico" style="background:#fef3c7;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="17" y1="11" x2="23" y2="11"/></svg></div>
               <div class="g-dash-label">Clientes inativos</div>
             </div>
-            <div class="g-dash-val">${inativosAtual}</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <div class="g-dash-val">${inativosAtual}</div>
+              <div style="display:flex;gap:4px;">
+                <button onclick="window.setDashInativosFiltro(15)" style="height:22px;padding:0 7px;border-radius:5px;border:0.5px solid ${_dashInativosFiltro===15?'#bfdbfe':'#e4e4e7'};background:${_dashInativosFiltro===15?'#eff6ff':'transparent'};color:${_dashInativosFiltro===15?'#1d4ed8':'#8e8e93'};font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;">15d+</button>
+                <button onclick="window.setDashInativosFiltro(30)" style="height:22px;padding:0 7px;border-radius:5px;border:0.5px solid ${_dashInativosFiltro===30?'#bfdbfe':'#e4e4e7'};background:${_dashInativosFiltro===30?'#eff6ff':'transparent'};color:${_dashInativosFiltro===30?'#1d4ed8':'#8e8e93'};font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;">30d+</button>
+              </div>
+            </div>
           </div>
 
           <div class="g-dash-panel g-dash-agenda">
@@ -2703,7 +2514,11 @@ function renderGestao(empInicial){
     _gFinCarregando = false;
     if(!error && data){
       _gFinLancamentos = data;
-      _gFinAgLancados = new Set(data.filter(l=>l.agendamento_id).map(l=>l.agendamento_id));
+      const lsKey = 'gfin_lancados_'+emp.id;
+      const saved = JSON.parse(localStorage.getItem(lsKey)||'[]');
+      saved.forEach(id=>_gFinAgLancados.add(id));
+      data.filter(l=>l.agendamento_id).forEach(l=>_gFinAgLancados.add(l.agendamento_id));
+      localStorage.setItem(lsKey, JSON.stringify([..._gFinAgLancados]));
     }
     if(corner === 'financeiro' || corner === 'dashboard') draw();
   }
@@ -2723,6 +2538,7 @@ function renderGestao(empInicial){
     if(corner === 'dashboard') draw();
   }
 
+  window.setDashInativosFiltro = (d)=>{ _dashInativosFiltro = d; draw(); };
   window.novaNota   = ()=>{ _notaModal = { texto:'', cor:'amarelo' }; draw(); };
   window.fecharNota = ()=>{ _notaModal = null; draw(); };
   window.setNotaCor = (cor)=>{
@@ -2842,7 +2658,7 @@ function renderGestao(empInicial){
       return `<div style="position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9000;display:flex;align-items:flex-end;justify-content:center;" onclick="if(event.target===this)gFinFecharModal()">
         <div style="background:#fff;border-radius:18px 18px 0 0;padding:28px 24px 40px;width:100%;max-width:520px;">
           <h3 style="${CS}font-weight:700;font-size:18px;margin:0 0 20px;">${titulo}</h3>
-          <div class="field"><label>Descrição</label><input id="gfin-desc" type="text" value="${escapeHtml(m.descricao||'')}" placeholder="${m.tipo==='receita'?'Ex: Dinheiro em aberto':'Ex: Conta de energia'}"></div>
+          <div class="field"><label>Descrição</label><input id="gfin-desc" type="text" value="${escapeHtml(m.descricao||'')}" placeholder="Ex: Coloracao raiz"></div>
           ${svcHtml}
           <div class="field"><label>Valor (R$)</label><input id="gfin-val" type="number" min="0" step="0.01" value="${escapeHtml(m.valor||'')}" placeholder="0,00"></div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px;">
@@ -2859,7 +2675,7 @@ function renderGestao(empInicial){
         const svcNome = a.servicoNome || '';
         const horario = a.hora ? a.hora.slice(0,5) : '';
         const dataFmt = new Date(a.data+'T00:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
-        return `<div style="background:#fff;border:0.5px solid #eee;border-left:4px solid #FFA500;border-radius:10px;padding:11px 12px;margin-bottom:6px;display:flex;align-items:center;gap:10px;box-shadow:0 1px 6px rgba(0,0,0,0.07);">
+        return `<div style="background:#fff;border:0.5px solid #eee;border-left:4px solid #FFA500;border-radius:10px;padding:11px 12px;margin-bottom:6px;display:flex;align-items:center;gap:10px;">
           <div style="flex:1;min-width:0;">
             <div style="font-size:13px;font-weight:600;color:#1a1a1a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(a.nome||'')}</div>
             <div style="font-size:11px;color:#aaa;margin-top:2px;">${escapeHtml(svcNome)}${horario?' · '+dataFmt+' '+horario:''}</div>
@@ -2880,7 +2696,7 @@ function renderGestao(empInicial){
           const svcMeta = ag?.servicoNome ? ag.servicoNome+' · ' : '';
           const meta   = ag ? `${svcMeta}${dataFmt}${horario}` : dataFmt;
           const lid    = escapeHtml(l.id);
-          return `<div style="background:#fff;border:0.5px solid #eee;border-left:4px solid ${bordClr};border-radius:10px;padding:11px 12px;margin-bottom:6px;display:flex;align-items:center;gap:10px;box-shadow:0 1px 6px rgba(0,0,0,0.07);">
+          return `<div style="background:#fff;border:0.5px solid #eee;border-left:4px solid ${bordClr};border-radius:10px;padding:11px 12px;margin-bottom:6px;display:flex;align-items:center;gap:10px;">
             <div style="flex:1;min-width:0;">
               <div style="font-size:13px;font-weight:600;color:#1a1a1a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(l.descricao)}</div>
               <div style="font-size:11px;color:#aaa;margin-top:2px;">${escapeHtml(meta)}</div>
@@ -2950,204 +2766,6 @@ function renderGestao(empInicial){
 
   window.gFinSetFiltro = (f)=>{ _gFinFiltro=f; draw(); };
 
-  function relatoriosBody(){
-    const MESES_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-    const fmtData = d => { const [y,m,dd]=d.split('-'); return `${dd}/${m}/${y}`; };
-    const ICO_DOWN = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`;
-    const ICO_CHEV = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#c7c7cc" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>`;
-
-    // MENU
-    if(!_relAba){
-      const mkCard = (onclick, bg, ico, titulo, desc) => `
-        <button onclick="${onclick}" style="width:100%;display:flex;align-items:center;gap:14px;padding:14px 16px;background:none;border:none;border-bottom:0.5px solid #f2f2f7;cursor:pointer;font-family:inherit;text-align:left;">
-          <div style="width:36px;height:36px;border-radius:10px;background:${bg};display:flex;align-items:center;justify-content:center;flex-shrink:0;">${ico}</div>
-          <div style="flex:1;min-width:0;">
-            <div style="font-size:15px;font-weight:600;color:#1a1a1a;">${titulo}</div>
-            <div style="font-size:12px;color:#8e8e93;margin-top:2px;">${desc}</div>
-          </div>
-          ${ICO_CHEV}
-        </button>`;
-      const ICO_FIN   = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>`;
-      const ICO_CAL2  = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`;
-      const ICO_PESS  = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`;
-      const ICO_SERV  = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ea580c" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>`;
-      return `
-        <div style="position:relative;display:flex;align-items:center;margin-bottom:16px;min-height:36px;">
-          <button onclick="configurarIr(null)" style="background:none;border:none;font-size:14px;font-weight:600;color:#555;cursor:pointer;padding:0;font-family:inherit;display:flex;align-items:center;gap:4px;">&#8249; Voltar</button>
-          <div style="position:absolute;left:0;right:0;text-align:center;font-weight:700;font-size:16px;pointer-events:none;">Relatórios</div>
-          <div></div>
-        </div>
-        <div style="background:#fff;border-radius:22px;box-shadow:0 2px 16px rgba(0,0,0,0.06);overflow:hidden;">
-          ${mkCard("setRelAba('financeiro')",   '#f0fdf4', ICO_FIN,   'Financeiro',    'Receitas, despesas e saldo por mês')}
-          ${mkCard("setRelAba('agendamentos')", '#eff6ff', ICO_CAL2,  'Agendamentos',  'Todos os agendamentos do mês')}
-          ${mkCard("setRelAba('clientes')",     '#f5f3ff', ICO_PESS,  'Clientes',      'Clientes ativos e frequência no mês')}
-          ${mkCard("setRelAba('servicos')",     '#fff7ed', ICO_SERV,  'Serviços',      'Serviços mais agendados no mês')}
-        </div>`;
-    }
-
-    // RELATÓRIO (financeiro ou agendamentos)
-    const [ano, mes] = _relMes.split('-').map(Number);
-    const mesLabel = MESES_PT[mes-1] + ' ' + ano;
-    const prevMes = (()=>{ const d=new Date(ano,mes-2,1); return isoData(d).slice(0,7); })();
-    const nextMes = (()=>{ const d=new Date(ano,mes,1);   return isoData(d).slice(0,7); })();
-    const titulo = _relAba==='financeiro' ? 'Financeiro' : _relAba==='agendamentos' ? 'Agendamentos' : _relAba==='clientes' ? 'Clientes' : 'Serviços';
-
-    const cabecalho = `
-      <div style="position:relative;display:flex;align-items:center;margin-bottom:16px;min-height:36px;">
-        <button onclick="setRelAba(null)" style="background:none;border:none;font-size:14px;font-weight:600;color:#555;cursor:pointer;padding:0;font-family:inherit;display:flex;align-items:center;gap:4px;">&#8249; Voltar</button>
-        <div style="position:absolute;left:0;right:0;text-align:center;font-weight:700;font-size:16px;pointer-events:none;">${titulo}</div>
-      </div>
-      <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:20px;">
-        <button onclick="setRelMes('${prevMes}')" style="background:none;border:none;font-size:22px;cursor:pointer;color:#1a1a1a;padding:4px 10px;line-height:1;">&#8249;</button>
-        <div style="font-size:15px;font-weight:700;color:#1a1a1a;min-width:140px;text-align:center;">${mesLabel}</div>
-        <button onclick="setRelMes('${nextMes}')" style="background:none;border:none;font-size:22px;cursor:pointer;color:#1a1a1a;padding:4px 10px;line-height:1;">&#8250;</button>
-      </div>`;
-
-    let conteudo = '';
-
-    if(_relAba === 'financeiro'){
-      const lancs = _gFinLancamentos.filter(l=>l.data.startsWith(_relMes)).sort((a,b)=>a.data.localeCompare(b.data));
-      const receita = lancs.filter(l=>l.tipo==='receita').reduce((s,l)=>s+parseFloat(l.valor||0),0);
-      const despesa = lancs.filter(l=>l.tipo==='despesa').reduce((s,l)=>s+parseFloat(l.valor||0),0);
-      const saldo   = receita - despesa;
-      const resumo = `
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px;">
-          <div style="background:#fff;border:0.5px solid #eee;border-radius:10px;padding:10px;text-align:center;">
-            <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#008000;margin-bottom:4px;">Receitas</div>
-            <div style="font-size:12px;font-weight:700;color:#008000;font-variant-numeric:tabular-nums;">${gFinFmtMoeda(receita)}</div>
-          </div>
-          <div style="background:#fff;border:0.5px solid #eee;border-radius:10px;padding:10px;text-align:center;">
-            <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#FF0000;margin-bottom:4px;">Despesas</div>
-            <div style="font-size:12px;font-weight:700;color:#FF0000;font-variant-numeric:tabular-nums;">${gFinFmtMoeda(despesa)}</div>
-          </div>
-          <div style="background:#fff;border:0.5px solid #eee;border-radius:10px;padding:10px;text-align:center;">
-            <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#1a1a1a;margin-bottom:4px;">Saldo</div>
-            <div style="font-size:12px;font-weight:700;color:${saldo>=0?'#008000':'#FF0000'};font-variant-numeric:tabular-nums;">${gFinFmtMoeda(saldo)}</div>
-          </div>
-        </div>`;
-      const linhas = lancs.length === 0
-        ? `<div style="text-align:center;padding:28px;color:#aaa;font-size:13px;">Nenhum lançamento neste mês</div>`
-        : lancs.map(l=>{ const isIn=l.tipo==='receita'; return `
-            <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:0.5px solid #f2f2f7;">
-              <div style="flex:1;min-width:0;">
-                <div style="font-size:14px;font-weight:600;color:#1a1a1a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(l.descricao||'-')}</div>
-                <div style="font-size:12px;color:#8e8e93;margin-top:2px;">${fmtData(l.data)}</div>
-              </div>
-              <div style="font-size:14px;font-weight:700;color:${isIn?'#008000':'#FF0000'};font-variant-numeric:tabular-nums;flex-shrink:0;">${isIn?'+':'-'}${gFinFmtMoeda(l.valor)}</div>
-            </div>`; }).join('');
-      const lista = lancs.length
-        ? `<div style="background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.05);margin-bottom:16px;">${linhas}</div>`
-        : `<div style="margin-bottom:16px;">${linhas}</div>`;
-      conteudo = resumo + lista + `<button onclick="exportarRelCSV('financeiro')" style="width:100%;height:44px;border-radius:12px;border:1.5px solid #d1d5db;background:#fff;color:#1a1a1a;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;">${ICO_DOWN} Exportar CSV</button>`;
-    }
-
-    if(_relAba === 'agendamentos'){
-      const ags = agendamentos.filter(a=>a.slug===emp.slug && a.data.startsWith(_relMes)).sort((a,b)=>a.data.localeCompare(b.data)||a.hora.localeCompare(b.hora));
-      const resumo = `
-        <div style="background:#fff;border:0.5px solid #eee;border-radius:10px;padding:12px;text-align:center;margin-bottom:16px;">
-          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#8e8e93;margin-bottom:4px;">Total de agendamentos</div>
-          <div style="font-size:28px;font-weight:700;color:#1a1a1a;line-height:1;">${ags.length}</div>
-        </div>`;
-      const linhas = ags.length === 0
-        ? `<div style="text-align:center;padding:28px;color:#aaa;font-size:13px;">Nenhum agendamento neste mês</div>`
-        : ags.map(a=>`
-            <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:0.5px solid #f2f2f7;">
-              <div style="flex-shrink:0;min-width:50px;text-align:center;">
-                <div style="font-size:12px;font-weight:700;color:#1a1a1a;">${fmtData(a.data)}</div>
-                <div style="font-size:11px;color:#8e8e93;">${a.hora}</div>
-              </div>
-              <div style="flex:1;min-width:0;">
-                <div style="font-size:14px;font-weight:600;color:#1a1a1a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(a.nome||'-')}</div>
-                <div style="font-size:12px;color:#8e8e93;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(a.servicoNome||'-')}</div>
-              </div>
-            </div>`).join('');
-      const lista = ags.length
-        ? `<div style="background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.05);margin-bottom:16px;">${linhas}</div>`
-        : `<div style="margin-bottom:16px;">${linhas}</div>`;
-      conteudo = resumo + lista + `<button onclick="exportarRelCSV('agendamentos')" style="width:100%;height:44px;border-radius:12px;border:1.5px solid #d1d5db;background:#fff;color:#1a1a1a;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;">${ICO_DOWN} Exportar CSV</button>`;
-    }
-
-    if(_relAba === 'clientes'){
-      const ags = agendamentos.filter(a=>a.slug===emp.slug && a.data.startsWith(_relMes));
-      // agrupa por cliente (nome+telefone)
-      const mapa = {};
-      ags.forEach(a=>{
-        const key = (a.telefone||a.nome||'').trim() || a.nome;
-        if(!mapa[key]) mapa[key] = { nome: a.nome||'-', telefone: a.telefone||'', count: 0 };
-        mapa[key].count++;
-      });
-      const lista_cli = Object.values(mapa).sort((a,b)=>b.count-a.count);
-      const totalAgs  = ags.length;
-      const totalCli  = lista_cli.length;
-      const resumo = `
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;">
-          <div style="background:#fff;border:0.5px solid #eee;border-radius:10px;padding:12px;text-align:center;">
-            <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#8e8e93;margin-bottom:4px;">Clientes ativos</div>
-            <div style="font-size:28px;font-weight:700;color:#7c3aed;line-height:1;">${totalCli}</div>
-          </div>
-          <div style="background:#fff;border:0.5px solid #eee;border-radius:10px;padding:12px;text-align:center;">
-            <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#8e8e93;margin-bottom:4px;">Agendamentos</div>
-            <div style="font-size:28px;font-weight:700;color:#1a1a1a;line-height:1;">${totalAgs}</div>
-          </div>
-        </div>`;
-      const linhas_cli = lista_cli.length === 0
-        ? `<div style="text-align:center;padding:28px;color:#aaa;font-size:13px;">Nenhum cliente neste mês</div>`
-        : lista_cli.map(c=>`
-            <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:0.5px solid #f2f2f7;">
-              <div style="width:34px;height:34px;border-radius:50%;background:#f5f3ff;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;font-weight:700;color:#7c3aed;">${(c.nome||'?')[0].toUpperCase()}</div>
-              <div style="flex:1;min-width:0;">
-                <div style="font-size:14px;font-weight:600;color:#1a1a1a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(c.nome)}</div>
-                <div style="font-size:12px;color:#8e8e93;">${c.telefone||'sem telefone'}</div>
-              </div>
-              <div style="font-size:13px;font-weight:700;color:#7c3aed;flex-shrink:0;">${c.count} ${c.count===1?'vez':'vezes'}</div>
-            </div>`).join('');
-      const bloco_cli = lista_cli.length
-        ? `<div style="background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.05);margin-bottom:16px;">${linhas_cli}</div>`
-        : `<div style="margin-bottom:16px;">${linhas_cli}</div>`;
-      conteudo = resumo + bloco_cli;
-    }
-
-    if(_relAba === 'servicos'){
-      const ags = agendamentos.filter(a=>a.slug===emp.slug && a.data.startsWith(_relMes));
-      const total = ags.length;
-      // agrupa por serviço
-      const mapa_svc = {};
-      ags.forEach(a=>{
-        const key = a.servicoNome||'Sem serviço';
-        if(!mapa_svc[key]) mapa_svc[key] = { nome: key, count: 0 };
-        mapa_svc[key].count++;
-      });
-      const lista_svc = Object.values(mapa_svc).sort((a,b)=>b.count-a.count);
-      const maxCount  = lista_svc.length ? lista_svc[0].count : 1;
-      const resumo_svc = `
-        <div style="background:#fff;border:0.5px solid #eee;border-radius:10px;padding:12px;text-align:center;margin-bottom:16px;">
-          <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#8e8e93;margin-bottom:4px;">Total de agendamentos</div>
-          <div style="font-size:28px;font-weight:700;color:#1a1a1a;line-height:1;">${total}</div>
-        </div>`;
-      const linhas_svc = lista_svc.length === 0
-        ? `<div style="text-align:center;padding:28px;color:#aaa;font-size:13px;">Nenhum agendamento neste mês</div>`
-        : lista_svc.map((s,i)=>{
-            const pct = total>0 ? Math.round(s.count/total*100) : 0;
-            const barW = Math.round(s.count/maxCount*100);
-            return `
-            <div style="padding:12px 14px;border-bottom:0.5px solid #f2f2f7;">
-              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-                <div style="font-size:14px;font-weight:600;color:#1a1a1a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0;">${escapeHtml(s.nome)}</div>
-                <div style="flex-shrink:0;margin-left:10px;font-size:13px;font-weight:700;color:#ea580c;">${s.count} <span style="font-weight:400;color:#8e8e93;font-size:12px;">(${pct}%)</span></div>
-              </div>
-              <div style="height:5px;border-radius:99px;background:#f2f2f7;overflow:hidden;">
-                <div style="height:100%;border-radius:99px;background:#ea580c;width:${barW}%;transition:width .3s;"></div>
-              </div>
-            </div>`;}).join('');
-      const bloco_svc = lista_svc.length
-        ? `<div style="background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.05);margin-bottom:16px;">${linhas_svc}</div>`
-        : `<div style="margin-bottom:16px;">${linhas_svc}</div>`;
-      conteudo = resumo_svc + bloco_svc;
-    }
-
-    return `${cabecalho}${conteudo}`;
-  }
-
   window.gFinAbrirModal = (tipo)=>{
     _gFinModal = { tipo, agId: null, descricao: '', valor: '', editId: null };
     draw();
@@ -3161,11 +2779,11 @@ function renderGestao(empInicial){
   };
 
   window.gFinExcluir = async (id)=>{
-    if(!confirm('Excluir este lançamento?')) return;
+    if(!confirm('Excluir este lancamento?')) return;
     const { error, count } = await supabaseClient.from('lancamentos_financeiros').delete({ count: 'exact' }).eq('id', id);
     if(error){ toast('Erro ao excluir: ' + error.message,'err'); return; }
-    if(count === 0){ toast('Sem permissão para excluir este lançamento.','err'); return; }
-    toast('Lançamento removido.','ok');
+    if(count === 0){ toast('Sem permissao para excluir este lancamento.','err'); return; }
+    toast('Lancamento removido.','ok');
     await gFinCarregar();
   };
 
@@ -3184,40 +2802,29 @@ function renderGestao(empInicial){
     const valEl  = document.getElementById('gfin-val');
     const desc = descEl?.value?.trim();
     const val  = parseFloat(valEl?.value);
-    if(!desc){ toast('Informe uma descrição.','err'); return; }
-    if(isNaN(val)||val<=0){ toast('Informe um valor válido.','err'); return; }
+    if(!desc){ toast('Informe uma descricao.','err'); return; }
+    if(isNaN(val)||val<=0){ toast('Informe um valor valido.','err'); return; }
     const m = _gFinModal;
     _gFinModal = null;
     let error;
     if(m.editId){
       ({ error } = await supabaseClient.from('lancamentos_financeiros').update({ descricao: desc, valor: val }).eq('id', m.editId));
     } else {
-      const agObj = m.agId ? agendamentos.find(a=>a.id===m.agId) : null;
-      const dataLanc = agObj?.data || (_gFinPeriodo==='dia' ? _gFinData : isoData(new Date()));
+      const dataLanc = _gFinPeriodo==='dia' ? _gFinData : isoData(new Date());
       const payload = { empresa_id: emp.id, tipo: m.tipo, descricao: desc, valor: val, data: dataLanc };
       if(m.agId) payload.agendamento_id = m.agId;
       ({ error } = await supabaseClient.from('lancamentos_financeiros').insert(payload));
       if(!error && m.agId){
         _gFinAgLancados.add(m.agId);
+        localStorage.setItem('gfin_lancados_'+emp.id, JSON.stringify([..._gFinAgLancados]));
       }
     }
     if(error){ toast('Erro ao salvar: '+error.message,'err'); _gFinModal=m; draw(); return; }
-    toast('Lançamento salvo!','ok');
+    toast('Lancamento salvo!','ok');
     await gFinCarregar();
   };
 
-  function preservarCamposPersonalizar(){
-    // Garante que valores digitados no formulário de personalizar
-    // não sejam perdidos quando draw() é chamado por outra razão
-    if(configurarSub !== 'personalizar') return;
-    const _nome = document.getElementById('pNome')?.value;          if(_nome != null) emp.nome = _nome || emp.nome;
-    const _desc = document.getElementById('pDescricao')?.value;     if(_desc != null) emp.descricao = _desc;
-    const _dest = document.getElementById('pTextoDestaque')?.value; if(_dest != null) emp.textoDestaque = _dest;
-    const _cor  = document.getElementById('pCor')?.value;           if(_cor)          emp.corPrincipal = _cor;
-  }
-
   function draw(){
-    preservarCamposPersonalizar();
     const isMaster = currentProfile?.role === 'master';
     const exitAction = isMaster
       ? `goto({empresa:'${emp.slug}'})`
@@ -3235,10 +2842,9 @@ function renderGestao(empInicial){
                : corner==='configurar'   ? configurarBody()
                : corner==='financeiro'   ? financeiroBody()
                : corner==='clientes'     ? clientesBody()
-               : corner==='relatorios'   ? relatoriosBody()
                : agendamentosBody();
 
-    const cardStyle = (corner==='configurar' || corner==='financeiro' || corner==='dashboard' || corner==='clientes' || corner==='relatorios' || corner===null) ? 'background:none;box-shadow:none;padding:0;' : '';
+    const cardStyle = (corner==='configurar' || corner==='financeiro' || corner==='dashboard' || corner==='clientes' || corner===null) ? 'background:none;box-shadow:none;padding:0;' : '';
 
 
     render(`
@@ -3260,33 +2866,24 @@ function renderGestao(empInicial){
   }
 
   window.setCorner = (c)=>{
-    // Reset de estado comum
-    corner=c; editandoId=null; novoAgState=null; configurarSub=null;
-    _removendoServicoIdx=null; _waMenuId=null; _gFinModal=null; _notaModal=null; _linkMenuAberto=false;
+    if(c==='financeiro' && corner!=='financeiro'){
+      _gFinData = isoData(new Date()); _gFinPeriodo='dia'; _gFinLancamentos=[]; _gFinModal=null;
+      corner=c; editandoId=null; novoAgState=null; configurarSub=null; _removendoServicoIdx=null; _waMenuId=null;
+      draw(); gFinCarregar(); return;
+    }
+    if(c==='dashboard' && corner!=='dashboard'){
+      corner=c; editandoId=null; novoAgState=null; configurarSub=null; _removendoServicoIdx=null; _waMenuId=null; _gFinModal=null; _notaModal=null;
+      draw();
+      if(!_gFinLancamentos.length) gFinCarregar();
+      carregarNotas();
+      return;
+    }
+    corner=c; editandoId=null; novoAgState=null; configurarSub=null; _removendoServicoIdx=null; _waMenuId=null; _gFinModal=null; _notaModal=null; _linkMenuAberto=false;
     _novoAgClienteId=null; _novoAgClienteBusca=''; _novoAgClienteResultados=[];
     _clientePerfilId=null; _clientePerfilEditando=false; _clienteModalNovo=false;
     draw();
-
-    // Recarrega dados e executa ação específica da aba
-    loadData().then(()=>{
-      const a = empresas.find(e=>e.slug===emp.slug); if(a) emp=a;
-      if(c==='financeiro'){
-        _gFinData = isoData(new Date()); _gFinPeriodo='dia'; _gFinLancamentos=[]; _gFinModal=null;
-        draw(); gFinCarregar();
-      } else if(c==='dashboard'){
-        draw();
-        if(!_gFinLancamentos.length) gFinCarregar();
-        carregarNotas();
-      } else if(c==='relatorios'){
-        _relAba=null; _relMes = isoData(new Date()).slice(0,7);
-        draw();
-        if(!_gFinLancamentos.length) gFinCarregar();
-      } else if(c==='clientes'){
-        carregarClientes();
-      } else {
-        draw();
-      }
-    });
+    if(c==='clientes') { carregarClientes(); return; }
+    loadData().then(()=>{ const a=empresas.find(e=>e.slug===emp.slug); if(a) emp=a; draw(); });
   };
   window.selecionarDiaGestao = (iso)=>{
     if(!iso || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return;
@@ -3332,27 +2929,24 @@ function renderGestao(empInicial){
   window.cancelarNovoAg = ()=>{ novoAgState=null; _novoAgClienteId=null; _novoAgClienteBusca=''; _novoAgClienteResultados=[]; draw(); };
   window.salvarNovoAg = async (data)=>{
     const servicoId = document.getElementById('novoServico')?.value;
-    const hora = novoAgState?.hora;
+    const hora = document.getElementById('novoHora')?.value;
     if(!_novoAgClienteId){ toast('Selecione um cliente.','err'); return; }
     if(!servicoId||!hora){ toast('Preencha todos os campos.','err'); return; }
     const cliente = _clientes.find(c=>c.id===_novoAgClienteId);
-    if(!cliente){ toast('Cliente não encontrado.','err'); return; }
+    if(!cliente){ toast('Cliente nao encontrado.','err'); return; }
     const servico = emp.servicos.find(s=>s.id===servicoId);
     const {data:row, error} = await supabaseClient.from('agendamentos').insert({
       empresa_id: emp.id,
       cliente_id: cliente.id,
       nome_cliente: cliente.nome, telefone: cliente.telefone, servico_id: servicoId, servico_nome: servico?.nome||'',
-      data, hora, token_curto: gerarTokenCurto()
+      data, hora
     }).select().single();
     if(error){ toast(friendlyError(error,'Erro ao agendar.'),'err'); return; }
     agendamentos.push({
       id:row.id, slug:emp.slug,
       nome:row.nome_cliente, telefone:row.telefone,
       servicoId:row.servico_id, servicoNome:row.servico_nome,
-      data:row.data, hora:row.hora,
-      status: row.status || 'nao_confirmado',
-      confirmacaoEnviada: false, lembreteEnviado: false,
-      tokenCurto: row.token_curto || null
+      data:row.data, hora:row.hora
     });
     novoAgState=null; _novoAgClienteId=null; _novoAgClienteBusca=''; _novoAgClienteResultados=[]; draw();
   };
@@ -3385,7 +2979,7 @@ function renderGestao(empInicial){
     editandoId = null; draw();
   };
   window.excluirAgendamento = async (id)=>{
-    if(!confirm('Excluir este agendamento? Essa ação não pode ser desfeita.')) return;
+    if(!confirm('Excluir este agendamento? Essa acao nao pode ser desfeita.')) return;
     const { error } = await supabaseClient.from('agendamentos').delete().eq('id', id);
     if(error){ toast(friendlyError(error,'Erro ao excluir agendamento. Tente novamente.'),'err'); return; }
     agendamentos = agendamentos.filter(a=>a.id!==id);
@@ -3463,62 +3057,6 @@ function renderGestao(empInicial){
     _waMenuId = _waMenuId === agId ? null : agId;
     draw();
   };
-  window.setRelAba = (aba)=>{ _relAba=aba; draw(); };
-  window.setRelMes = (mes)=>{ _relMes=mes; draw(); };
-  window.exportarRelCSV = (tipo)=>{
-    const MESES_PT = ['Janeiro','Fevereiro','Marco','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-    const [ano, mes] = _relMes.split('-').map(Number);
-    const mesLabel = MESES_PT[mes-1]+'_'+ano;
-    const fmtData = d => { const [y,m,dd]=d.split('-'); return `${dd}/${m}/${y}`; };
-    let csv, nome;
-    if(tipo==='financeiro'){
-      const lancs = _gFinLancamentos.filter(l=>l.data.startsWith(_relMes)).sort((a,b)=>a.data.localeCompare(b.data));
-      csv = 'Data;Descricao;Tipo;Valor\n';
-      csv += lancs.map(l=>`${fmtData(l.data)};${(l.descricao||'').replace(/;/g,'')};${l.tipo==='receita'?'Receita':'Despesa'};${parseFloat(l.valor||0).toFixed(2).replace('.',',')}`).join('\n');
-      nome = `financeiro_${mesLabel}.csv`;
-    } else {
-      const ags = agendamentos.filter(a=>a.slug===emp.slug && a.data.startsWith(_relMes)).sort((a,b)=>a.data.localeCompare(b.data)||a.hora.localeCompare(b.hora));
-      csv = 'Data;Hora;Cliente;Servico\n';
-      csv += ags.map(a=>`${fmtData(a.data)};${a.hora};${(a.nome||'').replace(/;/g,'')};${(a.servicoNome||'').replace(/;/g,'')}`).join('\n');
-      nome = `agendamentos_${mesLabel}.csv`;
-    }
-    const blob = new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8;'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href=url; a.download=nome; a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  window.toggleWaMenuInativo = (clienteId)=>{
-    _inativoWaMenuId = _inativoWaMenuId === clienteId ? null : clienteId;
-    draw();
-  };
-  window.waAcaoInativo = (clienteId, tipo, empId)=>{
-    const c = _clientes.find(x=>x.id===clienteId);
-    if(!c || !c.telefone){ _inativoWaMenuId=null; draw(); return; }
-    const waNum = '55' + c.telefone.replace(/\D/g,'').replace(/^0/,'');
-    let link;
-    if(tipo === 'conversar'){
-      link = `https://wa.me/${waNum}`;
-    } else {
-      const empObj = empresas.find(e=>e.id===empId);
-      const defaultMsg = 'Olá, {nome}! \nFaz um tempinho desde o seu último atendimento.\nQue tal agendar um novo horário? Estamos à disposição.\nAgende pelo link:\n{link}';
-      const tmpl = empObj?.msgInativo || defaultMsg;
-      const linkPublico = 'https://' + (empObj?.slug||'') + '.agenplus.com.br';
-      const msg = tmpl
-        .replace(/{nome}/g, c.nome||'')
-        .replace(/{link}/g, linkPublico);
-      link = `https://wa.me/${waNum}?text=${encodeURIComponent(msg)}`;
-    }
-    if(tipo === 'inativo'){
-      const agora = new Date().toISOString();
-      supabaseClient.from('clientes').update({ ausente_enviado_em: agora }).eq('id', clienteId);
-      const cf = _clientes.find(x=>x.id===clienteId); if(cf) cf.ausenteEnviadoEm = agora;
-    }
-    _inativoWaMenuId = null;
-    draw();
-    window.open(link, '_blank', 'noopener,noreferrer');
-  };
   window.waAcao = (agId, tipo, empId)=>{
     const ag = agendamentos.find(a=>a.id===agId);
     if(!ag) return;
@@ -3529,12 +3067,11 @@ function renderGestao(empInicial){
     } else {
       const empObj = empresas.find(e=>e.id===empId);
       const defaultMsg = tipo === 'confirmacao'
-        ? 'Olá, {nome}!\nConfirme seu agendamento de {servico} para {data} às {hora}.\nAcesse o link abaixo para confirmar ou cancelar:\n{link}'
-        : 'Olá, {nome}! \nPassando pra lembrar do seu agendamento! \n{servico}\n{data} - {hora}.\nAté lá!';
+        ? 'Ola, {nome}!\nConfirme seu agendamento de {servico} para hoje as {hora}.\nAcesse o link abaixo, faca o login e confirme ou cancele:\n{link}'
+        : 'Ola, {nome}! Lembrando do seu agendamento de {servico} amanha as {hora}. Ate la!';
       const tmpl = (tipo === 'confirmacao' ? empObj?.msgConfirmacao : empObj?.msgLembrete) || defaultMsg;
       const dataFmt = ag.data ? new Date(ag.data+'T00:00:00').toLocaleDateString('pt-BR') : '';
-      const token = ag.tokenCurto || agId;
-      const linkConfirmar = 'https://' + (empObj?.slug||'') + '.agenplus.com.br/?ag=' + token;
+      const linkConfirmar = 'https://' + (empObj?.slug||'') + '.agenplus.com.br/confirmar';
       const msg = tmpl
         .replace(/{nome}/g, ag.nome||'')
         .replace(/{hora}/g, ag.hora||'')
@@ -3543,7 +3080,7 @@ function renderGestao(empInicial){
         .replace(/{link}/g, linkConfirmar);
       link = `https://wa.me/${waNum}?text=${encodeURIComponent(msg)}`;
       const campo = tipo === 'confirmacao' ? 'confirmacao_enviada' : 'lembrete_enviado';
-      fetch('/api/ag-mark', { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ ag_id: agId, campo }) });
+      supabaseClient.from('agendamentos').update({ [campo]: true }).eq('id', agId);
       if(tipo === 'confirmacao') ag.confirmacaoEnviada = true;
       else ag.lembreteEnviado = true;
     }
@@ -3554,16 +3091,14 @@ function renderGestao(empInicial){
   window.salvarMensagens = async (empId)=>{
     const c = document.getElementById('msgConfirmacao');
     const l = document.getElementById('msgLembrete');
-    const i = document.getElementById('msgInativo');
     if(!c || !l) return;
     const { error } = await supabaseClient.from('empresas').update({
       msg_confirmacao: c.value,
-      msg_lembrete:    l.value,
-      msg_inativo:     i ? i.value : null
+      msg_lembrete:    l.value
     }).eq('id', empId);
     if(error){ toast('Erro ao salvar. Tente novamente.','err'); return; }
     const empObj = empresas.find(e=>e.id===empId);
-    if(empObj){ empObj.msgConfirmacao = c.value; empObj.msgLembrete = l.value; if(i) empObj.msgInativo = i.value; }
+    if(empObj){ empObj.msgConfirmacao = c.value; empObj.msgLembrete = l.value; }
     toast('Mensagens salvas!','ok');
   };
   window.toggleLinkMenu = ()=>{ _linkMenuAberto = !_linkMenuAberto; draw(); };
@@ -3579,33 +3114,10 @@ function renderGestao(empInicial){
     const { data, error } = await supabaseClient.from('clientes').select('*').eq('empresa_id', emp.id).order('nome');
     _clientesCarregando = false;
     if(error){ toast('Erro ao carregar clientes.','err'); _clientes=[]; draw(); return; }
-    _clientes = (data||[]).map(c=>({ id:c.id, nome:c.nome, telefone:c.telefone, ausenteEnviadoEm:c.ausente_enviado_em||null }));
+    _clientes = (data||[]).map(c=>({ id:c.id, nome:c.nome, telefone:c.telefone }));
     draw();
   }
   window.filtrarClientes = (v)=>{ _clientesBusca=v; draw(); };
-  window.filtrarClientesLive = (v)=>{
-    _clientesBusca = v;
-    const wrap = document.getElementById('clientesListaWrap');
-    if(!wrap){ draw(); return; }
-    const q = v.toLowerCase();
-    const digits = v.replace(/\D/g,'');
-    const listados = _clientes.filter(c=>{
-      if(!v) return true;
-      return c.nome.toLowerCase().includes(q) || (digits && (c.telefone||'').includes(digits));
-    });
-    const _fmtTel = t => { const d=(t||'').replace(/\D/g,'').replace(/^0/,''); return d.length===11?`(${d.slice(0,2)}) ${d.slice(2,7)}-${d.slice(7)}`:t||''; };
-    const rows = listados.map(c=>`
-      <div onclick="abrirPerfilCliente('${c.id}')" style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:0.5px solid #f2f2f7;cursor:pointer;" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background=''">
-        <div style="flex:1;min-width:0;">
-          <div style="font-size:15px;font-weight:600;color:#1a1a1a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(c.nome)}</div>
-          <div style="font-size:13px;color:#8e8e93;margin-top:2px;">${_fmtTel(c.telefone)}</div>
-        </div>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#c7c7cc" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-      </div>`).join('');
-    wrap.innerHTML = listados.length
-      ? `<div style="background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.06);">${rows}</div>`
-      : `<p class="muted" style="text-align:center;padding:24px 0;">${v ? 'Nenhum cliente encontrado.' : 'Nenhum cliente cadastrado ainda.'}</p>`;
-  };
   window.abrirNovoCliente = ()=>{ _clienteModalNovo=true; draw(); };
   window.fecharModalCliente = ()=>{ _clienteModalNovo=false; draw(); };
   window.abrirPerfilCliente = (id)=>{ _clientePerfilId=id; _clientePerfilEditando=false; draw(); };
@@ -3618,13 +3130,13 @@ function renderGestao(empInicial){
     const nome = (document.getElementById('cliNome')?.value||'').trim().toUpperCase();
     const telRaw = (document.getElementById('cliTel')?.value||'').replace(/\D/g,'').replace(/^(55|0)/,'');
     if(!nome){ toast('Preencha o nome.','err'); return; }
-    if(telRaw.length!==11 || telRaw[2]!=='9'){ toast('Telefone inválido. Ex: (11) 98765-4321','err'); return; }
+    if(telRaw.length!==11 || telRaw[2]!=='9'){ toast('Telefone invalido. Ex: (11) 98765-4321','err'); return; }
     const telefone = '0'+telRaw;
-    const existe = _clientes.find(c=>c.telefone===telefone);
-    if(existe){ toast(`Já existe um cliente com este número: ${existe.nome}.`,'err'); return; }
+    const existe = _clientes.find(c=>c.nome===nome && c.telefone===telefone);
+    if(existe){ toast('Ja existe um cliente com este nome e telefone.','err'); return; }
     const { data, error } = await supabaseClient.from('clientes').insert({ empresa_id:emp.id, nome, telefone }).select().single();
     if(error){ toast('Erro ao cadastrar cliente.','err'); return; }
-    _clientes.push({ id:data.id, nome:data.nome, telefone:data.telefone, ausenteEnviadoEm:null });
+    _clientes.push({ id:data.id, nome:data.nome, telefone:data.telefone });
     _clientes.sort((a,b)=>a.nome.localeCompare(b.nome));
     _clienteModalNovo=false; _clientesBusca=''; draw(); toast('Cliente cadastrado.','ok');
   };
@@ -3632,10 +3144,8 @@ function renderGestao(empInicial){
     const nome = (document.getElementById('cliNome')?.value||'').trim().toUpperCase();
     const telRaw = (document.getElementById('cliTel')?.value||'').replace(/\D/g,'').replace(/^(55|0)/,'');
     if(!nome){ toast('Preencha o nome.','err'); return; }
-    if(telRaw.length!==11 || telRaw[2]!=='9'){ toast('Telefone inválido. Ex: (11) 98765-4321','err'); return; }
+    if(telRaw.length!==11 || telRaw[2]!=='9'){ toast('Telefone invalido. Ex: (11) 98765-4321','err'); return; }
     const telefone = '0'+telRaw;
-    const existe = _clientes.find(c=>c.telefone===telefone && c.id!==id);
-    if(existe){ toast(`Já existe um cliente com este número: ${existe.nome}.`,'err'); return; }
     const { error } = await supabaseClient.from('clientes').update({ nome, telefone }).eq('id', id);
     if(error){ toast('Erro ao salvar.','err'); return; }
     const c = _clientes.find(x=>x.id===id);
@@ -3643,24 +3153,10 @@ function renderGestao(empInicial){
     _clientes.sort((a,b)=>a.nome.localeCompare(b.nome));
     _clientePerfilEditando=false; draw(); toast('Cliente atualizado.','ok');
   };
-  window.excluirClienteDoPerfil = (id)=>{
-    _excluirClienteModal = id; draw();
-  };
-  window.cancelarExcluirCliente = ()=>{
-    _excluirClienteModal = null; draw();
-  };
-  window.confirmarExcluirCliente = async (id, excluirAgs)=>{
-    _excluirClienteModal = null;
-    if(excluirAgs){
-      const idsAg = agendamentos.filter(a=>a.slug===emp.slug && _clientes.find(c=>c.id===id && c.nome===a.nome && c.telefone===a.telefone)).map(a=>a.id);
-      if(idsAg.length){
-        const { error: eAg } = await supabaseClient.from('agendamentos').delete().in('id', idsAg);
-        if(eAg){ toast('Erro ao excluir agendamentos.','err'); return; }
-        agendamentos = agendamentos.filter(a=>!idsAg.includes(a.id));
-      }
-    }
+  window.excluirClienteDoPerfil = async (id)=>{
+    if(!confirm('Excluir este cliente?')) return;
     const { error } = await supabaseClient.from('clientes').delete().eq('id', id);
-    if(error){ toast('Erro ao excluir cliente.','err'); return; }
+    if(error){ toast('Erro ao excluir.','err'); return; }
     _clientes = _clientes.filter(c=>c.id!==id);
     _clientePerfilId=null; _clientePerfilEditando=false;
     draw(); toast('Cliente removido.','ok');
@@ -3719,7 +3215,7 @@ function renderGestao(empInicial){
     const telefone = '0'+telRaw;
     const { data, error } = await supabaseClient.from('clientes').insert({ empresa_id:emp.id, nome, telefone }).select().single();
     if(error){ toast('Erro ao cadastrar cliente.','err'); return; }
-    _clientes.push({ id:data.id, nome:data.nome, telefone:data.telefone, ausenteEnviadoEm:null });
+    _clientes.push({ id:data.id, nome:data.nome, telefone:data.telefone });
     _clientes.sort((a,b)=>a.nome.localeCompare(b.nome));
     _novoAgClienteId = data.id;
     _novoAgClienteBusca = data.nome;
@@ -3730,12 +3226,12 @@ function renderGestao(empInicial){
 
   window.salvarCancelamentoHoras = async (empresaId)=>{
     const val = parseInt(document.getElementById('cancelamentoHoras')?.value||'0', 10);
-    if(isNaN(val)||val<0){ toast('Valor inválido.','err'); return; }
+    if(isNaN(val)||val<0){ toast('Valor invalido.','err'); return; }
     const { error } = await supabaseClient.from('empresas').update({ cancelamento_horas: val }).eq('id', empresaId);
     if(error){ toast('Erro ao salvar.','err'); return; }
     emp.cancelamentoHoras = val;
     const g = empresas.find(e=>e.id===empresaId); if(g) g.cancelamentoHoras = val;
-    toast('Configuração salva.','ok');
+    toast('Configuracao salva.','ok');
     configurarSub = null; draw();
   };
 
@@ -3758,10 +3254,10 @@ function renderGestao(empInicial){
   window.salvarSlugEmpresa = async ()=>{
     const novoSlug = (document.getElementById('pSlug')?.value || '').trim();
     if(!novoSlug){ toast('Preencha o link.','err'); return; }
-    if(novoSlug === emp.slug){ toast('Link não alterado.','ok'); return; }
-    if(!confirm('Alterar o link para "'+novoSlug+'.agenplus.com.br"? O endereço antigo vai parar de funcionar.')) return;
+    if(novoSlug === emp.slug){ toast('Link nao alterado.','ok'); return; }
+    if(!confirm('Alterar o link para "'+novoSlug+'.agenplus.com.br"? O endereco antigo vai parar de funcionar.')) return;
     const { error } = await supabaseClient.from('empresas').update({ slug: novoSlug }).eq('id', emp.id);
-    if(error){ toast((error.message||'').includes('unique')||error.code==='23505' ? 'Este link já está em uso.' : 'Erro ao salvar. Tente novamente.','err'); return; }
+    if(error){ toast((error.message||'').includes('unique')||error.code==='23505' ? 'Este link ja esta em uso.' : 'Erro ao salvar. Tente novamente.','err'); return; }
     emp.slug = novoSlug;
     toast('Link atualizado!','ok');
     draw();
@@ -3847,28 +3343,17 @@ function renderGestao(empInicial){
     if(d.length !== 11 || d[2] !== '9') return null;
     return 'https://wa.me/55' + d;
   }
-  window.atualizarCampoBotao = (tipoId, linkId, hintId, labelId, descId)=>{
-    const tipo  = document.getElementById(tipoId)?.value;
-    const inp   = document.getElementById(linkId);
-    const hint  = document.getElementById(hintId);
-    const label = labelId ? document.getElementById(labelId) : null;
-    const desc  = descId  ? document.getElementById(descId)  : null;
+  window.atualizarCampoBotao = (tipoId, linkId, hintId)=>{
+    const tipo = document.getElementById(tipoId)?.value;
+    const inp  = document.getElementById(linkId);
+    const hint = document.getElementById(hintId);
     if(!inp) return;
-    const BINFO = {
-      whatsapp: { label:'Número',  desc:'Digite o número com DDD', ph:'(xx) xxxxx-xxxx' },
-      instagram:{ label:'Link',    desc:'Cole aqui o link do seu Instagram', ph:'https://instagram.com/seuusuario' },
-      maps:     { label:'Link',    desc:'Pesquise seu endereço no Google Maps e cole o link aqui', ph:'https://maps.app.goo.gl/...' },
-      site:     { label:'Link',    desc:'Cole o link do seu site, caso tenha', ph:'https://seusite.com.br' },
-    };
-    const bi = BINFO[tipo] || BINFO.whatsapp;
-    if(label) label.textContent = bi.label;
-    if(desc)  desc.textContent  = bi.desc;
-    inp.placeholder = bi.ph;
-    inp.value = '';
     if(tipo === 'whatsapp'){
+      inp.placeholder = '(xx) xxxxx-xxxx';
       inp.type = 'tel'; inp.inputMode = 'numeric'; inp.maxLength = 16;
       inp.oninput = ()=>window.maskTel(inp);
     } else {
+      inp.placeholder = tipo === 'telefone' ? 'tel:+5511999999999' : 'https://...';
       inp.type = 'text'; inp.inputMode = ''; inp.maxLength = 500;
       inp.oninput = null; inp.removeAttribute('oninput');
       if(hint) hint.style.display = 'none';
@@ -4021,7 +3506,7 @@ function renderCadastro(){
               onkeyup="if(event.key==='Enter') document.getElementById('cad-email').focus()"/>
           </div>
           <div class="field">
-            <label style="color:#c7c7cc;">WhatsApp</label>
+            <label style="color:#c7c7cc;">WhatsApp <span style="font-weight:400;">(opcional)</span></label>
             <input id="cad-whats" type="tel" inputmode="numeric" maxlength="16" placeholder="(xx) xxxxx-xxxx" style="border-color:#e5e5ea;color:#8e8e93;"
               onkeydown="if(event.key.length===1&&!/[0-9]/.test(event.key))event.preventDefault()"
               oninput="maskTel(this)"/>
@@ -4143,11 +3628,7 @@ window.tentarLoginUnificado = async ()=>{
   const senha = document.getElementById('loginSenha').value;
   if(!email || !senha){ toast('Preencha e-mail e senha.','err'); return; }
 
-  const btn = document.querySelector('button[onclick="tentarLoginUnificado()"]');
-  if(btn){ btn.disabled = true; btn.textContent = 'Entrando...'; }
-
   const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password: senha });
-  if(error && btn){ btn.disabled = false; btn.textContent = 'Entrar com email'; }
   if(error){ toast('E-mail ou senha incorretos.','err'); return; }
 
   const { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', data.user.id).single();
@@ -4159,41 +3640,20 @@ window.tentarLoginUnificado = async ()=>{
 
   currentUser    = data.user;
   currentProfile = profile;
-
-  try {
-    await loadData();
-  } catch(e) {
-    if(btn){ btn.disabled = false; btn.textContent = 'Entrar com email'; }
-    toast('Erro ao carregar dados. Tente novamente.','err');
-    return;
-  }
+  await loadData();
 
   if(profile.role === 'master'){
     location.replace('/master');
   } else if(profile.role === 'owner_empresa'){
     const emp = empresas.find(e => e.id === profile.empresa_id);
     if(emp){
-      const subAtual = slugDoSubdominio();
-      if(subAtual === emp.slug){
-        // ja esta no subdominio correto — roteia direto sem recarregar
-        goto({ empresa: emp.slug, page: 'gestao' });
-      } else {
-        // vem do dominio principal — precisa do redirect cross-domain com tokens
-        try {
-          const { data: { session } } = await supabaseClient.auth.getSession();
-          const hash = `access_token=${session.access_token}&refresh_token=${session.refresh_token}&token_type=bearer&type=bearer`;
-          location.replace(`https://${emp.slug}.agenplus.com.br/gestao#${hash}`);
-        } catch(e) {
-          if(btn){ btn.disabled = false; btn.textContent = 'Entrar com email'; }
-          toast('Erro ao redirecionar. Tente novamente.','err');
-        }
-      }
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      const hash = `access_token=${session.access_token}&refresh_token=${session.refresh_token}&token_type=bearer&type=bearer`;
+      location.replace(`https://${emp.slug}.agenplus.com.br/gestao#${hash}`);
     } else {
-      if(btn){ btn.disabled = false; btn.textContent = 'Entrar com email'; }
       toast('Empresa não encontrada.','err');
     }
   } else {
-    if(btn){ btn.disabled = false; btn.textContent = 'Entrar com email'; }
     toast('Acesso não autorizado.','err');
   }
 };
@@ -4239,24 +3699,13 @@ let masterShowForm = false;
 let masterSearch = '';
 let masterAba = 'dashboard'; // 'dashboard' | 'empresas' | 'financeiro'
 let masterNavAberta = false;
-let _filtroEmpStatus = 'todos'; // 'todos' | 'ativa' | 'trial' | 'bloqueada'
 let financeiroData = []; // registros da tabela financeiro
 let _finForm = null; // { mode:'configurar'|'editar', empresaId, regId, valor, dia }
 let _filtroFin = 'todos';
-let _masterDetalheSlug = null; // slug da empresa aberta no detalhe
-let mensalidades = []; // historico de mensalidades por empresa
-let _finPeriodo = (()=>{ const n=new Date(); return {mes:n.getMonth(),ano:n.getFullYear()}; })();
-let _finEmpFiltro = ''; // filtro de empresa na aba financeiro
-let _finEmpExpandido = null; // slug expandido na tabela financeiro
 
 async function carregarFinanceiro(){
   const { data, error } = await supabaseClient.from('financeiro').select('*');
   if(!error && data) financeiroData = data;
-}
-
-async function carregarMensalidades(){
-  const { data, error } = await supabaseClient.from('mensalidades').select('*').order('referencia', { ascending:false });
-  if(!error && data) mensalidades = data;
 }
 
 function finStatusInfo(reg){
@@ -4370,18 +3819,6 @@ function renderMasterPanel(){
       .m-alert-row { display:flex; align-items:center; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--line); }
       .m-alert-row:last-child { border-bottom:none; }
 
-      /* Status badges */
-      .m-badge { display:inline-flex; align-items:center; gap:5px; padding:3px 10px; border-radius:20px; font-size:12px; font-weight:700; white-space:nowrap; }
-      .m-badge-dot { width:6px; height:6px; border-radius:50%; background:currentColor; }
-      .m-badge.ativa     { background:#dcfce7; color:#16a34a; }
-      .m-badge.trial     { background:#fef3c7; color:#b45309; }
-      .m-badge.bloqueada { background:#fee2e2; color:#dc2626; }
-
-      /* Atencao section */
-      .m-atencao { border:1px solid #fca5a5; border-radius:14px; overflow:hidden; margin-bottom:16px; }
-      .m-atencao-head { padding:12px 16px; background:#fff5f5; border-bottom:1px solid #fca5a5; display:flex; align-items:center; justify-content:space-between; }
-      .m-atencao-title { font-size:13px; font-weight:700; color:#dc2626; }
-
       /* Fin filter tabs */
       .m-tabs { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:16px; }
       .m-tab { padding:6px 14px; border-radius:20px; border:1.5px solid var(--line); font-size:13px; cursor:pointer; background:var(--paper); color:var(--ink); font-family:inherit; font-weight:600; transition:background .12s, color .12s; }
@@ -4394,140 +3831,9 @@ function renderMasterPanel(){
       .m-form-title { font-size:20px; font-weight:800; color:var(--ink); margin-bottom:24px; }
       .m-form-actions { display:flex; flex-direction:column; gap:8px; margin-top:24px; }
 
-      /* Edit form novo */
-      .m-emp-header { display:flex; align-items:center; gap:14px; margin-bottom:24px; }
-      .m-emp-avatar { width:50px; height:50px; border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:18px; font-weight:800; color:#fff; flex-shrink:0; }
-      .m-emp-header-name { font-size:21px; font-weight:800; color:var(--ink); letter-spacing:-0.4px; }
-      .m-emp-header-link { font-size:12px; color:var(--ink-soft); margin-top:2px; }
-      .m-section { background:var(--paper); border:1px solid var(--line); border-radius:14px; overflow:hidden; margin-bottom:12px; }
-      .m-section-title { font-size:11px; font-weight:700; color:var(--ink-soft); text-transform:uppercase; letter-spacing:0.06em; padding:12px 16px 0; }
-      .m-field-row { padding:10px 16px; border-bottom:0.5px solid var(--line); }
-      .m-field-row:last-child { border-bottom:none; }
-      .m-field-lbl { font-size:11px; font-weight:700; color:var(--ink-soft); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:4px; }
-      .m-field-inp { width:100%; border:1.5px solid var(--line); border-radius:9px; outline:none; font-size:15px; color:var(--ink); font-family:inherit; background:#fff; padding:9px 12px; margin-top:4px; }
-      .m-field-inp:focus { border-color:#3d1f3a; }
-      .m-field-inp::placeholder { color:var(--ink-soft); }
-      .m-field-hint { font-size:11px; color:var(--ink-soft); margin-top:3px; }
-      .m-link-row { display:flex; align-items:center; gap:3px; }
-      .m-link-pfx { font-size:13px; color:var(--ink-soft); white-space:nowrap; }
-      .m-link-inp { flex:1; border:none; border-bottom:1.5px solid var(--line); outline:none; font-size:15px; color:var(--accent); font-family:inherit; background:transparent; font-weight:600; min-width:0; padding:2px 0; }
-      .m-link-inp:focus { border-color:#3d1f3a; }
-      .m-status-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; padding:12px 16px; }
-      .m-status-opt { border:2px solid var(--line); border-radius:12px; padding:10px 6px; text-align:center; cursor:pointer; transition:all .14s; background:var(--paper); }
-      .m-status-opt:hover { border-color:#c4b5c0; }
-      .m-status-opt.s-ativa     { border-color:#16a34a; background:#dcfce7; }
-      .m-status-opt.s-trial     { border-color:#f59e0b; background:#fef3c7; }
-      .m-status-opt.s-bloqueada { border-color:#dc2626; background:#fee2e2; }
-      .m-status-dot { width:8px; height:8px; border-radius:50%; margin:0 auto 5px; background:var(--line); }
-      .m-status-opt.s-ativa     .m-status-dot { background:#16a34a; }
-      .m-status-opt.s-trial     .m-status-dot { background:#f59e0b; }
-      .m-status-opt.s-bloqueada .m-status-dot { background:#dc2626; }
-      .m-status-lbl { font-size:13px; font-weight:700; color:var(--ink-soft); }
-      .m-status-opt.s-ativa     .m-status-lbl { color:#16a34a; }
-      .m-status-opt.s-trial     .m-status-lbl { color:#b45309; }
-      .m-status-opt.s-bloqueada .m-status-lbl { color:#dc2626; }
-      .m-status-sub { font-size:11px; color:var(--ink-soft); margin-top:2px; }
-      .m-btn-save { width:100%; height:46px; background:var(--accent); color:#fff; border:none; border-radius:12px; font-size:15px; font-weight:700; cursor:pointer; font-family:inherit; margin-bottom:10px; }
-      .m-acoes-sec { display:flex; gap:8px; }
-      .m-btn-sec { flex:1; height:38px; border:1.5px solid var(--line); border-radius:10px; background:var(--paper); font-size:13px; font-weight:600; color:var(--ink-soft); cursor:pointer; font-family:inherit; }
-      .m-btn-sec:hover { border-color:#c4b5c0; color:var(--ink); }
-      .m-btn-del { flex:1; height:38px; border:1.5px solid #fca5a5; border-radius:10px; background:var(--paper); font-size:13px; font-weight:600; color:#dc2626; cursor:pointer; font-family:inherit; }
-      .m-btn-del:hover { background:#fee2e2; }
-
       /* Color swatches */
       .m-swatches { display:grid; grid-template-columns:repeat(6,1fr); gap:8px; margin-bottom:10px; }
       .m-sw { width:100%; aspect-ratio:1; border-radius:8px; cursor:pointer; border:3px solid transparent; box-sizing:border-box; transition:border-color .1s; }
-
-      /* Empresa card clicavel */
-      .m-ec { cursor:pointer; }
-      .m-chevron { color:var(--line); flex-shrink:0; }
-      .m-chevron svg { width:16px; height:16px; display:block; }
-
-      /* Detalhe empresa */
-      .m-det-header { background:var(--paper); border:1px solid var(--line); border-radius:14px; padding:18px; margin-bottom:14px; display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
-      .m-det-av { width:52px; height:52px; border-radius:15px; display:flex; align-items:center; justify-content:center; font-size:20px; font-weight:800; color:#fff; flex-shrink:0; }
-      .m-det-info { flex:1; min-width:0; }
-      .m-det-nome { font-size:18px; font-weight:800; color:var(--ink); letter-spacing:-.3px; }
-      .m-det-slug { font-size:12px; color:var(--ink-soft); margin-top:2px; }
-      .m-det-badges { display:flex; gap:6px; margin-top:6px; flex-wrap:wrap; }
-      .m-det-right { text-align:right; flex-shrink:0; }
-      .m-det-venc-lbl { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-soft); }
-      .m-det-venc-val { font-size:15px; font-weight:800; color:var(--ink); margin-top:2px; }
-
-      /* Historico pagamentos detalhe */
-      .m-pag-sec { background:var(--paper); border:1px solid var(--line); border-radius:14px; overflow:hidden; margin-bottom:14px; }
-      .m-pag-head { display:flex; align-items:center; justify-content:space-between; padding:12px 16px; border-bottom:1px solid var(--line); }
-      .m-pag-title { font-size:13px; font-weight:700; color:var(--ink); }
-      .m-pag-row { display:flex; align-items:center; padding:10px 16px; border-bottom:0.5px solid var(--line); gap:10px; }
-      .m-pag-row:last-child { border-bottom:none; }
-      .m-pag-circle { width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-      .m-pag-circle.ok { background:#dcfce7; color:#16a34a; }
-      .m-pag-circle.miss { background:#fee2e2; color:#dc2626; }
-      .m-pag-mes { font-size:13px; font-weight:700; color:var(--ink); min-width:72px; }
-      .m-pag-data { font-size:12px; color:var(--ink-soft); flex:1; }
-      .m-pag-valor { font-size:13px; font-weight:700; color:var(--ink); font-variant-numeric:tabular-nums; }
-      .m-lanc-form { padding:12px 16px; display:flex; gap:8px; align-items:flex-end; flex-wrap:wrap; border-top:1px solid var(--line); }
-      .m-lanc-field { display:flex; flex-direction:column; gap:4px; flex:1; min-width:90px; }
-      .m-lanc-lbl { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-soft); }
-      .m-lanc-input { height:34px; padding:0 9px; border:1.5px solid var(--line); border-radius:8px; font-size:13px; color:var(--ink); font-family:inherit; background:#fff; outline:none; }
-      .m-lanc-input:focus { border-color:#3d1f3a; }
-      .m-lanc-btn { height:34px; padding:0 14px; background:#3d1f3a; color:#fff; border:none; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer; font-family:inherit; white-space:nowrap; }
-
-      /* Acoes grid no detalhe */
-      .m-acoes-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; padding:12px 16px; }
-      .m-acao-btn { display:flex; align-items:center; gap:10px; padding:11px 12px; border:1.5px solid var(--line); border-radius:12px; background:var(--paper); cursor:pointer; font-family:inherit; transition:border-color .12s,background .12s; text-align:left; }
-      .m-acao-btn:hover { border-color:#c4b5c0; background:#faf9fc; }
-      .m-acao-btn.danger { border-color:#fca5a5; }
-      .m-acao-btn.danger:hover { background:#fee2e2; }
-      .m-acao-icon { width:32px; height:32px; border-radius:9px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-      .m-acao-label { font-size:13px; font-weight:700; color:var(--ink); line-height:1.2; }
-      .m-acao-sub { font-size:11px; color:var(--ink-soft); margin-top:2px; }
-      .m-acao-btn.danger .m-acao-label { color:#dc2626; }
-
-      /* Financeiro novo */
-      .m-fin-hdr { display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; gap:10px; flex-wrap:wrap; }
-      .m-period-nav { display:flex; align-items:center; background:var(--paper); border:1px solid var(--line); border-radius:10px; overflow:hidden; }
-      .m-period-btn { width:34px; height:34px; border:none; background:none; cursor:pointer; display:flex; align-items:center; justify-content:center; color:var(--ink-soft); transition:background .1s; }
-      .m-period-btn:hover { background:var(--bg); color:var(--ink); }
-      .m-period-lbl { padding:0 14px; font-size:14px; font-weight:700; color:var(--ink); border-left:1px solid var(--line); border-right:1px solid var(--line); height:34px; display:flex; align-items:center; white-space:nowrap; }
-      .m-btn-csv { display:flex; align-items:center; gap:6px; height:34px; padding:0 14px; border:1.5px solid var(--line); border-radius:10px; background:var(--paper); font-size:13px; font-weight:600; color:var(--ink-2); cursor:pointer; font-family:inherit; }
-      .m-btn-csv:hover { border-color:#c4b5c0; }
-      .m-sum-row { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:16px; }
-      .m-sum-card { background:var(--paper); border:1px solid var(--line); border-radius:14px; padding:14px 16px; position:relative; overflow:hidden; }
-      .m-sum-stripe { position:absolute; left:0; top:0; bottom:0; width:4px; }
-      .m-sum-card.sg .m-sum-stripe { background:#16a34a; }
-      .m-sum-card.sa .m-sum-stripe { background:#f59e0b; }
-      .m-sum-card.sr .m-sum-stripe { background:#dc2626; }
-      .m-sum-lbl { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); margin-bottom:5px; }
-      .m-sum-val { font-size:20px; font-weight:800; letter-spacing:-.4px; font-variant-numeric:tabular-nums; }
-      .m-sum-card.sg .m-sum-val { color:#16a34a; }
-      .m-sum-card.sa .m-sum-val { color:#b45309; }
-      .m-sum-card.sr .m-sum-val { color:#dc2626; }
-      .m-sum-sub { font-size:11px; color:var(--ink-soft); margin-top:3px; }
-      .m-chart-wrap { background:var(--paper); border:1px solid var(--line); border-radius:14px; padding:16px 18px 14px; margin-bottom:16px; }
-      .m-chart-title { font-size:13px; font-weight:700; color:var(--ink); margin-bottom:12px; }
-      .m-fin-table { background:var(--paper); border:1px solid var(--line); border-radius:14px; overflow:hidden; }
-      .m-fin-toolbar { display:flex; align-items:center; gap:10px; padding:12px 16px; border-bottom:1px solid var(--line); }
-      .m-fin-toolbar-lbl { font-size:13px; font-weight:700; color:var(--ink); flex:1; }
-      .m-fin-filter { height:30px; padding:0 9px; border:1.5px solid var(--line); border-radius:8px; font-size:13px; color:var(--ink); font-family:inherit; background:var(--bg); outline:none; max-width:180px; }
-      .m-fin-row { display:flex; align-items:center; padding:12px 16px; border-bottom:0.5px solid var(--line); cursor:pointer; gap:10px; transition:background .1s; }
-      .m-fin-row:last-of-type { border-bottom:none; }
-      .m-fin-row:hover { background:#faf9fc; }
-      .m-fin-row.exp { background:#f3eef5; }
-      .m-fin-name { font-size:14px; font-weight:700; color:var(--ink); flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-      .m-fin-venc { font-size:12px; color:var(--ink-soft); min-width:65px; }
-      .m-fin-pago { font-size:12px; color:var(--ink-soft); min-width:80px; }
-      .m-fin-valor { font-size:13px; font-weight:700; color:var(--ink); font-variant-numeric:tabular-nums; min-width:70px; text-align:right; }
-      .m-fin-expand { padding:10px 16px 14px 16px; border-bottom:0.5px solid var(--line); background:#f3eef5; }
-      .m-fin-expand-ttl { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); margin-bottom:8px; }
-      .m-fin-hist-item { display:flex; align-items:center; gap:8px; padding:5px 0; font-size:13px; border-bottom:0.5px solid rgba(0,0,0,.06); }
-      .m-fin-hist-item:last-child { border-bottom:none; }
-      .m-fin-hist-mes { font-weight:700; color:var(--ink); min-width:72px; }
-      .m-fin-hist-data { color:var(--ink-soft); flex:1; }
-      .m-fin-hist-val { font-variant-numeric:tabular-nums; font-weight:600; color:var(--ink); }
-      .m-fin-total { display:flex; align-items:center; padding:12px 16px; background:var(--bg); border-top:2px solid var(--line); }
-      .m-fin-total-lbl { flex:1; font-size:13px; font-weight:800; color:var(--ink); }
-      .m-fin-total-val { font-size:13px; font-weight:800; color:var(--ink); font-variant-numeric:tabular-nums; }
     </style>
   `;
 
@@ -4560,62 +3866,72 @@ function renderMasterPanel(){
     else if(masterAba === 'financeiro') drawFinanceiro();
   }
 
-  function _empStatus(e){
-    // Deriva o status real considerando trial expirado
-    if(e.status === 'trial' && e.trialExpiraEm && new Date() > new Date(e.trialExpiraEm)) return 'bloqueada';
-    return e.status || 'ativa';
-  }
-  function _diasTrialRestantes(e){
-    if(!e.trialExpiraEm) return null;
-    const diff = Math.ceil((new Date(e.trialExpiraEm) - new Date()) / 86400000);
-    return diff;
-  }
-  function _statusBadgeHtml(e){
-    const s = _empStatus(e);
-    const dias = s === 'trial' ? _diasTrialRestantes(e) : null;
-    const label = s === 'trial' ? `Trial · ${dias}d` : s === 'ativa' ? 'Ativa' : 'Bloqueada';
-    return `<span class="m-badge ${s}"><span class="m-badge-dot"></span>${label}</span>`;
-  }
-
   function drawDashboard(){
-    const total     = empresas.length;
-    const nAtivas   = empresas.filter(e=>_empStatus(e)==='ativa').length;
-    const nTrial    = empresas.filter(e=>_empStatus(e)==='trial').length;
-    const nBloq     = empresas.filter(e=>_empStatus(e)==='bloqueada').length;
+    const total = empresas.length;
+    const ativas = empresas.filter(e=>!e.bloqueada).length;
+    const bloqueadas = empresas.filter(e=>e.bloqueada).length;
 
-    // Trial expirando em até 3 dias
-    const expirando = empresas.filter(e=>{
-      if(_empStatus(e)!=='trial') return false;
-      const d = _diasTrialRestantes(e);
-      return d !== null && d <= 3;
-    }).sort((a,b)=>_diasTrialRestantes(a)-_diasTrialRestantes(b));
+    const hoje = new Date();
+    const ano = hoje.getFullYear();
+    const mes = hoje.getMonth();
 
-    const hoje = new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
-    const hojeStr = hoje.charAt(0).toUpperCase() + hoje.slice(1);
+    let vencendo = 0, vencidas = 0, pagas = 0;
+    let fatEsperado = 0, fatConfirmado = 0, fatAberto = 0;
 
-    const alertaHtml = expirando.length ? `
-      <div style="background:#fff8f0;border:1px solid #fcd34d;border-radius:14px;padding:14px 18px;display:flex;align-items:flex-start;gap:12px;margin-bottom:16px;">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-        <div>
-          <div style="font-size:14px;font-weight:700;color:#92400e;">${expirando.length} empresa${expirando.length!==1?'s':''} com trial expirando em breve</div>
-          <div style="font-size:13px;color:#b45309;margin-top:3px;">${expirando.map(e=>`${escapeHtml(e.nome)} (${_diasTrialRestantes(e)}d)`).join(' · ')}</div>
-        </div>
-      </div>` : '';
+    empresas.forEach(e => {
+      const reg = financeiroData.find(f=>f.empresa_id===e.id);
+      if(reg){
+        fatEsperado += parseFloat(reg.valor||0);
+        const info = finStatusInfo(reg);
+        if(info.label === 'Pago'){ pagas++; fatConfirmado += parseFloat(reg.valor||0); }
+        else if(info.label === 'Vencido'){ vencidas++; fatAberto += parseFloat(reg.valor||0); }
+        else if(info.label.startsWith('Vence')){ vencendo++; fatAberto += parseFloat(reg.valor||0); }
+        else { fatAberto += parseFloat(reg.valor||0); }
+      }
+    });
+
+    const fmt = v => v.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+
+    const alertas = [];
+    empresas.forEach(e => {
+      const reg = financeiroData.find(f=>f.empresa_id===e.id);
+      if(!reg) return;
+      const info = finStatusInfo(reg);
+      if(info.label === 'Vencido' || info.label.startsWith('Vence')){
+        alertas.push({ nome: e.nome, info });
+      }
+    });
+
+    const listaAlertas = alertas.length ? alertas.map(a=>`
+      <div class="m-alert-row">
+        <span style="font-size:14px;font-weight:600;">${escapeHtml(a.nome)}</span>
+        <span class="fin-status" style="color:${a.info.cor};background:${a.info.bg};">${a.info.label}</span>
+      </div>
+    `).join('') : `<p class="muted">Nenhum alerta no momento.</p>`;
 
     drawMasterShell(`
       <div class="m-sh" style="margin-bottom:20px;">
         <div>
-          <div class="m-sh-title">Dashboard</div>
-          <div class="m-sh-sub">${hojeStr}</div>
+          <div class="m-sh-title">Visão geral</div>
+          <div class="m-sh-sub">${total} empresa${total!==1?'s':''} cadastrada${total!==1?'s':''}</div>
         </div>
       </div>
-      <div class="m-stats" style="grid-template-columns:repeat(4,1fr);margin-bottom:20px;">
-        <div class="m-stat"><div class="m-stat-val">${total}</div><div class="m-stat-label">Total</div></div>
-        <div class="m-stat"><div class="m-stat-val" style="color:#16a34a;">${nAtivas}</div><div class="m-stat-label">Ativas</div></div>
-        <div class="m-stat"><div class="m-stat-val" style="color:#b45309;">${nTrial}</div><div class="m-stat-label">Trial</div></div>
-        <div class="m-stat"><div class="m-stat-val" style="color:#dc2626;">${nBloq}</div><div class="m-stat-label">Bloqueadas</div></div>
+      <div class="m-stats">
+        <div class="m-stat"><div class="m-stat-val">${ativas}</div><div class="m-stat-label">Ativas</div></div>
+        <div class="m-stat"><div class="m-stat-val" style="color:#c62828;">${vencidas}</div><div class="m-stat-label">Inadimpl.</div></div>
+        <div class="m-stat"><div class="m-stat-val" style="color:#e65100;">${vencendo}</div><div class="m-stat-label">A vencer</div></div>
       </div>
-      ${alertaHtml}
+      <div class="m-stats" style="margin-bottom:${alertas.length?'20px':'0'};">
+        <div class="m-stat"><div class="m-stat-val" style="font-size:18px;">${fmt(fatEsperado)}</div><div class="m-stat-label">Esperado</div></div>
+        <div class="m-stat"><div class="m-stat-val" style="font-size:18px;color:#2e7d32;">${fmt(fatConfirmado)}</div><div class="m-stat-label">Confirmado</div></div>
+        <div class="m-stat"><div class="m-stat-val" style="font-size:18px;color:#c62828;">${fmt(fatAberto)}</div><div class="m-stat-label">Em aberto</div></div>
+      </div>
+      ${alertas.length ? `
+        <div style="background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:16px 18px;">
+          <div style="font-size:13px;font-weight:700;color:#c62828;margin-bottom:12px;">${alertas.length} empresa${alertas.length!==1?'s':''} precisam de atenção</div>
+          ${listaAlertas.replace(/class="m-alert-row"/g,'class="m-alert-row"')}
+        </div>
+      ` : ''}
     `);
   }
 
@@ -4655,209 +3971,63 @@ function renderMasterPanel(){
 
     // Formulario de editar — substitui a lista
     if(masterDrawerMode === 'editar' && editing){
-      const initiais = (editing.nome||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
-      const stAtual = _empStatus(editing);
-      const diasTrial = editing.trialExpiraEm ? _diasTrialRestantes(editing) : null;
-      const statusSub = {
-        ativa:     'acesso completo',
-        trial:     diasTrial !== null ? `${diasTrial}d restantes` : 'periodo de teste',
-        bloqueada: 'sem acesso',
-      };
       drawMasterShell(`
         <button class="m-back" onclick="masterFecharDrawer()">${ICO_BACK} Voltar</button>
-        <div class="m-emp-header">
-          <div class="m-emp-avatar" style="background:${escapeAttr(editing.corPrincipal||'#3d1f3a')}">${initiais}</div>
-          <div>
-            <div class="m-emp-header-name">${escapeHtml(editing.nome)}</div>
-            <div class="m-emp-header-link">${escapeHtml(editing.slug)}.agenplus.com.br</div>
+        <div class="m-form-title">${escapeHtml(editing.nome)}</div>
+        <div class="field"><label>Nome</label><input value="${escapeAttr(editing.nome)}" onchange="masterUpd('nome',this.value)"/></div>
+        <div class="field"><label>WhatsApp</label><input type="tel" inputmode="numeric" maxlength="16" value="${escapeAttr(fmtTelStr(editing.whatsapp))}" onkeydown="if(event.key.length===1&&!/[0-9]/.test(event.key))event.preventDefault()" oninput="maskTel(this);masterUpd('whatsapp',this.value)"/></div>
+        <div class="field">
+          <label>Link público</label>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <span style="font-size:13px;color:var(--ink-soft);white-space:nowrap;">https://</span>
+            <input id="masterSlugInput" value="${escapeAttr(editing.slug)}" placeholder="seu-link" style="flex:1;" oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9-]/g,'')"/>
+            <span style="font-size:13px;color:var(--ink-soft);white-space:nowrap;">.agenplus.com.br</span>
           </div>
+          <div style="font-size:11px;color:var(--ink-soft);margin-top:4px;">Alterar o link quebra o endereço antigo.</div>
         </div>
-        <div class="m-section">
-          <div class="m-section-title">Dados</div>
-          <div class="m-field-row">
-            <div class="m-field-lbl">Nome</div>
-            <input class="m-field-inp" id="editNome" value="${escapeAttr(editing.nome)}"/>
-          </div>
-          <div class="m-field-row">
-            <div class="m-field-lbl">WhatsApp</div>
-            <input class="m-field-inp" id="editWhats" type="tel" inputmode="numeric" maxlength="16" value="${escapeAttr(fmtTelStr(editing.whatsapp))}" onkeydown="if(event.key.length===1&&!/[0-9]/.test(event.key))event.preventDefault()" oninput="maskTel(this)"/>
-          </div>
-          <div class="m-field-row">
-            <div class="m-field-lbl">Link publico</div>
-            <div class="m-link-row">
-              <span class="m-link-pfx">https://</span>
-              <input class="m-link-inp" id="masterSlugInput" value="${escapeAttr(editing.slug)}" oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9-]/g,'')"/>
-              <span class="m-link-pfx">.agenplus.com.br</span>
-            </div>
-            <div class="m-field-hint">Alterar o link quebra o endereco antigo.</div>
-          </div>
-          <div class="m-field-row">
-            <div class="m-field-lbl">E-mail do gestor</div>
-            <input class="m-field-inp" id="masterEmailInput" type="email" value="${escapeAttr(editing.gestorEmail||'')}"/>
-          </div>
+        <div class="field">
+          <label>E-mail do gestor</label>
+          <input id="masterEmailInput" type="email" value="${escapeAttr(editing.gestorEmail||'')}"/>
+          <button class="btn ghost" style="width:100%;margin-top:6px;" onclick="masterSalvarEmail()">Salvar e-mail</button>
         </div>
-        <div class="m-section">
-          <div class="m-section-title">Status da conta</div>
-          <div class="m-status-grid">
-            ${['trial','ativa','bloqueada'].map(s=>`
-              <div class="m-status-opt${stAtual===s?' s-'+s:''}" onclick="masterSelStatus(this,'${s}')">
-                <div class="m-status-dot"></div>
-                <div class="m-status-lbl">${s.charAt(0).toUpperCase()+s.slice(1)}</div>
-                <div class="m-status-sub">${statusSub[s]}</div>
-              </div>`).join('')}
-          </div>
-        </div>
-        <button class="m-btn-save" onclick="masterSalvarEdicao()">Salvar alteracoes</button>
-        <div class="m-acoes-sec">
-          <button class="m-btn-sec" onclick="masterRedefinirSenha()">Redefinir senha</button>
-          <button class="m-btn-del" onclick="masterExcluir('${editing.slug}')">Excluir empresa</button>
+        <div class="m-form-actions">
+          <button class="btn" style="width:100%;" onclick="masterSalvarEdicao()">Salvar alterações</button>
+          <button class="btn ghost" style="width:100%;" onclick="masterToggleBloqueio()">${editing.bloqueada?'Desbloquear empresa':'Bloquear empresa'}</button>
+          <button class="btn ghost" style="width:100%;" onclick="masterRedefinirSenha()">Redefinir senha do gestor</button>
+          <button class="btn danger" style="width:100%;" onclick="masterExcluir('${editing.slug}')">Excluir empresa</button>
         </div>
       `);
       return;
     }
 
     // Lista normal
+    const listaFiltrada = masterSearch
+      ? empresas.filter(e => e.nome.toLowerCase().includes(masterSearch.toLowerCase()))
+      : empresas;
+
     const ICO_EXT  = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>`;
     const ICO_COPY = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
     const ICO_GEST = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>`;
     const ICO_EDIT = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
 
-    const ICO_CHV = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>`;
-    const ICO_OK  = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
-    const ICO_X   = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
-
-    // Iniciais do nome da empresa
-    function empIniciais(nome){ return nome.split(' ').slice(0,2).map(w=>w[0]||'').join('').toUpperCase()||'?'; }
-    // Cor de fundo do avatar baseada no slug
-    const AV_CORES = ['#3d1f3a','#15803d','#1d4ed8','#be185d','#c2410c','#0f766e','#7e22ce','#b45309'];
-    function empAvCor(slug){ let h=0; for(let i=0;i<slug.length;i++) h=(h*31+slug.charCodeAt(i))&0x7fffffff; return AV_CORES[h%AV_CORES.length]; }
-
-    const empRow = e => {
-      const cor = empAvCor(e.slug);
-      return `<div class="m-ec" onclick="masterAbrirDetalhe('${e.slug}')">
-        <div style="width:40px;height:40px;border-radius:11px;background:${cor};display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#fff;flex-shrink:0;">${empIniciais(e.nome)}</div>
-        <div class="m-ec-body">
-          <div class="m-ec-name">${escapeHtml(e.nome)}</div>
-          <div class="m-ec-link">${e.slug}.agenplus.com.br</div>
-        </div>
-        ${_statusBadgeHtml(e)}
-        <div class="m-chevron">${ICO_CHV}</div>
-      </div>`;
-    };
-
-    // Detalhe da empresa
-    if(_masterDetalheSlug){
-      const e = empresas.find(x=>x.slug===_masterDetalheSlug);
-      if(!e){ _masterDetalheSlug=null; }
-      else {
-        const cor = empAvCor(e.slug);
-        const st  = _empStatus(e);
-        const finReg = financeiroData.find(f=>f.empresa_id===e.id);
-        // Historico desta empresa
-        const empMens = mensalidades.filter(m=>m.empresa_id===e.id);
-        const histRows = empMens.length ? empMens.map(m=>{
-          const ok = !!m.pago_em;
-          const dataFmt = ok ? new Date(m.pago_em).toLocaleDateString('pt-BR') : '—';
-          const valFmt = m.valor ? 'R$ '+parseFloat(m.valor).toLocaleString('pt-BR',{minimumFractionDigits:2}) : '—';
-          const [yy,mm] = m.referencia.split('-');
-          const mesLabel = new Date(+yy,+mm-1,1).toLocaleString('pt-BR',{month:'short',year:'2-digit'}).replace(' de ',' ');
-          return `<div class="m-pag-row">
-            <div class="m-pag-circle ${ok?'ok':'miss'}">${ok?ICO_OK:ICO_X}</div>
-            <span class="m-pag-mes">${mesLabel}</span>
-            <span class="m-pag-data">${ok?'Pago em '+dataFmt:'Nao pago'}</span>
-            <span class="m-pag-valor">${ok?valFmt:'—'}</span>
-          </div>`;
-        }).join('') : `<div style="padding:18px 16px;font-size:14px;color:var(--ink-soft);">Nenhum lancamento ainda.</div>`;
-
-        const hoje = new Date();
-        const refPadrao = `${hoje.getFullYear()}-${String(hoje.getMonth()+1).padStart(2,'0')}`;
-        const valPadrao = finReg ? finReg.valor : '';
-        const vencInfo = st==='trial'
-          ? `<div class="m-det-right"><div class="m-det-venc-lbl">Trial expira em</div><div class="m-det-venc-val">${_diasTrialRestantes(e)} dias</div></div>`
-          : st==='ativa' && finReg
-          ? `<div class="m-det-right"><div class="m-det-venc-lbl">Vencimento</div><div class="m-det-venc-val">Dia ${finReg.dia_vencimento}</div></div>`
-          : '';
-
-        const ICO_PENCIL = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
-        const ICO_EXTL  = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>`;
-        const ICO_LOCK  = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`;
-        const ICO_TRASH = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>`;
-
-        drawMasterShell(`
-          <button class="m-back" onclick="masterVoltarEmpresas()">${ICO_BACK} Empresas</button>
-          <div class="m-det-header">
-            <div class="m-det-av" style="background:${cor}">${empIniciais(e.nome)}</div>
-            <div class="m-det-info">
-              <div class="m-det-nome">${escapeHtml(e.nome)}</div>
-              <div class="m-det-slug">${e.slug}.agenplus.com.br</div>
-              <div class="m-det-badges">${_statusBadgeHtml(e)}</div>
-            </div>
-            ${vencInfo}
-          </div>
-          <div class="m-pag-sec">
-            <div class="m-pag-head">
-              <span class="m-pag-title">Historico de pagamentos</span>
-            </div>
-            ${histRows}
-            <div class="m-lanc-form">
-              <div class="m-lanc-field">
-                <label class="m-lanc-lbl">Referencia</label>
-                <input class="m-lanc-input" type="month" id="lancRef" value="${refPadrao}"/>
-              </div>
-              <div class="m-lanc-field">
-                <label class="m-lanc-lbl">Valor</label>
-                <input class="m-lanc-input" type="number" id="lancValor" placeholder="0.00" value="${escapeAttr(String(valPadrao))}"/>
-              </div>
-              <div class="m-lanc-field">
-                <label class="m-lanc-lbl">Data do pagamento</label>
-                <input class="m-lanc-input" type="date" id="lancData" value="${refPadrao+'-'+String(hoje.getDate()).padStart(2,'0')}"/>
-              </div>
-              <button class="m-lanc-btn" onclick="masterLancarMensalidade('${e.id}')">Lancar</button>
-            </div>
-          </div>
-          <div class="m-pag-sec">
-            <div class="m-pag-head"><span class="m-pag-title">Acoes</span></div>
-            <div class="m-acoes-grid">
-              <button class="m-acao-btn" onclick="masterEditarEmpresa('${e.slug}')">
-                <div class="m-acao-icon" style="background:#f3eef5;">${ICO_PENCIL}</div>
-                <div><div class="m-acao-label">Editar cadastro</div><div class="m-acao-sub">Nome, WhatsApp, e-mail</div></div>
-              </button>
-              <button class="m-acao-btn" onclick="goto({empresa:'${e.slug}',page:'gestao'})">
-                <div class="m-acao-icon" style="background:#dcfce7;">${ICO_EXTL}</div>
-                <div><div class="m-acao-label">Entrar na gestao</div><div class="m-acao-sub">Painel da empresa</div></div>
-              </button>
-              <button class="m-acao-btn" onclick="masterToggleEmpStatus('${e.slug}')">
-                <div class="m-acao-icon" style="background:#fef3c7;">${ICO_LOCK}</div>
-                <div><div class="m-acao-label">${st==='bloqueada'?'Desbloquear':'Bloquear'}</div><div class="m-acao-sub">${st==='bloqueada'?'Reativar acesso':'Suspender acesso'}</div></div>
-              </button>
-              <button class="m-acao-btn danger" onclick="masterExcluir('${e.slug}')">
-                <div class="m-acao-icon" style="background:#fee2e2;">${ICO_TRASH}</div>
-                <div><div class="m-acao-label">Excluir empresa</div><div class="m-acao-sub">Acao irreversivel</div></div>
-              </button>
-            </div>
-          </div>
-        `);
-        return;
-      }
-    }
-
-    // Filtro por status
-    const filtros = ['todos','ativa','trial','bloqueada'];
-    const filtroLabels = {todos:'Todas',ativa:'Ativas',trial:'Trial',bloqueada:'Bloqueadas'};
-    const filtroTabs = filtros.map(f=>`
-      <button class="m-tab ${_filtroEmpStatus===f?'on':''}" onclick="_filtroEmpStatus='${f}';drawMaster();">
-        ${filtroLabels[f]}
-      </button>`).join('');
-
-    const listaFiltrada = empresas.filter(e=>{
-      const matchStatus = _filtroEmpStatus==='todos' || _empStatus(e)===_filtroEmpStatus;
-      const matchSearch = !masterSearch || e.nome.toLowerCase().includes(masterSearch.toLowerCase());
-      return matchStatus && matchSearch;
-    });
-
     const lista = listaFiltrada.length
-      ? `<div style="display:flex;flex-direction:column;gap:8px;">${listaFiltrada.map(empRow).join('')}</div>`
-      : `<p class="muted">${masterSearch ? 'Nenhuma empresa encontrada.' : 'Nenhuma empresa nesta categoria.'}</p>`;
+      ? `<div style="display:flex;flex-direction:column;gap:8px;">${listaFiltrada.map(e=>{
+          const link = `https://${e.slug}.agenplus.com.br`;
+          return `<div class="m-ec">
+            <div class="m-ec-dot" style="background:${e.bloqueada?'#ef4444':'#22c55e'};"></div>
+            <div class="m-ec-body">
+              <div class="m-ec-name">${escapeHtml(e.nome)}</div>
+              <div class="m-ec-link">${escapeHtml(link)}</div>
+            </div>
+            <div class="m-ec-acts">
+              <button class="m-ib" title="Página pública" onclick="goto({empresa:'${e.slug}'})"> ${ICO_EXT}</button>
+              <button class="m-ib" title="Copiar link" onclick="navigator.clipboard.writeText('${escapeAttr(link)}').then(()=>toast('Link copiado!','ok'))">${ICO_COPY}</button>
+              <button class="m-ib" title="Painel de gestão" onclick="goto({empresa:'${e.slug}',page:'gestao'})">${ICO_GEST}</button>
+              <button class="m-ib" title="Editar" onclick="masterEditarEmpresa('${e.slug}')">${ICO_EDIT}</button>
+            </div>
+          </div>`;
+        }).join('')}</div>`
+      : `<p class="muted">${masterSearch ? 'Nenhuma empresa encontrada.' : 'Nenhuma empresa cadastrada ainda.'}</p>`;
 
     drawMasterShell(`
       <div class="m-sh">
@@ -4870,187 +4040,87 @@ function renderMasterPanel(){
           Nova empresa
         </button>
       </div>
-      <div class="m-tabs">${filtroTabs}</div>
       <input class="m-search" placeholder="Buscar empresa..." value="${escapeAttr(masterSearch)}" oninput="masterSearch=this.value; drawMaster()"/>
       ${lista}
     `);
   }
 
   function drawFinanceiro(){
-    const MESES_PT = ['Janeiro','Fevereiro','Marco','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-    const periodoLabel = `${MESES_PT[_finPeriodo.mes]} ${_finPeriodo.ano}`;
-    const refAtual = `${_finPeriodo.ano}-${String(_finPeriodo.mes+1).padStart(2,'0')}`;
+    const hoje = new Date();
+    const mesAtual = hoje.toLocaleString('pt-BR',{month:'long', year:'numeric'}).replace(' De ', ' de ');
 
-    // Mensalidades do periodo
-    const mensPeriodo = mensalidades.filter(m=>m.referencia===refAtual);
+    const rows = empresas.map(e => ({ e, reg: financeiroData.find(f=>f.empresa_id===e.id) }));
 
-    // Resumo
-    let totalRecebido=0, totalPendente=0, totalAtraso=0;
-    let cntRecebido=0, cntPendente=0, cntAtraso=0;
-    empresas.forEach(e=>{
-      const finReg = financeiroData.find(f=>f.empresa_id===e.id);
-      const mens = mensPeriodo.find(m=>m.empresa_id===e.id);
-      const val = mens ? parseFloat(mens.valor||0) : (finReg ? parseFloat(finReg.valor||0) : 0);
-      if(!val) return;
-      if(mens?.pago_em){ totalRecebido+=val; cntRecebido++; }
-      else {
-        const hoje=new Date(); const diaHoje=hoje.getDate();
-        const finDia = finReg?.dia_vencimento||28;
-        if(diaHoje>finDia){ totalAtraso+=val; cntAtraso++; }
-        else { totalPendente+=val; cntPendente++; }
-      }
+    const filtroFin = _filtroFin;
+    const filtrados = rows.filter(({reg}) => {
+      if(filtroFin === 'todos') return true;
+      if(!reg) return filtroFin === 'sem-dados';
+      const info = finStatusInfo(reg);
+      if(filtroFin === 'pagos')    return info.label === 'Pago';
+      if(filtroFin === 'vencidos') return info.label === 'Vencido';
+      if(filtroFin === 'a-vencer') return info.label.startsWith('Vence');
+      return true;
     });
-    const fmtR = v=>'R$ '+v.toLocaleString('pt-BR',{minimumFractionDigits:2});
 
-    // Tabela — lista filtrada por empresa
-    const listaEmp = _finEmpFiltro ? empresas.filter(e=>e.id===_finEmpFiltro) : empresas;
-    const tableRows = listaEmp.map(e=>{
-      const finReg = financeiroData.find(f=>f.empresa_id===e.id);
-      const mens = mensPeriodo.find(m=>m.empresa_id===e.id);
-      const val = mens ? parseFloat(mens.valor||0) : (finReg ? parseFloat(finReg.valor||0) : 0);
-      const pagoEm = mens?.pago_em ? new Date(mens.pago_em+'T00:00:00').toLocaleDateString('pt-BR') : null;
-      const diaVenc = finReg?.dia_vencimento ? `Dia ${finReg.dia_vencimento}` : '—';
-      const exp = _finEmpExpandido===e.id;
+    const tabBtns = ['todos','pagos','vencidos','a-vencer'].map(f => `
+      <button class="m-tab ${filtroFin===f?'on':''}" onclick="_filtroFin='${f}'; drawMaster();">
+        ${{todos:'Todos',pagos:'Pagos',vencidos:'Vencidos','a-vencer':'A vencer'}[f]}
+      </button>`).join('');
 
-      // historico dos ultimos 4 meses
-      const empMens = mensalidades.filter(m=>m.empresa_id===e.id).slice(0,4);
-      const histHtml = empMens.length ? empMens.map(m=>{
-        const [yy,mm]=m.referencia.split('-');
-        const lbl=new Date(+yy,+mm-1,1).toLocaleString('pt-BR',{month:'short',year:'2-digit'}).replace(' de ',' ');
-        const ok=!!m.pago_em;
-        const dataStr=ok?new Date(m.pago_em+'T00:00:00').toLocaleDateString('pt-BR'):'Nao pago';
-        const valStr=ok?fmtR(parseFloat(m.valor||0)):'—';
-        const dotClr=ok?'#16a34a':'#dc2626';
-        return `<div class="m-fin-hist-item"><span style="width:8px;height:8px;border-radius:50%;background:${dotClr};flex-shrink:0;display:inline-block;"></span><span class="m-fin-hist-mes">${lbl}</span><span class="m-fin-hist-data">${dataStr}</span><span class="m-fin-hist-val">${valStr}</span></div>`;
-      }).join('') : '<div style="font-size:13px;color:var(--ink-soft);padding:4px 0;">Nenhum registro.</div>';
-
+    const listaFin = filtrados.length ? filtrados.map(({e, reg}) => {
+      const info = finStatusInfo(reg);
+      const valor = reg ? parseFloat(reg.valor||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}) : '—';
+      const diaVenc = reg ? `Dia ${reg.dia_vencimento}` : '—';
+      const pagoEm = reg?.pago_em ? new Date(reg.pago_em).toLocaleDateString('pt-BR') : null;
+      const podeMarcar = reg && info.label !== 'Pago';
       return `
-        <div class="m-fin-row${exp?' exp':''}" onclick="_finEmpExpandido=_finEmpExpandido==='${e.id}'?null:'${e.id}';drawMaster();">
-          <span class="m-fin-name">${escapeHtml(e.nome)}</span>
-          <span class="m-fin-venc">${diaVenc}</span>
-          <span class="m-fin-pago">${pagoEm?pagoEm:'—'}</span>
-          <span class="m-fin-valor">${val?fmtR(val):'—'}</span>
-          <span class="fin-status" style="color:${pagoEm?'#2e7d32':'#9e9e9e'};background:${pagoEm?'#e8f5e9':'#f5f5f5'};font-size:11px;padding:2px 8px;border-radius:20px;font-weight:700;white-space:nowrap;">${pagoEm?'Pago':'Pendente'}</span>
+        <div class="m-fc">
+          <div class="m-fc-body">
+            <div class="m-fc-name">${escapeHtml(e.nome)}</div>
+            <div class="m-fc-sub">${diaVenc} · ${valor}/mês${pagoEm ? ` · pago em ${pagoEm}` : ''}</div>
+          </div>
+          <span class="fin-status" style="color:${info.cor};background:${info.bg};flex-shrink:0;">${info.label}</span>
+          <div class="m-fc-acts">
+            ${!reg
+              ? `<button class="btn" style="font-size:12px;height:34px;padding:0 12px;" onclick="finConfigurar('${e.id}')">Configurar</button>`
+              : `${podeMarcar ? `<button class="btn" style="font-size:12px;height:34px;padding:0 12px;background:#166534;border-color:#166534;" onclick="finMarcarPago('${reg.id}')">Pago</button>` : `<button class="btn ghost" style="font-size:12px;height:34px;padding:0 12px;" disabled>Pago</button>`}
+                 <button class="m-ib" title="Editar plano" onclick="finEditar('${e.id}','${reg.id}',${reg.valor},${reg.dia_vencimento})">
+                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                 </button>`
+            }
+          </div>
+        </div>`;
+    }).join('') : `<p class="muted">Nenhuma empresa nesta categoria.</p>`;
+
+    if(_finForm){
+      const emp = empresas.find(e=>e.id===_finForm.empresaId);
+      drawMasterShell(`
+        <button class="m-back" onclick="finCancelarForm()">${ICO_BACK} Voltar</button>
+        <div class="m-form-title">${_finForm.mode==='configurar'?'Configurar plano':'Editar plano'}${emp?' — '+escapeHtml(emp.nome):''}</div>
+        <div class="field"><label>Valor mensal (R$)</label><input type="number" id="finFormValor" value="${_finForm.valor||''}" min="0" step="0.01" placeholder="Ex: 99.90"/></div>
+        <div class="field"><label>Dia de vencimento (1 a 28)</label><input type="number" id="finFormDia" value="${_finForm.dia||''}" min="1" max="28" placeholder="Ex: 10"/></div>
+        <div class="m-form-actions">
+          <button class="btn" style="width:100%;" onclick="finSalvarForm()">Salvar</button>
+          <button class="btn ghost" style="width:100%;" onclick="finCancelarForm()">Cancelar</button>
         </div>
-        ${exp?`<div class="m-fin-expand"><div class="m-fin-expand-ttl">Historico</div>${histHtml}</div>`:''}`;
-    }).join('');
-
-    const totalPeriodo = totalRecebido+totalPendente+totalAtraso;
-    const totalRow = `<div class="m-fin-total"><span class="m-fin-total-lbl">Total do periodo</span><span class="m-fin-total-val">${fmtR(totalRecebido)} / ${fmtR(totalPeriodo)}</span></div>`;
-
-    // Opcoes do filtro de empresa
-    const empOpts = empresas.map(e=>`<option value="${e.id}" ${_finEmpFiltro===e.id?'selected':''}>${escapeHtml(e.nome)}</option>`).join('');
-
-    // Chart — ultimos 6 meses como barras inline (sem canvas para evitar rerender)
-    const chartMeses = [];
-    for(let i=5;i>=0;i--){
-      let m=_finPeriodo.mes-i, a=_finPeriodo.ano;
-      if(m<0){m+=12;a--;}
-      const ref=`${a}-${String(m+1).padStart(2,'0')}`;
-      const lbl=new Date(a,m,1).toLocaleString('pt-BR',{month:'short'}).replace('.','');
-      const tot=mensalidades.filter(x=>x.referencia===ref&&x.pago_em).reduce((s,x)=>s+parseFloat(x.valor||0),0);
-      chartMeses.push({lbl,tot,ref,atual:ref===refAtual});
+      `);
+      return;
     }
-    const maxVal=Math.max(...chartMeses.map(c=>c.tot),1);
-    const chartBars=chartMeses.map(c=>{
-      const pct=Math.round((c.tot/maxVal)*100);
-      const clr=c.atual?'#3d1f3a':'#e8e5ec';
-      const txtClr=c.atual?'#3d1f3a':'#8e8e93';
-      return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;">
-        <div style="font-size:10px;font-weight:700;color:${txtClr};font-variant-numeric:tabular-nums;">${c.tot>0?fmtR(c.tot):''}</div>
-        <div style="width:100%;height:60px;display:flex;align-items:flex-end;">
-          <div style="width:100%;height:${Math.max(pct,3)}%;background:${clr};border-radius:4px 4px 0 0;min-height:4px;"></div>
-        </div>
-        <div style="font-size:11px;color:${txtClr};font-weight:${c.atual?'700':'400'};">${c.lbl}</div>
-      </div>`;
-    }).join('');
-
-    const ICO_DL = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`;
 
     drawMasterShell(`
-      <div class="m-fin-hdr">
-        <div class="m-period-nav">
-          <button class="m-period-btn" onclick="finMudarPeriodo(-1)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
-          <span class="m-period-lbl">${periodoLabel}</span>
-          <button class="m-period-btn" onclick="finMudarPeriodo(1)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+      <div class="m-sh" style="margin-bottom:16px;">
+        <div>
+          <div class="m-sh-title">Financeiro</div>
+          <div class="m-sh-sub" style="text-transform:capitalize;">${mesAtual}</div>
         </div>
-        <button class="m-btn-csv" onclick="finExportarCSV('${refAtual}')">${ICO_DL} Exportar CSV</button>
       </div>
-      <div class="m-sum-row">
-        <div class="m-sum-card sg"><div class="m-sum-stripe"></div><div class="m-sum-lbl">Recebido</div><div class="m-sum-val">${fmtR(totalRecebido)}</div><div class="m-sum-sub">${cntRecebido} empresa${cntRecebido!==1?'s':''}</div></div>
-        <div class="m-sum-card sa"><div class="m-sum-stripe"></div><div class="m-sum-lbl">Pendente</div><div class="m-sum-val">${fmtR(totalPendente)}</div><div class="m-sum-sub">${cntPendente} empresa${cntPendente!==1?'s':''}</div></div>
-        <div class="m-sum-card sr"><div class="m-sum-stripe"></div><div class="m-sum-lbl">Em atraso</div><div class="m-sum-val">${fmtR(totalAtraso)}</div><div class="m-sum-sub">${cntAtraso} empresa${cntAtraso!==1?'s':''}</div></div>
-      </div>
-      <div class="m-chart-wrap">
-        <div class="m-chart-title">Receita recebida — ultimos 6 meses</div>
-        <div style="display:flex;gap:6px;align-items:flex-end;">${chartBars}</div>
-      </div>
-      <div class="m-fin-table">
-        <div class="m-fin-toolbar">
-          <span class="m-fin-toolbar-lbl">Lancamentos</span>
-          <select class="m-fin-filter" onchange="_finEmpFiltro=this.value;_finEmpExpandido=null;drawMaster();">
-            <option value="">Todas as empresas</option>
-            ${empOpts}
-          </select>
-        </div>
-        ${tableRows || '<div style="padding:20px 16px;font-size:14px;color:var(--ink-soft);">Nenhuma empresa cadastrada.</div>'}
-        ${totalRow}
-      </div>
+      <div class="m-tabs">${tabBtns}</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">${listaFin}</div>
     `);
   }
 
   window.drawMaster = draw;
-  window.masterIrAba = (aba) => { masterAba = aba; _masterDetalheSlug = null; draw(); };
-
-  window.masterAbrirDetalhe = async (slug) => {
-    _masterDetalheSlug = slug; draw();
-    await carregarMensalidades(); draw();
-  };
-  window.masterVoltarEmpresas = () => { _masterDetalheSlug = null; masterDrawerMode = null; editingSlug = null; draw(); };
-
-  window.masterLancarMensalidade = async (empresaId) => {
-    const ref   = document.getElementById('lancRef')?.value||'';
-    const valor = parseFloat(document.getElementById('lancValor')?.value)||0;
-    const pago  = document.getElementById('lancData')?.value||'';
-    if(!ref){ toast('Informe a referencia.','err'); return; }
-    if(!valor){ toast('Informe o valor.','err'); return; }
-    // Verifica se ja existe registro para esse mes/empresa
-    const existe = mensalidades.find(m=>m.empresa_id===empresaId && m.referencia===ref);
-    let erro;
-    if(existe){
-      const { error } = await supabaseClient.from('mensalidades').update({ valor, pago_em: pago||null }).eq('id', existe.id);
-      erro = error;
-    } else {
-      const { error } = await supabaseClient.from('mensalidades').insert({ empresa_id: empresaId, referencia: ref, valor, pago_em: pago||null });
-      erro = error;
-    }
-    if(erro){ toast('Erro ao salvar lancamento.','err'); return; }
-    toast('Lancamento salvo!','ok');
-    await carregarMensalidades(); draw();
-  };
-
-  window.finMudarPeriodo = (d) => {
-    let m = _finPeriodo.mes + d, a = _finPeriodo.ano;
-    if(m>11){m=0;a++;} if(m<0){m=11;a--;}
-    _finPeriodo = {mes:m,ano:a}; draw();
-  };
-
-  window.finExportarCSV = (refAtual) => {
-    const mensPeriodo = mensalidades.filter(m=>m.referencia===refAtual);
-    const linhas = [['Empresa','Referencia','Valor','Pago em']];
-    empresas.forEach(e=>{
-      const m = mensPeriodo.find(x=>x.empresa_id===e.id);
-      const finReg = financeiroData.find(f=>f.empresa_id===e.id);
-      const val = m ? m.valor : (finReg ? finReg.valor : '');
-      const pago = m?.pago_em || '';
-      linhas.push([e.nome, refAtual, val, pago]);
-    });
-    const csv = linhas.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
-    const blob = new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8;'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href=url; a.download=`financeiro-${refAtual}.csv`; a.click();
-    URL.revokeObjectURL(url);
-  };
+  window.masterIrAba = (aba) => { masterAba = aba; draw(); };
 
   window.finCancelarForm = () => { _finForm = null; draw(); };
   window.finConfigurar = (empresaId) => { _finForm = { mode:'configurar', empresaId, regId:null, valor:'', dia:'' }; draw(); };
@@ -5122,8 +4192,6 @@ function renderMasterPanel(){
     nova.slug = s2; nova.nome = nome;
     nova.whatsapp = document.getElementById('novoWhats').value.trim();
     nova.corPrincipal = sanitizeCor(document.getElementById('novaCor')?.value || '#3d1f3a');
-    nova.status = 'trial';
-    nova.trialExpiraEm = new Date(Date.now() + 7*24*60*60*1000).toISOString();
     empresas.push(nova);
     await saveEmpresas();
 
@@ -5172,32 +4240,15 @@ function renderMasterPanel(){
       if(data?.email){ emp.gestorEmail = data.email; emp.gestorUserId = data.id; draw(); }
     }
   };
-  window.masterSelStatus = (el, novoStatus) => {
-    document.querySelectorAll('.m-status-opt').forEach(o => o.className = 'm-status-opt');
-    el.classList.add('s-' + novoStatus);
-  };
   window.masterSalvarEdicao = async ()=>{
     const e = empresas.find(x=>x.slug===editingSlug);
     if(!e){ editingSlug=null; draw(); return; }
 
-    // Ler campos do novo formulario
-    const novoNome  = (document.getElementById('editNome')?.value||'').trim();
-    const novoWhats = (document.getElementById('editWhats')?.value||'').trim();
-    const novoSlug  = (document.getElementById('masterSlugInput')?.value||'').trim();
-    const novoEmail = (document.getElementById('masterEmailInput')?.value||'').trim();
-    const selOpt    = document.querySelector('.m-status-opt.s-ativa,.m-status-opt.s-trial,.m-status-opt.s-bloqueada');
-    const novoStatus = selOpt ? ['ativa','trial','bloqueada'].find(s=>selOpt.classList.contains('s-'+s)) : null;
-
-    if(novoNome) e.nome = novoNome;
-    if(novoWhats !== undefined){ let _wd = novoWhats.replace(/\D/g,''); if(_wd.startsWith('55') && _wd.length>11) _wd=_wd.slice(2); if(_wd.startsWith('0')) _wd=_wd.slice(1); e.whatsapp = _wd; }
-    if(novoStatus && novoStatus !== e.status){
-      e.status = novoStatus;
-      e.bloqueada = novoStatus === 'bloqueada';
-    }
-
+    const novoSlug = (document.getElementById('masterSlugInput')?.value||'').trim();
     const RESERVADOS = ['api','app','admin','master','login','logout','static','assets','sw','manifest','index','null','undefined','favicon'];
+
     if(novoSlug && novoSlug !== editingSlug){
-      if(!/^[a-z0-9][a-z0-9-]*[a-z0-9]$|^[a-z0-9]$/.test(novoSlug)){
+      if(!novoSlug || !/^[a-z0-9][a-z0-9-]*[a-z0-9]$|^[a-z0-9]$/.test(novoSlug)){
         toast('Link inválido. Use apenas letras minúsculas, números e hífens.','err'); return;
       }
       if(RESERVADOS.includes(novoSlug)){ toast('Esse link é reservado pelo sistema.','err'); return; }
@@ -5207,6 +4258,7 @@ function renderMasterPanel(){
       e.slug = novoSlug;
       await saveEmpresas();
 
+      // Move imagens no Storage para o novo caminho
       for(const bucket of ['logos','backgrounds']){
         const file = bucket==='logos' ? 'logo.jpg' : 'background.jpg';
         try{
@@ -5220,25 +4272,13 @@ function renderMasterPanel(){
           }
         }catch(_){}
       }
+      await saveEmpresas();
+
       agendamentos = agendamentos.map(a=> a.slug===antigoSlug ? {...a, slug:novoSlug} : a);
       editingSlug = novoSlug;
+      toast('Link alterado com sucesso!','ok');
     }
 
-    await saveEmpresas();
-
-    // Salvar email se mudou
-    if(novoEmail && novoEmail !== e.gestorEmail && e.gestorUserId){
-      const resp = await fetch('/api/update-email', {
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ user_id: e.gestorUserId, email: novoEmail })
-      });
-      const json = await resp.json().catch(()=>({}));
-      if(!resp.ok){ toast(json.error||'Dados salvos, mas erro ao atualizar e-mail.','err'); }
-      else { e.gestorEmail = novoEmail; }
-    }
-
-    toast('Alteracoes salvas!','ok');
     editingSlug = null; masterDrawerMode = null; draw();
   };
   window.masterUpd = async (field,val)=>{
@@ -5267,25 +4307,7 @@ function renderMasterPanel(){
   };
   window.masterToggleBloqueio = async ()=>{
     const e = empresas.find(x=>x.slug===editingSlug);
-    if(e.status === 'bloqueada'){
-      e.status = 'ativa'; e.bloqueada = false;
-    } else {
-      e.status = 'bloqueada'; e.bloqueada = true;
-    }
-    await saveEmpresas(); draw();
-  };
-  window.masterAtivarEmpresa = async (slug)=>{
-    const e = empresas.find(x=>x.slug===slug);
-    if(!e) return;
-    e.status = 'ativa'; e.bloqueada = false;
-    await saveEmpresas(); draw();
-  };
-  window.masterToggleEmpStatus = async (slug)=>{
-    const e = empresas.find(x=>x.slug===slug);
-    if(!e) return;
-    if(_empStatus(e)==='bloqueada'){ e.status='ativa'; e.bloqueada=false; }
-    else { e.status='bloqueada'; e.bloqueada=true; }
-    await saveEmpresas(); draw();
+    e.bloqueada = !e.bloqueada; await saveEmpresas(); draw();
   };
   window.masterExcluir = async (slug)=>{
     const e = empresas.find(x=>x.slug===slug);
@@ -5309,16 +4331,14 @@ function renderMasterPanel(){
     editingSlug = null;
     draw();
   };
-  Promise.all([carregarFinanceiro(), carregarMensalidades()]).then(draw);
-  iniciarPolling(()=>{ if(!editingSlug && masterDrawerMode === null) Promise.all([carregarFinanceiro(), carregarMensalidades()]).then(()=>{ if(!editingSlug && masterDrawerMode === null) draw(); }); });
+  carregarFinanceiro().then(draw);
+  iniciarPolling(()=>{ if(!editingSlug && masterDrawerMode === null) carregarFinanceiro().then(()=>{ if(!editingSlug && masterDrawerMode === null) draw(); }); });
 }
 
 function _limparEstado(){
   empresas = []; agendamentos = []; loaded = false;
-  editingSlug = null; masterSearch = ''; masterAba = 'dashboard'; _filtroEmpStatus = 'todos';
+  editingSlug = null; masterSearch = ''; masterAba = 'dashboard';
   financeiroData = []; _finForm = null; _filtroFin = 'todos';
-  _masterDetalheSlug = null; mensalidades = []; _finEmpFiltro = ''; _finEmpExpandido = null;
-  _finPeriodo = (()=>{ const n=new Date(); return {mes:n.getMonth(),ano:n.getFullYear()}; })();
   // gestão financeiro — resetado pelo closure de gestaoApp, mas zeramos referências globais por segurança
 }
 window.masterLogout = async ()=>{

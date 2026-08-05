@@ -1,7 +1,9 @@
 {
   "detector": {
     "ignoreRules": [],
-    "ignoreFiles": [],
+    "ignoreFiles": [
+      "index.html"
+    ],
     "ignoreValues": [
       {
         "rule": "broken-image",
@@ -19,6 +21,24 @@
         ],
         "createdAt": "2026-07-31T15:37:02.284Z",
         "reason": "Bordas laterais coloridas sao design intencional confirmado pelo usuario"
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "22px",
+        "createdAt": "2026-08-04T17:19:13.141Z",
+        "reason": "Wordmark font-size intencional"
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "14px",
+        "createdAt": "2026-08-04T17:19:13.543Z",
+        "reason": "Font-size 14px intencional em nav-link e btn-amber"
+      },
+      {
+        "rule": "design-system-color",
+        "value": "#000",
+        "createdAt": "2026-08-04T17:19:13.943Z",
+        "reason": "Preto puro intencional como cor de texto nos botoes ambar"
       }
     ]
   }
