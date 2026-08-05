@@ -4634,18 +4634,7 @@ function renderMasterPanel(){
         <div class="field"><label>WhatsApp</label><input id="novoWhats" type="tel" inputmode="numeric" maxlength="16" placeholder="(xx) xxxxx-xxxx" onkeydown="if(event.key.length===1&&!/[0-9]/.test(event.key))event.preventDefault()" oninput="maskTel(this)"/></div>
         <div class="field"><label>E-mail do gestor</label><input type="email" id="novoEmail" placeholder="gestor@email.com"/></div>
         <div class="field"><label>Senha temporária</label><input type="password" id="novaSenha" placeholder="Mínimo 6 caracteres"/></div>
-        <div class="field">
-          <label>Cor principal</label>
-          <div class="m-swatches" id="masterCorSwatches">
-            ${['#3d1f3a','#1a1a2e','#0f3460','#264653','#2d6a4f','#533483','#b5179e','#c1121f','#e76f51','#f4a261','#457b9d','#1a1a1a'].map(c=>
-              `<div class="m-sw master-cor-sw" data-cor="${c}" onclick="masterSwatchCor('${c}')" style="background:${c};border-color:${c==='#3d1f3a'?'#1a1a1a':'transparent'};"></div>`
-            ).join('')}
-          </div>
-          <div style="display:flex;align-items:center;gap:10px;">
-            <input type="color" id="novaCor" value="#3d1f3a" style="width:38px;height:38px;border:1.5px solid #d0d0d0;border-radius:8px;cursor:pointer;padding:3px;background:#fff;" oninput="masterSwatchCor(this.value,true)"/>
-            <span style="font-size:13px;color:#888;">Personalizar cor</span>
-          </div>
-        </div>
+        <input type="hidden" id="novaCor" value="#3d1f3a"/>
         <div class="m-form-actions">
           <button class="btn" style="width:100%;" onclick="masterCriar()">Criar empresa</button>
           <button class="btn ghost" style="width:100%;" onclick="masterFecharDrawer()">Cancelar</button>
@@ -4736,7 +4725,6 @@ function renderMasterPanel(){
     const empRow = e => {
       const cor = empAvCor(e.slug);
       return `<div class="m-ec" onclick="masterAbrirDetalhe('${e.slug}')">
-        <div style="width:10px;height:10px;border-radius:50%;background:${cor};flex-shrink:0;"></div>
         <div class="m-ec-body">
           <div class="m-ec-name">${escapeHtml(e.nome)}</div>
           <div class="m-ec-link">${e.slug}.agenplus.com.br</div>
