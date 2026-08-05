@@ -3563,11 +3563,12 @@ function renderGestao(empInicial){
       if(!v) return true;
       return c.nome.toLowerCase().includes(q) || (digits && (c.telefone||'').includes(digits));
     });
+    const _fmtTel = t => { const d=(t||'').replace(/\D/g,'').replace(/^0/,''); return d.length===11?`(${d.slice(0,2)}) ${d.slice(2,7)}-${d.slice(7)}`:t||''; };
     const rows = listados.map(c=>`
       <div onclick="abrirPerfilCliente('${c.id}')" style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:0.5px solid #f2f2f7;cursor:pointer;" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background=''">
         <div style="flex:1;min-width:0;">
           <div style="font-size:15px;font-weight:600;color:#1a1a1a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(c.nome)}</div>
-          <div style="font-size:13px;color:#8e8e93;margin-top:2px;">${telFmt(c.telefone)}</div>
+          <div style="font-size:13px;color:#8e8e93;margin-top:2px;">${_fmtTel(c.telefone)}</div>
         </div>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#c7c7cc" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
       </div>`).join('');
