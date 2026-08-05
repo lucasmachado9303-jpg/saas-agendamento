@@ -621,7 +621,9 @@ async function init(){
     else if(subPage === 'confirmacao') currentRoute.page = 'confirmacao';
     // Limpa /app.html da URL para ficar estetico
     if(path === 'app.html' || _pParam){
-      const cleanPath = currentRoute.page ? '/' + currentRoute.page : '/';
+      const cleanPath = currentRoute.page === 'ag'
+        ? '/?ag=' + encodeURIComponent(currentRoute.agId)
+        : (currentRoute.page ? '/' + currentRoute.page : '/');
       history.replaceState(currentRoute, '', cleanPath);
     }
   } else if(path === 'cadastro'){
