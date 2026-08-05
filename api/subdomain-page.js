@@ -66,10 +66,10 @@ module.exports = async function handler(req, res) {
     ogDesc  = `Acesse o link para confirmar ou cancelar seu agendamento.`;
     ogImage = null;
   } else {
-    // Pagina inicial da empresa: usa logo se tiver
+    // Pagina inicial da empresa
     ogTitle = `${empNome} — Agende seu horário`;
     ogDesc  = `Agende online de forma rápida e simples.`;
-    ogImage = (emp && emp.logo) ? emp.logo : null;
+    ogImage = null;
   }
 
   function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
