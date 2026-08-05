@@ -2388,9 +2388,9 @@ function renderGestao(empInicial){
         const dias = Math.floor(diffMin / 1440);
         const horas = Math.floor((diffMin % 1440) / 60);
         const mins = diffMin % 60;
-        if (dias > 0) proxVal = 'em' + dias + 'd e ' + horas + 'h';
-        else if (horas > 0) proxVal = 'em' + horas + 'h ' + mins + 'min';
-        else proxVal = 'em' + mins + 'min';
+        if (dias > 0) proxVal = 'em ' + dias + 'd e ' + horas + 'h';
+        else if (horas > 0) proxVal = 'em ' + horas + 'h ' + mins + 'min';
+        else proxVal = 'em ' + mins + 'min';
       }
     }
 
