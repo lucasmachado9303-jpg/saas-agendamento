@@ -13,12 +13,13 @@ module.exports = async function handler(req, res) {
   const slugMatch = host.match(/^([^.]+)\.agenplus\.com\.br$/);
   const slug = slugMatch ? slugMatch[1] : null;
 
-  // Le o app.html do disco
+  // Le o app.html do disco (api/ fica uma pasta abaixo da raiz)
   let html;
   try {
-    html = fs.readFileSync(path.join(process.cwd(), 'app.html'), 'utf8');
+    html = fs.readFileSync(path.join(__dirname, '..', 'app.html'), 'utf8');
   } catch(e) {
-    return res.status(500).send('Erro ao carregar página.');
+    console.error('[subdomain-page] erro ao ler app.html:', e.message, 'cwd:', process.cwd(), '__dirname:', __dirname);
+    return res.status(500).send('Erro ao carregar página: ' + e.message);
   }
 
   // Sem slug ou sem env: serve app.html sem modificar
