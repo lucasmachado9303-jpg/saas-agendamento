@@ -3176,6 +3176,7 @@ function renderGestao(empInicial){
     const _nome = document.getElementById('pNome')?.value;          if(_nome != null) emp.nome = _nome || emp.nome;
     const _desc = document.getElementById('pDescricao')?.value;     if(_desc != null) emp.descricao = _desc;
     const _dest = document.getElementById('pTextoDestaque')?.value; if(_dest != null) emp.textoDestaque = _dest;
+    const _cor  = document.getElementById('pCor')?.value;           if(_cor)          emp.corPrincipal = _cor;
   }
 
   function draw(){
