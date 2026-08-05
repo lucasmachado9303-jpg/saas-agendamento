@@ -57,19 +57,19 @@ module.exports = async function handler(req, res) {
 
   // Monta titulo e descricao
   const empNome   = emp ? emp.nome : 'Agen+';
-  const ogImage   = (emp && emp.logo) ? emp.logo : 'https://saas-agendamento-seven.vercel.app/icon.svg';
   const currentUrl = req.headers['x-original-url'] || `https://${host}${req.url}`;
 
-  let ogTitle, ogDesc;
+  let ogTitle, ogDesc, ogImage;
   if (ag) {
-    const meses = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
-    const dt = new Date(ag.data + 'T00:00:00');
-    const dataFmt = `${dt.getDate()} de ${meses[dt.getMonth()]}`;
+    // Link de confirmacao: sem imagem, descricao simples
     ogTitle = `${empNome} — Confirme seu agendamento`;
-    ogDesc  = `${ag.servico_nome} · ${dataFmt} às ${ag.hora}`;
+    ogDesc  = `Acesse o link para confirmar ou cancelar seu agendamento.`;
+    ogImage = null;
   } else {
+    // Pagina inicial da empresa: usa logo se tiver
     ogTitle = `${empNome} — Agende seu horário`;
     ogDesc  = `Agende online de forma rápida e simples.`;
+    ogImage = (emp && emp.logo) ? emp.logo : null;
   }
 
   function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
@@ -79,7 +79,7 @@ module.exports = async function handler(req, res) {
     `<meta property="og:url" content="${esc(currentUrl)}"/>`,
     `<meta property="og:title" content="${esc(ogTitle)}"/>`,
     `<meta property="og:description" content="${esc(ogDesc)}"/>`,
-    `<meta property="og:image" content="${esc(ogImage)}"/>`,
+    ...(ogImage ? [`<meta property="og:image" content="${esc(ogImage)}"/>`] : []),
     `<meta property="og:site_name" content="${esc(empNome)}"/>`,
     `<meta name="twitter:card" content="summary"/>`,
     `<meta name="twitter:title" content="${esc(ogTitle)}"/>`,
