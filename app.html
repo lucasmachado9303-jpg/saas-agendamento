@@ -3393,7 +3393,7 @@ function renderGestao(empInicial){
         .replace(/{link}/g, linkConfirmar);
       link = `https://wa.me/${waNum}?text=${encodeURIComponent(msg)}`;
       const campo = tipo === 'confirmacao' ? 'confirmacao_enviada' : 'lembrete_enviado';
-      supabaseClient.from('agendamentos').update({ [campo]: true }).eq('id', agId);
+      fetch('/api/ag-mark', { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ ag_id: agId, campo }) });
       if(tipo === 'confirmacao') ag.confirmacaoEnviada = true;
       else ag.lembreteEnviado = true;
     }
