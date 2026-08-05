@@ -3215,11 +3215,15 @@ function renderGestao(empInicial){
       data, hora, token_curto: gerarTokenCurto()
     }).select().single();
     if(error){ toast(friendlyError(error,'Erro ao agendar.'),'err'); return; }
+    console.log('[ag insert] token_curto do banco:', row.token_curto);
     agendamentos.push({
       id:row.id, slug:emp.slug,
       nome:row.nome_cliente, telefone:row.telefone,
       servicoId:row.servico_id, servicoNome:row.servico_nome,
-      data:row.data, hora:row.hora
+      data:row.data, hora:row.hora,
+      status: row.status || 'nao_confirmado',
+      confirmacaoEnviada: false, lembreteEnviado: false,
+      tokenCurto: row.token_curto || null
     });
     novoAgState=null; _novoAgClienteId=null; _novoAgClienteBusca=''; _novoAgClienteResultados=[]; draw();
   };
