@@ -1987,10 +1987,10 @@ function renderGestao(empInicial){
       ${banner}
       ${tabs}
       <div style="margin-bottom:14px;">
-        <input type="search" value="${escapeAttr(_clientesBusca)}" placeholder="Buscar por nome ou telefone..." oninput="filtrarClientes(this.value)"
+        <input id="clientesBuscaInput" type="search" value="${escapeAttr(_clientesBusca)}" placeholder="Buscar por nome ou telefone..." oninput="filtrarClientesLive(this.value)"
           style="width:100%;border:0.5px solid #e4e4e7;border-radius:12px;padding:10px 14px;font-size:15px;font-family:inherit;color:#1a1a1a;background:#fff;box-sizing:border-box;"/>
       </div>
-      ${listaHtml}
+      <div id="clientesListaWrap">${listaHtml}</div>
       <div style="text-align:center;margin-top:12px;color:#8e8e93;font-size:13px;">${_clientes.length} cliente${_clientes.length!==1?'s':''} cadastrado${_clientes.length!==1?'s':''}</div>
     `;
   }
@@ -3553,6 +3553,28 @@ function renderGestao(empInicial){
     draw();
   }
   window.filtrarClientes = (v)=>{ _clientesBusca=v; draw(); };
+  window.filtrarClientesLive = (v)=>{
+    _clientesBusca = v;
+    const wrap = document.getElementById('clientesListaWrap');
+    if(!wrap){ draw(); return; }
+    const q = v.toLowerCase();
+    const digits = v.replace(/\D/g,'');
+    const listados = _clientes.filter(c=>{
+      if(!v) return true;
+      return c.nome.toLowerCase().includes(q) || (digits && (c.telefone||'').includes(digits));
+    });
+    const rows = listados.map(c=>`
+      <div onclick="abrirPerfilCliente('${c.id}')" style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:0.5px solid #f2f2f7;cursor:pointer;" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background=''">
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:15px;font-weight:600;color:#1a1a1a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(c.nome)}</div>
+          <div style="font-size:13px;color:#8e8e93;margin-top:2px;">${telFmt(c.telefone)}</div>
+        </div>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#c7c7cc" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>`).join('');
+    wrap.innerHTML = listados.length
+      ? `<div style="background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.06);">${rows}</div>`
+      : `<p class="muted" style="text-align:center;padding:24px 0;">${v ? 'Nenhum cliente encontrado.' : 'Nenhum cliente cadastrado ainda.'}</p>`;
+  };
   window.abrirNovoCliente = ()=>{ _clienteModalNovo=true; draw(); };
   window.fecharModalCliente = ()=>{ _clienteModalNovo=false; draw(); };
   window.abrirPerfilCliente = (id)=>{ _clientePerfilId=id; _clientePerfilEditando=false; draw(); };
