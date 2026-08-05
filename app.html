@@ -553,8 +553,22 @@ async function init(){
   const _hp = new URLSearchParams(location.hash.slice(1));
   const _at = _hp.get('access_token'), _rt = _hp.get('refresh_token');
   if(_at && _rt){
-    await supabaseClient.auth.setSession({ access_token: _at, refresh_token: _rt });
+    try { await supabaseClient.auth.setSession({ access_token: _at, refresh_token: _rt }); } catch(e){}
     history.replaceState(null, '', location.pathname + location.search);
+    // Busca perfil e roteia diretamente, sem depender do onAuthStateChange
+    const { data: { session: _s } } = await supabaseClient.auth.getSession();
+    if(_s?.user){
+      currentUser = _s.user;
+      const { data: _p } = await supabaseClient.from('profiles').select('*').eq('id', _s.user.id).single();
+      currentProfile = _p || null;
+      await loadData();
+      if(currentProfile?.role === 'master'){
+        goto({ master: 1 }); _appInitialized = true; return;
+      } else if(currentProfile?.role === 'owner_empresa'){
+        const _e = empresas.find(e => e.id === currentProfile.empresa_id);
+        if(_e){ goto({ empresa: _e.slug, page: 'gestao' }); _appInitialized = true; return; }
+      }
+    }
   }
 
   // Escuta mudanças de auth (inclui PASSWORD_RECOVERY vindo do e-mail)
