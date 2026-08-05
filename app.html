@@ -1685,7 +1685,7 @@ function renderGestao(empInicial){
             </div>
             <div class="row">
               <div class="field"><label>Serviço</label><select id="novoServico">${servicoOpts}</select></div>
-              <div class="field"><label>Horário</label><select id="novoHora">${horariosOpts}</select></div>
+              <div class="field"><label>Horário</label><div style="padding:10px 12px;border:1.5px solid #e5e7eb;border-radius:10px;font-size:14px;font-weight:600;color:#1a1a1a;background:#f9f9f9;">${novoAgState.hora}</div></div>
             </div>
             <div class="row">
               <button class="btn ghost" onclick="cancelarNovoAg()">Cancelar</button>
@@ -3307,7 +3307,7 @@ function renderGestao(empInicial){
   window.cancelarNovoAg = ()=>{ novoAgState=null; _novoAgClienteId=null; _novoAgClienteBusca=''; _novoAgClienteResultados=[]; draw(); };
   window.salvarNovoAg = async (data)=>{
     const servicoId = document.getElementById('novoServico')?.value;
-    const hora = document.getElementById('novoHora')?.value;
+    const hora = novoAgState?.hora;
     if(!_novoAgClienteId){ toast('Selecione um cliente.','err'); return; }
     if(!servicoId||!hora){ toast('Preencha todos os campos.','err'); return; }
     const cliente = _clientes.find(c=>c.id===_novoAgClienteId);
