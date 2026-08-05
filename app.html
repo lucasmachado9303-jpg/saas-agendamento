@@ -1545,7 +1545,7 @@ function renderGestao(empInicial){
   let configurarSub = null; // null | 'servicos' | 'horarios' | 'personalizar' | 'mensagens'
   let _waMenuId = null; // id do agendamento com dropdown WA aberto
   let _inativoWaMenuId = null; // id do cliente inativo com dropdown WA aberto
-  let _ausentesEnviados = new Set(); // ids de clientes que receberam mensagem ausente nesta sessao
+
   let personalizarDirty = false;
   let mesHorario = mesKey(new Date());
   let novoBotaoState = null;
@@ -1963,7 +1963,7 @@ function renderGestao(empInicial){
                   <button onclick="event.stopPropagation();toggleWaMenuInativo('${c.id}')" class="ag-btn ag-btn-wa" style="padding:6px 10px;">${ICO_WA}</button>
                   ${_inativoWaMenuId === c.id ? `<div style="position:absolute;top:calc(100% + 4px);right:0;min-width:130px;background:#fff;border:0.5px solid #d1d5db;border-radius:9px;overflow:hidden;z-index:50;box-shadow:0 4px 12px rgba(0,0,0,.10);" onclick="event.stopPropagation()">
                     <button class="ag-wa-dd-item" onclick="waAcaoInativo('${c.id}','conversar','${emp.id}')">Conversar</button>
-                    <button class="ag-wa-dd-item" style="border-bottom:none;" onclick="waAcaoInativo('${c.id}','inativo','${emp.id}')">Ausente ${_ausentesEnviados.has(c.id) ? '<span style="color:#22c55e">&#10003;</span>' : ''}</button>
+                    <button class="ag-wa-dd-item" style="border-bottom:none;" onclick="waAcaoInativo('${c.id}','inativo','${emp.id}')">Ausente ${c.ausenteEnviadoEm ? '<span style="color:#22c55e">&#10003;</span>' : ''}</button>
                   </div>` : ''}
                 </div>
               </div>`;
@@ -3511,7 +3511,11 @@ function renderGestao(empInicial){
         .replace(/{link}/g, linkPublico);
       link = `https://wa.me/${waNum}?text=${encodeURIComponent(msg)}`;
     }
-    if(tipo === 'inativo') _ausentesEnviados.add(clienteId);
+    if(tipo === 'inativo'){
+      const agora = new Date().toISOString();
+      supabaseClient.from('clientes').update({ ausente_enviado_em: agora }).eq('id', clienteId);
+      const cf = _clientes.find(x=>x.id===clienteId); if(cf) cf.ausenteEnviadoEm = agora;
+    }
     _inativoWaMenuId = null;
     draw();
     window.open(link, '_blank', 'noopener,noreferrer');
@@ -3576,7 +3580,7 @@ function renderGestao(empInicial){
     const { data, error } = await supabaseClient.from('clientes').select('*').eq('empresa_id', emp.id).order('nome');
     _clientesCarregando = false;
     if(error){ toast('Erro ao carregar clientes.','err'); _clientes=[]; draw(); return; }
-    _clientes = (data||[]).map(c=>({ id:c.id, nome:c.nome, telefone:c.telefone }));
+    _clientes = (data||[]).map(c=>({ id:c.id, nome:c.nome, telefone:c.telefone, ausenteEnviadoEm:c.ausente_enviado_em||null }));
     draw();
   }
   window.filtrarClientes = (v)=>{ _clientesBusca=v; draw(); };
@@ -3621,7 +3625,7 @@ function renderGestao(empInicial){
     if(existe){ toast(`Já existe um cliente com este número: ${existe.nome}.`,'err'); return; }
     const { data, error } = await supabaseClient.from('clientes').insert({ empresa_id:emp.id, nome, telefone }).select().single();
     if(error){ toast('Erro ao cadastrar cliente.','err'); return; }
-    _clientes.push({ id:data.id, nome:data.nome, telefone:data.telefone });
+    _clientes.push({ id:data.id, nome:data.nome, telefone:data.telefone, ausenteEnviadoEm:null });
     _clientes.sort((a,b)=>a.nome.localeCompare(b.nome));
     _clienteModalNovo=false; _clientesBusca=''; draw(); toast('Cliente cadastrado.','ok');
   };
@@ -3716,7 +3720,7 @@ function renderGestao(empInicial){
     const telefone = '0'+telRaw;
     const { data, error } = await supabaseClient.from('clientes').insert({ empresa_id:emp.id, nome, telefone }).select().single();
     if(error){ toast('Erro ao cadastrar cliente.','err'); return; }
-    _clientes.push({ id:data.id, nome:data.nome, telefone:data.telefone });
+    _clientes.push({ id:data.id, nome:data.nome, telefone:data.telefone, ausenteEnviadoEm:null });
     _clientes.sort((a,b)=>a.nome.localeCompare(b.nome));
     _novoAgClienteId = data.id;
     _novoAgClienteBusca = data.nome;
