@@ -4348,7 +4348,7 @@ function renderMasterPanel(){
       .m-search:focus { border-color:#888; }
 
       /* Empresa card */
-      .m-ec { background:var(--paper); border:1px solid var(--line); border-radius:14px; display:flex; align-items:center; padding:14px 16px; gap:12px; transition:border-color .15s; }
+      .m-ec { background:#fff; border:1px solid var(--line); border-radius:14px; display:flex; align-items:center; padding:14px 16px; gap:12px; transition:border-color .15s; }
       .m-ec:hover { border-color:#bbb; }
       .m-ec-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
       .m-ec-body { flex:1; min-width:0; }
@@ -4410,7 +4410,8 @@ function renderMasterPanel(){
       .m-field-hint { font-size:11px; color:var(--ink-soft); margin-top:3px; }
       .m-link-row { display:flex; align-items:center; gap:3px; }
       .m-link-pfx { font-size:13px; color:var(--ink-soft); white-space:nowrap; }
-      .m-link-inp { flex:1; border:none; border-bottom:1.5px solid var(--line); outline:none; font-size:15px; color:var(--accent); font-family:inherit; background:transparent; font-weight:600; min-width:0; padding:2px 0; }
+      .m-link-inp { flex:1; border:1.5px solid var(--line); border-radius:9px; outline:none; font-size:15px; color:var(--accent); font-family:inherit; background:#fff; font-weight:600; min-width:0; padding:7px 10px; }
+      .m-link-inp:focus { border-color:#3d1f3a; }
       .m-link-inp:focus { border-color:#3d1f3a; }
       .m-status-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; padding:12px 16px; }
       .m-status-opt { border:2px solid var(--line); border-radius:12px; padding:10px 6px; text-align:center; cursor:pointer; transition:all .14s; background:var(--paper); }
