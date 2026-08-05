@@ -614,7 +614,9 @@ async function init(){
     // _p vem do redirect do index.html quando o rewrite do Vercel não pega
     const _pParam = new URLSearchParams(location.search).get('_p') || '';
     const subPage = _pParam || (path === 'app.html' ? '' : path);
-    if(subPage === 'gestao')      currentRoute.page = 'gestao';
+    const agParam = new URLSearchParams(location.search).get('ag');
+    if(agParam){ currentRoute.page = 'ag'; currentRoute.agId = agParam; }
+    else if(subPage === 'gestao')      currentRoute.page = 'gestao';
     else if(subPage === 'agendar')     currentRoute.page = 'agendar';
     else if(subPage === 'confirmacao') currentRoute.page = 'confirmacao';
     // Limpa /app.html da URL para ficar estetico
@@ -657,8 +659,7 @@ function route(){
     if(!emp){ renderNotFound(); return; }
     if(page==="agendar") renderAgendar(emp);
     else if(page==="confirmacao") renderConfirmacao(emp);
-    else if(page==="confirmar") renderClienteLogin(emp);
-    else if(page==="confirmar-lista") renderMeusAgendamentos(emp);
+    else if(page==="ag") renderAgConfirmar(emp, currentRoute.agId);
     else if(page==="gestao"){
       const isMaster = currentProfile?.role === 'master';
       const isOwner  = currentProfile?.role === 'owner_empresa'
@@ -762,13 +763,6 @@ function renderHome(emp){
           </button>
         </div>
 
-        <!-- Ver meus agendamentos -->
-        <div style="width:100%;max-width:240px;margin:0 auto 12px;">
-          <button onclick="goto({empresa:'${emp.slug}', page:'confirmar'})"
-            style="width:100%;background:#fff;color:var(--ink);border:1.5px solid var(--line);border-radius:14px;padding:14px 20px;font-size:15px;font-weight:600;font-family:'Nunito',sans-serif;cursor:pointer;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
-            Ver meus agendamentos
-          </button>
-        </div>
 
         <!-- Botões personalizados -->
         ${botoesHtml}
@@ -1191,6 +1185,140 @@ function renderConfirmacao(emp){
     </div>
   `);
 }
+
+// ---------- LINK DIRETO DE AGENDAMENTO (?ag=UUID) ----------
+async function renderAgConfirmar(emp, agId){
+  applyAccent(emp.corPrincipal);
+  const cor = emp.corPrincipal || '#3d1f3a';
+
+  // Tela de carregamento
+  render(`<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--paper);"><div style="font-size:14px;color:#aaa;">Carregando...</div></div>`);
+
+  // Busca o agendamento pelo UUID
+  let ag = null;
+  try {
+    const { data, error } = await supabaseClient
+      .from('agendamentos')
+      .select('id,nome_cliente,servico_nome,data,hora,status,empresa_id')
+      .eq('id', agId)
+      .eq('empresa_id', emp.id)
+      .single();
+    if(!error) ag = data;
+  } catch(e){}
+
+  if(!ag){
+    render(`
+      <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--paper);padding:24px;">
+        <div style="background:#fff;border-radius:20px;padding:32px 24px;max-width:360px;width:100%;box-shadow:0 4px 24px rgba(0,0,0,0.10);text-align:center;">
+          <div style="font-size:40px;margin-bottom:12px;">?</div>
+          <div style="font-size:17px;font-weight:700;color:var(--ink);margin-bottom:8px;">Agendamento não encontrado</div>
+          <div style="font-size:14px;color:#8e8e93;margin-bottom:24px;">Este link pode ter expirado ou o agendamento foi removido.</div>
+          <button onclick="goto({empresa:'${emp.slug}'})" style="background:${cor};color:#fff;border:none;border-radius:14px;padding:14px 24px;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;width:100%;">Fazer novo agendamento</button>
+        </div>
+      </div>
+    `);
+    return;
+  }
+
+  const diasSemana = ['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'];
+  const meses = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+  const dtObj = new Date(ag.data + 'T00:00:00');
+  const dataFmt = `${diasSemana[dtObj.getDay()]}, ${dtObj.getDate()} de ${meses[dtObj.getMonth()]}`;
+
+  const statusLabels = { confirmado: 'Confirmado', cancelado: 'Cancelado', agendado: 'Aguardando confirmação' };
+  const statusColors = { confirmado: { bg:'#f0fdf4', text:'#16a34a', dot:'#16a34a', border:'#bbf7d0' }, cancelado: { bg:'#fef2f2', text:'#dc2626', dot:'#dc2626', border:'#fecaca' }, agendado: { bg:'#fff8ec', text:'#d97706', dot:'#d97706', border:'#fde68a' } };
+  const sc = statusColors[ag.status] || statusColors.agendado;
+  const sl = statusLabels[ag.status] || 'Aguardando confirmação';
+
+  const jaDefinido = ag.status === 'confirmado' || ag.status === 'cancelado';
+
+  render(`
+    <div style="min-height:100vh;background:var(--paper);display:flex;align-items:center;justify-content:center;padding:24px 16px;">
+      <div style="background:#fff;border-radius:20px;padding:32px 24px 28px;max-width:360px;width:100%;box-shadow:0 4px 24px rgba(0,0,0,0.10);">
+        <div style="font-size:18px;font-weight:700;color:var(--ink);text-align:center;margin-bottom:20px;">${escapeHtml(emp.nome)}</div>
+
+        <div style="text-align:center;margin-bottom:20px;">
+          <span style="display:inline-flex;align-items:center;gap:5px;background:${sc.bg};color:${sc.text};font-size:12px;font-weight:700;padding:4px 10px;border-radius:99px;border:1px solid ${sc.border};">
+            <span style="width:7px;height:7px;border-radius:50%;background:${sc.dot};display:inline-block;"></span>
+            ${sl}
+          </span>
+        </div>
+
+        <div style="height:1px;background:#f0f0f0;margin:0 -24px 20px;"></div>
+
+        <div style="display:flex;align-items:flex-start;gap:14px;margin-bottom:18px;">
+          <div style="width:36px;height:36px;border-radius:10px;background:#f5f5f5;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          </div>
+          <div><div style="font-size:11px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:2px;">Cliente</div><div style="font-size:16px;font-weight:600;color:var(--ink);">${escapeHtml(ag.nome_cliente||'')}</div></div>
+        </div>
+
+        <div style="display:flex;align-items:flex-start;gap:14px;margin-bottom:18px;">
+          <div style="width:36px;height:36px;border-radius:10px;background:#f5f5f5;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 10c-.83 0-1.5-.67-1.5-1.5v-5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5v5c0 .83-.67 1.5-1.5 1.5z"/><path d="M20.5 10H19V8.5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/><path d="M9.5 14c.83 0 1.5.67 1.5 1.5v5c0 .83-.67 1.5-1.5 1.5S8 21.33 8 20.5v-5c0-.83.67-1.5 1.5-1.5z"/><path d="M3.5 14H5v1.5c0 .83-.67 1.5-1.5 1.5S2 16.33 2 15.5 2.67 14 3.5 14z"/><path d="M14 14.5c0-.83.67-1.5 1.5-1.5h5c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5h-5c-.83 0-1.5-.67-1.5-1.5z"/><path d="M15.5 19H14v1.5c0 .83.67 1.5 1.5 1.5s1.5-.67 1.5-1.5-.67-1.5-1.5-1.5z"/><path d="M10 9.5C10 8.67 9.33 8 8.5 8h-5C2.67 8 2 8.67 2 9.5S2.67 11 3.5 11h5c.83 0 1.5-.67 1.5-1.5z"/><path d="M8.5 5H10V3.5C10 2.67 9.33 2 8.5 2S7 2.67 7 3.5 7.67 5 8.5 5z"/></svg>
+          </div>
+          <div><div style="font-size:11px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:2px;">Servico</div><div style="font-size:16px;font-weight:600;color:var(--ink);">${escapeHtml(ag.servico_nome||'')}</div></div>
+        </div>
+
+        <div style="display:flex;align-items:flex-start;gap:14px;margin-bottom:18px;">
+          <div style="width:36px;height:36px;border-radius:10px;background:#f5f5f5;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          </div>
+          <div><div style="font-size:11px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:2px;">Data</div><div style="font-size:16px;font-weight:600;color:var(--ink);">${dataFmt}</div></div>
+        </div>
+
+        <div style="display:flex;align-items:flex-start;gap:14px;margin-bottom:0;">
+          <div style="width:36px;height:36px;border-radius:10px;background:#f5f5f5;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>
+          </div>
+          <div><div style="font-size:11px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:2px;">Horario</div><div style="font-size:16px;font-weight:600;color:var(--ink);">${escapeHtml(ag.hora||'')}</div></div>
+        </div>
+
+        ${jaDefinido ? `
+        <div style="margin-top:28px;text-align:center;font-size:14px;color:#aaa;">
+          Este agendamento já foi ${ag.status === 'confirmado' ? 'confirmado' : 'cancelado'}.
+        </div>
+        ` : `
+        <div style="margin-top:28px;display:flex;flex-direction:column;align-items:center;gap:14px;" id="agActionArea">
+          <button id="btnConfirmarAg" onclick="agConfirmar('${agId}','confirmar','${emp.slug}')"
+            style="width:100%;background:#16a34a;color:#fff;border:none;border-radius:14px;padding:17px 24px;font-size:16px;font-weight:700;font-family:inherit;cursor:pointer;box-shadow:0 4px 16px rgba(22,163,74,0.25);">
+            Confirmar agendamento
+          </button>
+          <button onclick="agConfirmar('${agId}','cancelar','${emp.slug}')"
+            style="background:none;border:none;color:#aaa;font-size:13px;font-weight:500;font-family:inherit;cursor:pointer;padding:4px 8px;text-decoration:underline;text-underline-offset:3px;">
+            cancelar agendamento
+          </button>
+        </div>
+        `}
+      </div>
+    </div>
+  `);
+}
+
+window.agConfirmar = async (agId, acao, empSlug) => {
+  const btnConfirmar = document.getElementById('btnConfirmarAg');
+  const area = document.getElementById('agActionArea');
+  if(area) area.style.opacity = '0.5';
+  if(btnConfirmar) btnConfirmar.disabled = true;
+  try {
+    const res = await fetch('/api/ag-action', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ag_id: agId, acao })
+    });
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.error || 'Erro');
+    const msg = acao === 'confirmar' ? 'Agendamento confirmado!' : 'Agendamento cancelado.';
+    if(area){
+      area.innerHTML = `<div style="text-align:center;font-size:15px;font-weight:600;color:${acao==='confirmar'?'#16a34a':'#8e8e93'};padding:8px 0;">${msg}</div>`;
+      area.style.opacity = '1';
+    }
+  } catch(e) {
+    if(area) area.style.opacity = '1';
+    if(btnConfirmar) btnConfirmar.disabled = false;
+    alert('Erro ao processar. Tente novamente.');
+  }
+};
 
 // ---------- CLIENTE LOGIN / MEUS AGENDAMENTOS ----------
 let _clienteSession = null; // { nome, telefone, agendamentos: [] }
@@ -3265,11 +3393,11 @@ function renderGestao(empInicial){
     } else {
       const empObj = empresas.find(e=>e.id===empId);
       const defaultMsg = tipo === 'confirmacao'
-        ? 'Olá, {nome}!\nConfirme seu agendamento de {servico} para {data} às {hora}.\nAcesse o link abaixo, faça o login e confirme ou cancele:\n{link}'
+        ? 'Olá, {nome}!\nConfirme seu agendamento de {servico} para {data} às {hora}.\nAcesse o link abaixo para confirmar ou cancelar:\n{link}'
         : 'Olá, {nome}! \nPassando pra lembrar do seu agendamento! \n{servico}\n{data} - {hora}.\nAté lá!';
       const tmpl = (tipo === 'confirmacao' ? empObj?.msgConfirmacao : empObj?.msgLembrete) || defaultMsg;
       const dataFmt = ag.data ? new Date(ag.data+'T00:00:00').toLocaleDateString('pt-BR') : '';
-      const linkConfirmar = 'https://' + (empObj?.slug||'') + '.agenplus.com.br/confirmar';
+      const linkConfirmar = 'https://' + (empObj?.slug||'') + '.agenplus.com.br/?ag=' + agId;
       const msg = tmpl
         .replace(/{nome}/g, ag.nome||'')
         .replace(/{hora}/g, ag.hora||'')
