@@ -1580,8 +1580,8 @@ function renderGestao(empInicial){
   let _clientePerfilEditando = false;
   let _excluirClienteModal = null; // id do cliente aguardando confirmação de exclusão
   // Inativos
-  let _clientesAba = 'todos'; // 'todos' | 'inativos'
-  let _clientesInativosFiltro = 30;
+  let _clientesAba = 'todos'; // 'todos' | 'ausentes'
+  let _clientesInativosFiltro = 15; // faixa selecionada: 15 | 30 | 45
   let _clientesBannerDismissed = false;
 
   // Estado do bloco de notas (dashboard)
@@ -1915,9 +1915,12 @@ function renderGestao(empInicial){
         </div>`;
     }
 
-    // Calcular inativos
+    // Calcular ausentes (faixas exclusivas)
     const inativos30 = _clientes.filter(c => { const d=_diasSemVoltar(c); return d!==null && d>=30; });
-    const clientesInativos = _clientes.filter(c => { const d=_diasSemVoltar(c); return d!==null && d>=_clientesInativosFiltro; });
+    const ausentesFaixa15 = _clientes.filter(c => { const d=_diasSemVoltar(c); return d!==null && d>=16 && d<=30; });
+    const ausentesFaixa30 = _clientes.filter(c => { const d=_diasSemVoltar(c); return d!==null && d>=31 && d<=45; });
+    const ausentesFaixa45 = _clientes.filter(c => { const d=_diasSemVoltar(c); return d!==null && d>=46; });
+    const clientesAusentes = _clientesInativosFiltro===15 ? ausentesFaixa15 : _clientesInativosFiltro===30 ? ausentesFaixa30 : ausentesFaixa45;
 
     // Banner
     const banner = (!_clientesBannerDismissed && inativos30.length && _clientesAba==='todos') ? `
@@ -1930,14 +1933,20 @@ function renderGestao(empInicial){
     const tabs = `
       <div style="display:flex;gap:0;background:#f2f2f7;border-radius:12px;padding:3px;margin-bottom:14px;">
         <button onclick="setClientesAba('todos')" style="flex:1;padding:7px 0;border-radius:9px;border:none;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;${_clientesAba==='todos'?'background:#fff;color:#1a1a1a;box-shadow:0 1px 4px rgba(0,0,0,0.1);':'background:transparent;color:#8e8e93;'}">Todos</button>
-        <button onclick="setClientesAba('inativos')" style="flex:1;padding:7px 0;border-radius:9px;border:none;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;${_clientesAba==='inativos'?'background:#fff;color:#1a1a1a;box-shadow:0 1px 4px rgba(0,0,0,0.1);':'background:transparent;color:#8e8e93;'}">Inativos${inativos30.length?` <span style="background:#ef4444;color:#fff;border-radius:99px;font-size:11px;padding:1px 6px;margin-left:4px;vertical-align:middle;">${inativos30.length}</span>`:''}</button>
+        <button onclick="setClientesAba('ausentes')" style="flex:1;padding:7px 0;border-radius:9px;border:none;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;${_clientesAba==='ausentes'?'background:#fff;color:#1a1a1a;box-shadow:0 1px 4px rgba(0,0,0,0.1);':'background:transparent;color:#8e8e93;'}">Ausentes${inativos30.length?` <span style="background:#ef4444;color:#fff;border-radius:99px;font-size:11px;padding:1px 6px;margin-left:4px;vertical-align:middle;">${inativos30.length}</span>`:''}</button>
       </div>`;
 
-    // VIEW: INATIVOS
-    if(_clientesAba === 'inativos') {
-      const diaColor = d => d>=45?'#dc2626':'#f97316';
-      const inativoRows = clientesInativos.length
-        ? clientesInativos.map(c=>{
+    // VIEW: AUSENTES
+    if(_clientesAba === 'ausentes') {
+      const diaColor = d => d>=46?'#dc2626':d>=31?'#f97316':'#d97706';
+      const faixaBtns = `
+        <div style="display:flex;gap:8px;margin-bottom:14px;">
+          <button onclick="setInativosFiltro(15)" style="flex:1;padding:7px 0;border-radius:9px;border:1.5px solid ${_clientesInativosFiltro===15?'#1a1a1a':'#e4e4e7'};font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;background:${_clientesInativosFiltro===15?'#1a1a1a':'#fff'};color:${_clientesInativosFiltro===15?'#fff':'#8e8e93'};">+15 dias<br><span style="font-size:11px;font-weight:400;">${ausentesFaixa15.length}</span></button>
+          <button onclick="setInativosFiltro(30)" style="flex:1;padding:7px 0;border-radius:9px;border:1.5px solid ${_clientesInativosFiltro===30?'#1a1a1a':'#e4e4e7'};font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;background:${_clientesInativosFiltro===30?'#1a1a1a':'#fff'};color:${_clientesInativosFiltro===30?'#fff':'#8e8e93'};">+30 dias<br><span style="font-size:11px;font-weight:400;">${ausentesFaixa30.length}</span></button>
+          <button onclick="setInativosFiltro(45)" style="flex:1;padding:7px 0;border-radius:9px;border:1.5px solid ${_clientesInativosFiltro===45?'#1a1a1a':'#e4e4e7'};font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;background:${_clientesInativosFiltro===45?'#1a1a1a':'#fff'};color:${_clientesInativosFiltro===45?'#fff':'#8e8e93'};">+45 dias<br><span style="font-size:11px;font-weight:400;">${ausentesFaixa45.length}</span></button>
+        </div>`;
+      const ausenteRows = clientesAusentes.length
+        ? clientesAusentes.map(c=>{
             const dias=_diasSemVoltar(c);
             return `
               <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:0.5px solid #f2f2f7;" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background=''">
@@ -1958,16 +1967,17 @@ function renderGestao(empInicial){
                 </div>
               </div>`;
           }).join('')
-        : `<p class="muted" style="text-align:center;padding:24px 0;">Nenhum cliente inativo neste período.</p>`;
-      const wrapI = clientesInativos.length
-        ? `<div style="background:#fff;border-radius:16px;box-shadow:0 2px 12px rgba(0,0,0,0.06);">${inativoRows}</div>`
-        : inativoRows;
+        : `<p class="muted" style="text-align:center;padding:24px 0;">Nenhum cliente nesta faixa.</p>`;
+      const wrapI = clientesAusentes.length
+        ? `<div style="background:#fff;border-radius:16px;box-shadow:0 2px 12px rgba(0,0,0,0.06);">${ausenteRows}</div>`
+        : ausenteRows;
       return `
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding:0 4px;">
           <div style="font-size:22px;font-weight:700;color:#1a1a1a;">Clientes</div>
           <button onclick="abrirNovoCliente()" style="display:flex;align-items:center;gap:6px;height:36px;padding:0 14px;border-radius:10px;border:none;background:#1a1a1a;color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;">${ICO_PLUS} Novo</button>
         </div>
         ${tabs}
+        ${faixaBtns}
         ${wrapI}`;
     }
 
