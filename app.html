@@ -389,6 +389,7 @@ async function saveEmpresas(){
     logo:                  e.logo                  || null,
     cor_principal:         e.corPrincipal          || '#3d1f3a',
     texto_destaque:        e.textoDestaque         || null,
+    cancelamento_horas:    e.cancelamentoHoras != null ? e.cancelamentoHoras : 2,
   });
 
   const novas     = empresas.filter(e => !e.id);
@@ -970,7 +971,7 @@ function renderAgendar(emp){
         <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:18px;">${cabHtml}${cellsHtml}</div>
         ${bookingState.data
           ? `<div style="font-size:13px;font-weight:600;color:#555;margin-bottom:10px;text-transform:capitalize;">${diaLabel}</div>
-             <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">${slotsHtml}</div>`
+             <div class="wiz-horas" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">${slotsHtml}</div>`
           : `<p style="font-size:14px;color:#aaa;text-align:center;padding:8px 0;">Selecione um dia no calendário</p>`}
       </div>
       <div style="padding:16px 22px 34px;border-top:1px solid #f3f4f6;background:#fff;position:sticky;bottom:0;">
@@ -1075,7 +1076,7 @@ function renderAgendar(emp){
   };
   window.wizNext    = ()=>{ bookingState._step = Math.min(3, bookingState._step+1); draw(); };
   window.wizBack    = ()=>{ bookingState._step = Math.max(1, bookingState._step-1); draw(); };
-  window.wizSelDia  = (iso)=>{ bookingState.data=iso; bookingState.hora=null; draw(); };
+  window.wizSelDia  = (iso)=>{ bookingState.data=iso; bookingState.hora=null; draw(); setTimeout(()=>{ document.querySelector('.wiz-horas')?.scrollIntoView({behavior:'smooth',block:'nearest'}); window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'}); },80); };
   window.wizSelHora = (h)=>{ bookingState.hora=h; draw(); };
   window.wizCalMes  = (key)=>{ bookingState._calMes=key; draw(); };
   window.wizAtualizaBtn = ()=>{
