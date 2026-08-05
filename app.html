@@ -1194,17 +1194,12 @@ async function renderAgConfirmar(emp, agId){
   // Tela de carregamento
   render(`<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--paper);"><div style="font-size:14px;color:#aaa;">Carregando...</div></div>`);
 
-  // Busca o agendamento pelo UUID
+  // Busca o agendamento pelo UUID via API (service key, contorna RLS)
   let ag = null;
   try {
-    const { data, error } = await supabaseClient
-      .from('agendamentos')
-      .select('id,nome_cliente,servico_nome,data,hora,status,empresa_id')
-      .eq('id', agId)
-      .single();
-    if(error){ console.error('[ag-confirmar] supabase error:', error); }
-    else ag = data;
-  } catch(e){ console.error('[ag-confirmar] exception:', e); }
+    const r = await fetch('/api/ag-get?ag_id=' + encodeURIComponent(agId));
+    if(r.ok) ag = await r.json();
+  } catch(e){}
 
   if(!ag){
     render(`
