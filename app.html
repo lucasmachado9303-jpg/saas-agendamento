@@ -2125,47 +2125,45 @@ function renderGestao(empInicial){
       </div>
     `).join('')}</div>` : `<p class="muted" style="text-align:center;padding:16px 0;">Nenhum botão cadastrado ainda.</p>`;
 
-    const formNovoBotao = novoBotaoState !== null ? `
-      <div style="background:var(--paper);border-radius:12px;padding:20px 16px;margin-top:12px;border:1.5px solid var(--line);">
-        <div class="eyebrow" style="margin-bottom:14px;color:#1a1a1a;">Novo botão</div>
-        <div class="field"><label>Tipo</label>
-          <select id="bTipo" onchange="atualizarCampoBotao('bTipo','bLink','bLinkHint')">
-            <option value="whatsapp">WhatsApp</option>
-            <option value="instagram">Instagram</option>
-            <option value="maps">Google Maps</option>
-            <option value="site">Site</option>
-          </select>
+    const BINFO = {
+      whatsapp: { label:'Número',  desc:'Digite o número com DDD', ph:'(xx) xxxxx-xxxx' },
+      instagram:{ label:'Link',    desc:'Cole aqui o link do seu Instagram', ph:'https://instagram.com/seuusuario' },
+      maps:     { label:'Link',    desc:'Pesquise seu endereço no Google Maps e cole o link aqui', ph:'https://maps.app.goo.gl/...' },
+      site:     { label:'Link',    desc:'Cole o link do seu site, caso tenha', ph:'https://seusite.com.br' },
+    };
+    const mkBotaoModal = (titulo, tipoSel, valorLink, tipoIdEl, linkIdEl, hintIdEl, onCancelar, onSalvar, salvarLabel) => {
+      const bi = BINFO[tipoSel] || BINFO.whatsapp;
+      const isWa = tipoSel === 'whatsapp';
+      return `<div style="position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9000;display:flex;align-items:flex-end;justify-content:center;" onclick="if(event.target===this){${onCancelar}}">
+        <div style="background:#fff;border-radius:18px 18px 0 0;padding:28px 24px 40px;width:100%;max-width:520px;">
+          <h3 style="font-family:inherit;font-weight:700;font-size:18px;margin:0 0 20px;">${titulo}</h3>
+          <div class="field"><label>Tipo</label>
+            <select id="${tipoIdEl}" onchange="atualizarCampoBotao('${tipoIdEl}','${linkIdEl}','${hintIdEl}','${tipoIdEl}LabelEl','${tipoIdEl}DescEl')">
+              <option value="whatsapp" ${tipoSel==='whatsapp'?'selected':''}>WhatsApp</option>
+              <option value="instagram" ${tipoSel==='instagram'?'selected':''}>Instagram</option>
+              <option value="maps" ${tipoSel==='maps'?'selected':''}>Google Maps</option>
+              <option value="site" ${tipoSel==='site'?'selected':''}>Site</option>
+            </select>
+          </div>
+          <div class="field">
+            <label id="${tipoIdEl}LabelEl">${bi.label}</label>
+            <div id="${tipoIdEl}DescEl" style="font-size:12px;color:#8e8e93;margin-bottom:8px;">${bi.desc}</div>
+            <input id="${linkIdEl}" value="${escapeAttr(valorLink)}" placeholder="${bi.ph}" ${isWa?'type="tel" inputmode="numeric" maxlength="16" oninput="maskTel(this)"':'type="text" maxlength="500"'}/>
+            <div id="${hintIdEl}" style="font-size:12px;color:var(--danger);margin-top:6px;display:none;">Número inválido. Ex: (11) 98765-4321</div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px;">
+            <button class="btn ghost" onclick="${onCancelar}">Cancelar</button>
+            <button class="btn" onclick="${onSalvar}">${salvarLabel}</button>
+          </div>
         </div>
-        <div class="field"><label>Link / Número</label>
-          <input id="bLink" placeholder="(xx) xxxxx-xxxx" type="tel" inputmode="numeric" maxlength="16" oninput="maskTel(this)"/>
-          <div id="bLinkHint" style="font-size:12px;color:var(--danger);margin-top:6px;display:none;">Número inválido. Ex: (11) 98765-4321</div>
-        </div>
-        <div class="row">
-          <button class="btn ghost" onclick="cancelarNovoBotao()">Cancelar</button>
-          <button class="btn" onclick="salvarNovoBotao()">Adicionar</button>
-        </div>
-      </div>
-    ` : editandoBotaoId !== null ? (()=>{ const eb = emp.botoes.find(x=>x.id===editandoBotaoId)||{}; return `
-      <div style="background:var(--paper);border-radius:12px;padding:20px 16px;margin-top:12px;border:1.5px solid var(--line);">
-        <div class="eyebrow" style="margin-bottom:14px;color:#1a1a1a;">Editar botão</div>
-        <div class="field"><label>Tipo</label>
-          <select id="ebTipo" onchange="atualizarCampoBotao('ebTipo','ebLink','ebLinkHint')">
-            <option value="whatsapp" ${eb.tipo==='whatsapp'?'selected':''}>WhatsApp</option>
-            <option value="instagram" ${eb.tipo==='instagram'?'selected':''}>Instagram</option>
-            <option value="maps" ${eb.tipo==='maps'?'selected':''}>Google Maps</option>
-            <option value="site" ${eb.tipo==='site'?'selected':''}>Site</option>
-          </select>
-        </div>
-        <div class="field"><label>Link / Número</label>
-          <input id="ebLink" value="${escapeAttr(eb.tipo==='whatsapp'?fmtTelStr(eb.link):eb.link||'')}" placeholder="${eb.tipo==='whatsapp'?'(xx) xxxxx-xxxx':'https://'}" ${eb.tipo==='whatsapp'?'type="tel" inputmode="numeric" maxlength="16" oninput="maskTel(this)"':''}/>
-          <div id="ebLinkHint" style="font-size:12px;color:var(--danger);margin-top:6px;display:none;">Número inválido. Ex: (11) 98765-4321</div>
-        </div>
-        <div class="row">
-          <button class="btn ghost" onclick="cancelarEdicaoBotao()">Cancelar</button>
-          <button class="btn" onclick="salvarEdicaoBotao('${editandoBotaoId}')">Salvar</button>
-        </div>
-      </div>
-    `; })() : `<button onclick="iniciarNovoBotao()" style="width:100%;margin-top:14px;padding:14px;border:2px dashed #bbb;border-radius:12px;background:none;font-size:14px;font-weight:600;color:#888;cursor:pointer;letter-spacing:.01em;">+ Adicionar botão</button>`;
+      </div>`;
+    };
+    const formNovoBotao = novoBotaoState !== null
+      ? mkBotaoModal('Novo botão', 'whatsapp', '', 'bTipo', 'bLink', 'bLinkHint', 'cancelarNovoBotao()', 'salvarNovoBotao()', 'Adicionar')
+      : editandoBotaoId !== null ? (()=>{ const eb = emp.botoes.find(x=>x.id===editandoBotaoId)||{tipo:'whatsapp'};
+          return mkBotaoModal('Editar botão', eb.tipo||'whatsapp', eb.tipo==='whatsapp'?fmtTelStr(eb.link):eb.link||'', 'ebTipo', 'ebLink', 'ebLinkHint', 'cancelarEdicaoBotao()', `salvarEdicaoBotao('${editandoBotaoId}')`, 'Salvar');
+        })()
+      : `<button onclick="iniciarNovoBotao()" style="width:100%;margin-top:14px;padding:14px;border:2px dashed #bbb;border-radius:12px;background:none;font-size:14px;font-weight:600;color:#888;cursor:pointer;letter-spacing:.01em;">+ Adicionar botão</button>`;
 
     const hsl = hexToHsl(cor);
     const corH = hsl[0], corL = hsl[2];
@@ -3547,17 +3545,28 @@ function renderGestao(empInicial){
     if(d.length !== 11 || d[2] !== '9') return null;
     return 'https://wa.me/55' + d;
   }
-  window.atualizarCampoBotao = (tipoId, linkId, hintId)=>{
-    const tipo = document.getElementById(tipoId)?.value;
-    const inp  = document.getElementById(linkId);
-    const hint = document.getElementById(hintId);
+  window.atualizarCampoBotao = (tipoId, linkId, hintId, labelId, descId)=>{
+    const tipo  = document.getElementById(tipoId)?.value;
+    const inp   = document.getElementById(linkId);
+    const hint  = document.getElementById(hintId);
+    const label = labelId ? document.getElementById(labelId) : null;
+    const desc  = descId  ? document.getElementById(descId)  : null;
     if(!inp) return;
+    const BINFO = {
+      whatsapp: { label:'Número',  desc:'Digite o número com DDD', ph:'(xx) xxxxx-xxxx' },
+      instagram:{ label:'Link',    desc:'Cole aqui o link do seu Instagram', ph:'https://instagram.com/seuusuario' },
+      maps:     { label:'Link',    desc:'Pesquise seu endereço no Google Maps e cole o link aqui', ph:'https://maps.app.goo.gl/...' },
+      site:     { label:'Link',    desc:'Cole o link do seu site, caso tenha', ph:'https://seusite.com.br' },
+    };
+    const bi = BINFO[tipo] || BINFO.whatsapp;
+    if(label) label.textContent = bi.label;
+    if(desc)  desc.textContent  = bi.desc;
+    inp.placeholder = bi.ph;
+    inp.value = '';
     if(tipo === 'whatsapp'){
-      inp.placeholder = '(xx) xxxxx-xxxx';
       inp.type = 'tel'; inp.inputMode = 'numeric'; inp.maxLength = 16;
       inp.oninput = ()=>window.maskTel(inp);
     } else {
-      inp.placeholder = tipo === 'telefone' ? 'tel:+5511999999999' : 'https://...';
       inp.type = 'text'; inp.inputMode = ''; inp.maxLength = 500;
       inp.oninput = null; inp.removeAttribute('oninput');
       if(hint) hint.style.display = 'none';
