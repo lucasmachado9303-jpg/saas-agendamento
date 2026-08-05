@@ -1,7 +1,7 @@
 ﻿<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<script>(function(){var h=location.hostname.split('.');if(h.length>=4&&h[0]!=='www'){var pg=location.pathname.replace(/^\/+|\/+$/g,'');var q=pg&&pg!=='app.html'?'?_p='+encodeURIComponent(pg):'';location.replace('/app.html'+q+location.hash);}})();</script>
+<script>(function(){var h=location.hostname.split('.');if(h.length>=4&&h[0]!=='www'){var pg=location.pathname.replace(/^\/+|\/+$/g,'');var qs=location.search;if(pg&&pg!=='app.html'){location.replace('/app.html?_p='+encodeURIComponent(pg)+(qs?'&'+qs.slice(1):'')+location.hash);}else{location.replace('/app.html'+(qs||'')+location.hash);}}})();</script>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
 <title>agen+ — Agendamentos no link da bio</title>
