@@ -4128,20 +4128,34 @@ window.tentarLoginUnificado = async ()=>{
 
   currentUser    = data.user;
   currentProfile = profile;
-  await loadData();
+
+  try {
+    await loadData();
+  } catch(e) {
+    if(btn){ btn.disabled = false; btn.textContent = 'Entrar com email'; }
+    toast('Erro ao carregar dados. Tente novamente.','err');
+    return;
+  }
 
   if(profile.role === 'master'){
     location.replace('/master');
   } else if(profile.role === 'owner_empresa'){
     const emp = empresas.find(e => e.id === profile.empresa_id);
     if(emp){
-      const { data: { session } } = await supabaseClient.auth.getSession();
-      const hash = `access_token=${session.access_token}&refresh_token=${session.refresh_token}&token_type=bearer&type=bearer`;
-      location.replace(`https://${emp.slug}.agenplus.com.br/gestao#${hash}`);
+      try {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        const hash = `access_token=${session.access_token}&refresh_token=${session.refresh_token}&token_type=bearer&type=bearer`;
+        location.replace(`https://${emp.slug}.agenplus.com.br/gestao#${hash}`);
+      } catch(e) {
+        if(btn){ btn.disabled = false; btn.textContent = 'Entrar com email'; }
+        toast('Erro ao redirecionar. Tente novamente.','err');
+      }
     } else {
+      if(btn){ btn.disabled = false; btn.textContent = 'Entrar com email'; }
       toast('Empresa não encontrada.','err');
     }
   } else {
+    if(btn){ btn.disabled = false; btn.textContent = 'Entrar com email'; }
     toast('Acesso não autorizado.','err');
   }
 };
