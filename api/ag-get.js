@@ -21,8 +21,12 @@ module.exports = async function handler(req, res) {
   const { ag_id } = req.query;
   if (!ag_id) return res.status(400).json({ error: 'ag_id obrigatório' });
 
+  // Detecta se é UUID (36 chars) ou token curto
+  const isUUID = /^[0-9a-f-]{36}$/i.test(ag_id);
+  const filtro = isUUID ? `id=eq.${ag_id}` : `token_curto=eq.${encodeURIComponent(ag_id)}`;
+
   const r = await fetch(
-    `${SUPABASE_URL}/rest/v1/agendamentos?id=eq.${ag_id}&select=id,nome_cliente,servico_nome,data,hora,status`,
+    `${SUPABASE_URL}/rest/v1/agendamentos?${filtro}&select=id,nome_cliente,servico_nome,data,hora,status`,
     { headers: { 'Authorization': `Bearer ${SERVICE_KEY}`, 'apikey': SERVICE_KEY } }
   );
   const rows = await r.json();

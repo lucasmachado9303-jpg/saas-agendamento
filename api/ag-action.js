@@ -27,9 +27,13 @@ module.exports = async function handler(req, res) {
     return res.status(400).json({ error: 'acao deve ser cancelar ou confirmar' });
   }
 
+  // Detecta se é UUID (36 chars) ou token curto
+  const isUUID = /^[0-9a-f-]{36}$/i.test(ag_id);
+  const filtro = isUUID ? `id=eq.${ag_id}` : `token_curto=eq.${encodeURIComponent(ag_id)}`;
+
   // Verifica que o agendamento existe
   const checkRes = await fetch(
-    `${SUPABASE_URL}/rest/v1/agendamentos?id=eq.${ag_id}&select=id,status`,
+    `${SUPABASE_URL}/rest/v1/agendamentos?${filtro}&select=id,status`,
     { headers: { 'Authorization': `Bearer ${SERVICE_KEY}`, 'apikey': SERVICE_KEY } }
   );
   const rows = await checkRes.json();
@@ -38,8 +42,9 @@ module.exports = async function handler(req, res) {
   }
 
   const novoStatus = acao === 'cancelar' ? 'cancelado' : 'confirmado';
+  const realId = rows[0].id;
   const updRes = await fetch(
-    `${SUPABASE_URL}/rest/v1/agendamentos?id=eq.${ag_id}`,
+    `${SUPABASE_URL}/rest/v1/agendamentos?id=eq.${realId}`,
     {
       method: 'PATCH',
       headers: {

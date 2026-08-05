@@ -354,7 +354,8 @@ async function loadData(){
           criadoEm:            a.criado_em,
           confirmacaoEnviada:  a.confirmacao_enviada || false,
           lembreteEnviado:     a.lembrete_enviado    || false,
-          status:              a.status || 'nao_confirmado'
+          status:              a.status || 'nao_confirmado',
+          tokenCurto:          a.token_curto || null
         };
       });
     } else {
@@ -484,6 +485,13 @@ function horariosDoMes(emp, key){
 }
 function isoData(d){
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function gerarTokenCurto(){
+  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  let t = '';
+  for(let i=0;i<6;i++) t += chars[Math.floor(Math.random()*chars.length)];
+  return t;
 }
 
 const root = document.getElementById('root');
@@ -1122,7 +1130,8 @@ function renderAgendar(emp){
       data:          bookingState.data,
       hora:          bookingState.hora,
       nome_cliente:  bookingState.nome.trim(),
-      telefone:      bookingState.telefone.trim()
+      telefone:      bookingState.telefone.trim(),
+      token_curto:   gerarTokenCurto()
     });
     if(error){
       if(btn){ btn.disabled=false; btn.innerHTML='Confirmar'; }
@@ -3203,7 +3212,7 @@ function renderGestao(empInicial){
       empresa_id: emp.id,
       cliente_id: cliente.id,
       nome_cliente: cliente.nome, telefone: cliente.telefone, servico_id: servicoId, servico_nome: servico?.nome||'',
-      data, hora
+      data, hora, token_curto: gerarTokenCurto()
     }).select().single();
     if(error){ toast(friendlyError(error,'Erro ao agendar.'),'err'); return; }
     agendamentos.push({
@@ -3386,7 +3395,8 @@ function renderGestao(empInicial){
         : 'Olá, {nome}! \nPassando pra lembrar do seu agendamento! \n{servico}\n{data} - {hora}.\nAté lá!';
       const tmpl = (tipo === 'confirmacao' ? empObj?.msgConfirmacao : empObj?.msgLembrete) || defaultMsg;
       const dataFmt = ag.data ? new Date(ag.data+'T00:00:00').toLocaleDateString('pt-BR') : '';
-      const linkConfirmar = 'https://' + (empObj?.slug||'') + '.agenplus.com.br/?ag=' + agId;
+      const token = ag.tokenCurto || agId;
+      const linkConfirmar = 'https://' + (empObj?.slug||'') + '.agenplus.com.br/?ag=' + token;
       const msg = tmpl
         .replace(/{nome}/g, ag.nome||'')
         .replace(/{hora}/g, ag.hora||'')
