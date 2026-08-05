@@ -1201,10 +1201,10 @@ async function renderAgConfirmar(emp, agId){
       .from('agendamentos')
       .select('id,nome_cliente,servico_nome,data,hora,status,empresa_id')
       .eq('id', agId)
-      .eq('empresa_id', emp.id)
       .single();
-    if(!error) ag = data;
-  } catch(e){}
+    if(error){ console.error('[ag-confirmar] supabase error:', error); }
+    else ag = data;
+  } catch(e){ console.error('[ag-confirmar] exception:', e); }
 
   if(!ag){
     render(`
