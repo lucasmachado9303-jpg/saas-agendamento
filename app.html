@@ -1954,7 +1954,7 @@ function renderGestao(empInicial){
       return relatoriosBody();
     }
     if(configurarSub === 'cancelamento'){
-      const horas = emp.cancelamentoHoras || 0;
+      const horas = emp.cancelamentoHoras != null && emp.cancelamentoHoras !== '' ? emp.cancelamentoHoras : 2;
       return `
         <div style="position:relative;display:flex;align-items:center;margin-bottom:16px;min-height:36px;">
           <button onclick="configurarIr(null)" style="background:none;border:none;font-size:14px;font-weight:600;color:#555;cursor:pointer;padding:0;font-family:inherit;display:flex;align-items:center;gap:4px;">&#8249; Voltar</button>
@@ -1969,7 +1969,7 @@ function renderGestao(empInicial){
             <input id="cancelamentoHoras" type="number" min="0" max="168" step="1" value="${horas}" placeholder="0"
               style="width:100%;border:0.5px solid #d1d5db;border-radius:10px;padding:10px 12px;font-size:16px;font-family:inherit;color:#1a1a1a;"/>
           </div>
-          <div style="font-size:12px;color:#8e8e93;margin-top:8px;">Exemplo: 2 = o cliente pode cancelar até 2 horas antes.</div>
+          <div style="font-size:12px;color:#8e8e93;margin-top:8px;line-height:1.6;">Exemplo: 0 = Você não aceita cancelamentos<br>Exemplo: 2 = O cliente pode cancelar até 2 horas antes</div>
         </div>
         <button class="btn" onclick="salvarCancelamentoHoras('${emp.id}')">Salvar</button>
       `;
