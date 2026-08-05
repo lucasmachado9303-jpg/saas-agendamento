@@ -4157,13 +4157,20 @@ window.tentarLoginUnificado = async ()=>{
   } else if(profile.role === 'owner_empresa'){
     const emp = empresas.find(e => e.id === profile.empresa_id);
     if(emp){
-      try {
-        const { data: { session } } = await supabaseClient.auth.getSession();
-        const hash = `access_token=${session.access_token}&refresh_token=${session.refresh_token}&token_type=bearer&type=bearer`;
-        location.replace(`https://${emp.slug}.agenplus.com.br/gestao#${hash}`);
-      } catch(e) {
-        if(btn){ btn.disabled = false; btn.textContent = 'Entrar com email'; }
-        toast('Erro ao redirecionar. Tente novamente.','err');
+      const subAtual = slugDoSubdominio();
+      if(subAtual === emp.slug){
+        // ja esta no subdominio correto — roteia direto sem recarregar
+        goto({ empresa: emp.slug, page: 'gestao' });
+      } else {
+        // vem do dominio principal — precisa do redirect cross-domain com tokens
+        try {
+          const { data: { session } } = await supabaseClient.auth.getSession();
+          const hash = `access_token=${session.access_token}&refresh_token=${session.refresh_token}&token_type=bearer&type=bearer`;
+          location.replace(`https://${emp.slug}.agenplus.com.br/gestao#${hash}`);
+        } catch(e) {
+          if(btn){ btn.disabled = false; btn.textContent = 'Entrar com email'; }
+          toast('Erro ao redirecionar. Tente novamente.','err');
+        }
       }
     } else {
       if(btn){ btn.disabled = false; btn.textContent = 'Entrar com email'; }
