@@ -3121,31 +3121,33 @@ function renderGestao(empInicial){
   }
 
   window.setCorner = (c)=>{
-    if(c==='financeiro' && corner!=='financeiro'){
-      _gFinData = isoData(new Date()); _gFinPeriodo='dia'; _gFinLancamentos=[]; _gFinModal=null;
-      corner=c; editandoId=null; novoAgState=null; configurarSub=null; _removendoServicoIdx=null; _waMenuId=null;
-      draw(); gFinCarregar(); return;
-    }
-    if(c==='dashboard' && corner!=='dashboard'){
-      corner=c; editandoId=null; novoAgState=null; configurarSub=null; _removendoServicoIdx=null; _waMenuId=null; _gFinModal=null; _notaModal=null;
-      draw();
-      if(!_gFinLancamentos.length) gFinCarregar();
-      carregarNotas();
-      return;
-    }
-    if(c==='relatorios' && corner!=='relatorios'){
-      corner=c; editandoId=null; novoAgState=null; configurarSub=null; _removendoServicoIdx=null; _waMenuId=null; _gFinModal=null; _notaModal=null; _linkMenuAberto=false;
-      _relAba=null; _relMes = isoData(new Date()).slice(0,7);
-      draw();
-      if(!_gFinLancamentos.length) gFinCarregar();
-      return;
-    }
-    corner=c; editandoId=null; novoAgState=null; configurarSub=null; _removendoServicoIdx=null; _waMenuId=null; _gFinModal=null; _notaModal=null; _linkMenuAberto=false;
+    // Reset de estado comum
+    corner=c; editandoId=null; novoAgState=null; configurarSub=null;
+    _removendoServicoIdx=null; _waMenuId=null; _gFinModal=null; _notaModal=null; _linkMenuAberto=false;
     _novoAgClienteId=null; _novoAgClienteBusca=''; _novoAgClienteResultados=[];
     _clientePerfilId=null; _clientePerfilEditando=false; _clienteModalNovo=false;
     draw();
-    if(c==='clientes') { carregarClientes(); return; }
-    loadData().then(()=>{ const a=empresas.find(e=>e.slug===emp.slug); if(a) emp=a; draw(); });
+
+    // Recarrega dados e executa ação específica da aba
+    loadData().then(()=>{
+      const a = empresas.find(e=>e.slug===emp.slug); if(a) emp=a;
+      if(c==='financeiro'){
+        _gFinData = isoData(new Date()); _gFinPeriodo='dia'; _gFinLancamentos=[]; _gFinModal=null;
+        draw(); gFinCarregar();
+      } else if(c==='dashboard'){
+        draw();
+        if(!_gFinLancamentos.length) gFinCarregar();
+        carregarNotas();
+      } else if(c==='relatorios'){
+        _relAba=null; _relMes = isoData(new Date()).slice(0,7);
+        draw();
+        if(!_gFinLancamentos.length) gFinCarregar();
+      } else if(c==='clientes'){
+        carregarClientes();
+      } else {
+        draw();
+      }
+    });
   };
   window.selecionarDiaGestao = (iso)=>{
     if(!iso || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return;
