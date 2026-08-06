@@ -28,7 +28,6 @@ html{scroll-behavior:smooth;overflow-x:hidden;}
   --gold-deep:#CC7E1C;
   --line:rgba(240,235,227,0.07);
   --line-mid:rgba(240,235,227,0.12);
-  --r:10px;
 }
 
 body{
@@ -97,6 +96,7 @@ nav{
   background:var(--gold);color:#000;
   padding:15px 32px;font-size:17px;font-weight:800;letter-spacing:-0.01em;
 }
+.btn-amber-lg-full{width:100%;}
 .btn-amber-lg:hover{background:var(--gold-deep);}
 .btn-ink{
   background:var(--ink);color:var(--cream);
@@ -158,11 +158,6 @@ nav{
   height:auto;
   display:block;
   border-radius:16px;
-  animation:phonefloat 5s ease-in-out infinite;
-}
-.phone-frame{
-  position:relative;
-  display:inline-block;
   animation:phonefloat 5s ease-in-out infinite;
 }
 @keyframes phonefloat{
@@ -343,6 +338,10 @@ nav{
   font-size:13px;color:var(--gold);font-weight:600;
   margin-bottom:28px;
 }
+.price-trial-sub{
+  font-size:13px;color:var(--gold);font-weight:600;
+  margin-bottom:6px;
+}
 .price-divider{
   border:none;border-top:1px solid var(--line-mid);
   margin:24px 0;
@@ -487,14 +486,6 @@ footer{
 </style>
 </head>
 <body>
-<!--
-THESIS: agen+ is the appointment book every service business already knows, made shareable in one link. Refuses the category indigo-gradient hero and the cream-serif bookshop default.
-OWN-WORLD: Near-black ground (#0A0A09). Warm amber accent (#E8952A) on CTAs and active states. Warm off-white text (#F0EBE3). Bricolage Grotesque variable display. Faint horizontal rules as background texture. Final CTA section fully drenched in amber.
-STORY: Visitor recognises the problem, sees the mechanism (one link, client books themselves), and creates an account. Risk removed at CTA.
-FIRST VIEWPORT: Full-height dark hero. agen+ wordmark top-left. Strong headline left. Phone mockup right on desktop, below on mobile. Amber CTA.
-FORM: Premium appointment ledger translated to dark web. Candidate 3 of 7. Seed key 54f29fba.
-FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, and DESIGN.md.
--->
 <nav>
   <div class="nav-inner">
     <a href="/" class="logo-link"><img src="/logoagen+.png" alt="Agen+" class="nav-logo"/></a>
@@ -621,7 +612,7 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
         <span class="price-number">29</span>
         <span class="price-period">,90&nbsp;/&nbsp;mês</span>
       </div>
-      <p class="price-trial" style="margin-bottom:6px;">menos de R$ 1 por dia</p>
+      <p class="price-trial-sub">menos de R$ 1 por dia</p>
       <p class="price-trial">7 dias grátis &mdash; sem cartão de crédito</p>
       <hr class="price-divider"/>
       <ul class="price-feats">
@@ -632,7 +623,7 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
         <li>Lembretes no WhatsApp</li>
         <li>Cadastro de clientes</li>
       </ul>
-      <a href="/cadastro" class="btn btn-amber-lg" style="width:100%;">Criar minha agenda grátis</a>
+      <a href="/cadastro" class="btn btn-amber-lg btn-amber-lg-full">Criar minha agenda grátis</a>
       <p class="price-cancel">Cancele quando quiser. Sem multa.</p>
     </div>
   </div>
