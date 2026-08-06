@@ -279,6 +279,7 @@ async function loadData(){
       msgConfirmacao:       e.msg_confirmacao       || '',
       msgLembrete:          e.msg_lembrete          || '',
       msgInativo:           e.msg_inativo           || '',
+      textoAgendar:         e.texto_agendar         || '',
       // Relações
       servicos:             [],
       horariosPorMes:       {},
@@ -788,8 +789,8 @@ function renderHome(emp){
         <!-- Botão principal de agendamento -->
         <div style="width:100%;max-width:240px;margin:0 auto 10px;">
           <button onclick="goto({empresa:'${emp.slug}', page:'agendar'})"
-            style="width:100%;background:${cor};color:#fff;border:none;border-radius:14px;padding:16px 20px;font-size:16px;font-weight:700;font-family:'Nunito',sans-serif;cursor:pointer;text-align:center;box-shadow:0 4px 16px rgba(0,0,0,0.15);">
-            Agendar horário
+            style="width:100%;background:#fff;color:var(--ink);border:1.5px solid var(--line);border-radius:14px;padding:16px 20px;font-size:16px;font-weight:700;font-family:'Nunito',sans-serif;cursor:pointer;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
+            ${escapeHtml(emp.textoAgendar || 'Agendar horário')}
           </button>
         </div>
 
@@ -2364,6 +2365,7 @@ function renderGestao(empInicial){
       ${slugHtml}
       <div class="field"><label>Descrição curta</label><textarea id="pDescricao" rows="2" style="resize:vertical;min-height:80px;" oninput="marcarPersonalizarDirty()">${escapeHtml(emp.descricao||'')}</textarea></div>
       <div class="field"><label>Texto de destaque</label><input id="pTextoDestaque" value="${escapeAttr(emp.textoDestaque||'')}" placeholder="Ex: Atendimento premium" oninput="marcarPersonalizarDirty()"/></div>
+      <div class="field"><label>Texto do botao de agendamento</label><input id="pTextoAgendar" value="${escapeAttr(emp.textoAgendar||'')}" placeholder="Agendar horário" oninput="marcarPersonalizarDirty()"/></div>
       <div class="field">
         <label>Logo</label>
         ${emp.logo ? `<img src="${escapeAttr(emp.logo)}" style="width:90px;height:90px;object-fit:cover;border-radius:50%;display:block;margin-bottom:10px;border:2px solid var(--line);"/>` : `<div style="width:90px;height:90px;border-radius:50%;background:#f0f0f0;display:flex;align-items:center;justify-content:center;margin-bottom:10px;color:#999999;font-size:13px;text-align:center;">Sem logo</div>`}
@@ -3833,12 +3835,14 @@ function renderGestao(empInicial){
     emp.nome               = document.getElementById('pNome').value.trim() || emp.nome;
     emp.descricao          = document.getElementById('pDescricao').value.trim();
     emp.textoDestaque      = document.getElementById('pTextoDestaque').value.trim();
+    emp.textoAgendar       = document.getElementById('pTextoAgendar').value.trim();
     emp.corPrincipal       = document.getElementById('pCor').value;
     const { error } = await supabaseClient.from('empresas').update({
       nome:                  emp.nome,
       descricao:             emp.descricao             || null,
       cor_principal:         emp.corPrincipal,
       texto_destaque:        emp.textoDestaque         || null,
+      texto_agendar:         emp.textoAgendar          || null,
     }).eq('id', emp.id);
     if(error){ console.error('Erro ao salvar informações:', error); toast('Erro ao salvar. Tente novamente.','err'); return; }
     personalizarDirty = false;
