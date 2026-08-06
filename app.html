@@ -16,15 +16,16 @@
 <style>
   :root{
     --ink:#1a1a1a;
-    --ink-soft:#555555;
-    --paper:#f5f5f5;
+    --ink-soft:#5a5248;
+    --paper:#F5F1EC;
     --card:#ffffff;
-    --line:#e0e0e0;
-    --accent:#1a1a1a;
+    --line:#DDD4C8;
+    --accent:#B8540A;
+    --accent-light:#FEF3E0;
     --danger:#a3423a;
     --ok:#3f6b4f;
     --radius:14px;
-    --shadow:0 10px 30px -12px rgba(0,0,0,0.12);
+    --shadow:0 2px 10px rgba(0,0,0,0.07);
   }
   *{box-sizing:border-box;}
   body{margin:0;font-family:'Nunito',sans-serif;background:var(--paper);color:var(--ink);}
@@ -45,7 +46,7 @@
     font-family:'Nunito',sans-serif;padding:12px 14px;border-radius:10px;border:1.5px solid var(--line);
     background:#fff;font-size:15px;width:100%;color:var(--ink);
   }
-  input:focus,select:focus,textarea:focus{outline:none;border-color:#1a1a1a;}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);}
   label{font-size:13px;font-weight:600;color:var(--ink-soft);display:block;margin-bottom:6px;letter-spacing:.02em;text-transform:uppercase;}
   .field{margin-bottom:18px;}
   .card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:28px;}
@@ -66,13 +67,13 @@
     border:1.5px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:10px;cursor:pointer;
     display:flex;justify-content:space-between;align-items:center;transition:.15s;
   }
-  .service-opt:hover{border-color:#1a1a1a;}
+  .service-opt:hover{border-color:var(--accent);}
   .service-opt.selected{border-color:var(--accent);background:#f5f5f5;box-shadow:inset 0 0 0 1px var(--accent);}
   .slot{
     padding:10px 6px;text-align:center;border-radius:10px;border:1.5px solid var(--line);font-size:14px;font-weight:600;
   }
   .slot.free{cursor:pointer;}
-  .slot.free:hover{border-color:#1a1a1a;}
+  .slot.free:hover{border-color:var(--accent);}
   .slot.selected{background:var(--accent);color:#fff;border-color:var(--accent);}
   .slot.taken{opacity:.35;text-decoration:line-through;cursor:not-allowed;}
   .slots-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:8px;}
@@ -1539,7 +1540,7 @@ function renderGestao(empInicial){
   // 'let' porque o polling recria os objetos de empresa a cada 30s
   // e precisamos trocar a referência, senão a tela congela nos dados antigos.
   let emp = empInicial;
-  applyAccent('#1c1917');
+  applyAccent('#B8540A');
   document.title = `Gestão — ${emp.nome}`;
   dispensarPWA();
   let corner = 'dashboard'; // 'dashboard' | null=agendamentos | 'configurar' | 'personalizar' | 'financeiro'
@@ -1638,30 +1639,29 @@ function renderGestao(empInicial){
           const ICO_PEN = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
           const ICO_X   = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>`;
           const ICO_WAG = `<svg width="11" height="11" viewBox="0 0 32 32" fill="currentColor"><path d="M16 0C7.163 0 0 7.163 0 16c0 2.82.736 5.469 2.027 7.773L0 32l8.418-2.002A15.94 15.94 0 0 0 16 32c8.837 0 16-7.163 16-16S24.837 0 16 0zm0 29.333a13.27 13.27 0 0 1-6.77-1.848l-.485-.29-5.001 1.19 1.226-4.866-.317-.5A13.267 13.267 0 0 1 2.667 16C2.667 8.636 8.636 2.667 16 2.667S29.333 8.636 29.333 16 23.364 29.333 16 29.333zm7.27-9.98c-.398-.199-2.354-1.162-2.719-1.295-.365-.133-.631-.199-.897.2-.265.398-1.03 1.295-1.263 1.56-.232.266-.465.3-.863.1-.398-.2-1.68-.619-3.2-1.974-1.183-1.054-1.981-2.355-2.213-2.753-.232-.398-.025-.613.174-.811.179-.178.398-.465.597-.697.2-.232.266-.398.398-.663.133-.266.067-.498-.033-.697-.1-.2-.897-2.163-1.23-2.962-.324-.778-.652-.672-.897-.685l-.764-.013c-.266 0-.697.1-1.063.498-.365.398-1.395 1.362-1.395 3.325s1.428 3.857 1.627 4.123c.2.265 2.812 4.292 6.815 6.02.953.411 1.696.657 2.276.841.956.305 1.827.262 2.515.159.767-.115 2.354-.962 2.686-1.892.333-.93.333-1.728.233-1.893-.1-.165-.365-.265-.763-.464z"/></svg>`;
-          const cardStyle2 = ag.status==='cancelado' ? 'opacity:0.3;filter:grayscale(1);background:#f7f7f7;' : passadoHora ? 'opacity:0.3;filter:grayscale(1);background:#f7f7f7;' : 'box-shadow:0 2px 12px rgba(0,0,0,0.15);';
+          const cardStyle2 = ag.status==='cancelado' ? 'opacity:0.4;filter:grayscale(1);background:#F5F1EC;' : passadoHora ? 'opacity:0.4;filter:grayscale(1);background:#F5F1EC;' : 'box-shadow:0 2px 8px rgba(0,0,0,0.07);';
           const statusCor = ag.status==='confirmado' ? '#16a34a' : ag.status==='cancelado' ? '#dc2626' : '#6b7280';
           const statusLabel = ag.status==='confirmado' ? 'Confirmado' : ag.status==='cancelado' ? 'Cancelado' : 'Não confirmado';
           const nomeStyle = ag.status==='cancelado' ? 'text-decoration:line-through;' : '';
-          const BTN = 'font-family:inherit;height:28px;width:72px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;border:0.5px solid #ccc;background:#fff;color:#555;';
           const botoesPassado = `
             <div style="display:flex;gap:5px;justify-content:flex-end;">
-              <button style="${BTN}" onclick="editarAgendamento('${ag.id}')">Editar</button>
-              <button style="${BTN}border-color:#fca5a5;color:#dc2626;" onclick="excluirAgendamento('${ag.id}')">Excluir</button>
+              <button class="ag-btn ag-btn-edit" onclick="editarAgendamento('${ag.id}')">Editar</button>
+              <button class="ag-btn ag-btn-cancel" onclick="excluirAgendamento('${ag.id}')">Excluir</button>
             </div>`;
           const botoesAtivo = `
             <div style="display:flex;gap:5px;justify-content:flex-end;">
-              <button style="${BTN}" onclick="editarAgendamento('${ag.id}')">Editar</button>
-              <button style="${BTN}border-color:#fca5a5;color:#dc2626;" onclick="excluirAgendamento('${ag.id}')">Excluir</button>
+              <button class="ag-btn ag-btn-edit" onclick="editarAgendamento('${ag.id}')">Editar</button>
+              <button class="ag-btn ag-btn-cancel" onclick="excluirAgendamento('${ag.id}')">Excluir</button>
               <div style="position:relative;">
-                <button style="${BTN}border-color:#86efac;color:#16a34a;" onclick="toggleWaMenu('${ag.id}')">WhatsApp</button>
-                ${_waMenuId === ag.id ? `<div style="position:absolute;top:calc(100% + 4px);right:0;min-width:130px;background:#fff;border:0.5px solid #d1d5db;border-radius:9px;overflow:hidden;z-index:50;box-shadow:0 4px 12px rgba(0,0,0,.10);">
+                <button class="ag-btn ag-btn-wa" onclick="toggleWaMenu('${ag.id}')">WhatsApp</button>
+                ${_waMenuId === ag.id ? `<div style="position:absolute;top:calc(100% + 4px);right:0;min-width:130px;background:#fff;border:1px solid #E5D9C8;border-radius:9px;overflow:hidden;z-index:50;box-shadow:0 4px 16px rgba(0,0,0,.10);">
                   <button class="ag-wa-dd-item" onclick="waAcao('${ag.id}','conversar','${emp.id}')">Conversar</button>
                   <button class="ag-wa-dd-item" onclick="waAcao('${ag.id}','confirmacao','${emp.id}')">Confirmação ${ag.confirmacaoEnviada ? '<span style="color:#22c55e">&#10003;</span>' : ''}</button>
                   <button class="ag-wa-dd-item" onclick="waAcao('${ag.id}','lembrete','${emp.id}')">Lembrete ${ag.lembreteEnviado ? '<span style="color:#22c55e">&#10003;</span>' : ''}</button>
                 </div>` : ''}
               </div>
             </div>`;
-          parts.push(`<div style="padding:10px 12px;margin-bottom:6px;border-radius:9px;border:0.5px solid #e4e4e7;background:var(--card);display:flex;flex-direction:column;gap:8px;${cardStyle2}">
+          parts.push(`<div style="padding:10px 12px;margin-bottom:8px;border-radius:12px;border:1px solid #E5D9C8;background:var(--card);display:flex;flex-direction:column;gap:8px;${cardStyle2}">
             <div>
               <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
                 <div style="font-weight:700;font-size:15px;${nomeStyle}">${h} — ${escapeHtml(ag.nome)}</div>
@@ -1673,7 +1673,7 @@ function renderGestao(empInicial){
           </div>`); continue;
         }
         if(bloqueado){
-          parts.push(`<div style="padding:8px 12px;margin-bottom:6px;border-radius:9px;border:0.5px solid #e0e0e0;background:var(--card);display:flex;align-items:center;justify-content:space-between;opacity:${passadoHora?'0.4':'.45'};">
+          parts.push(`<div style="padding:8px 12px;margin-bottom:8px;border-radius:12px;border:1px solid #E5D9C8;background:var(--card);display:flex;align-items:center;justify-content:space-between;opacity:${passadoHora?'0.4':'.45'};">
             <span style="font-weight:700;font-size:13px;color:#e53935;">${h} — Bloqueado</span>
             <button style="font-family:inherit;height:24px;border-radius:5px;border:0.5px solid #ccc;background:#fff;color:#555;font-size:10px;font-weight:600;cursor:pointer;" onclick="desbloquearHorario('${diaSelecionado}','${h}')">Desbloquear</button>
           </div>`); continue;
@@ -1715,11 +1715,11 @@ function renderGestao(empInicial){
           </div>`); continue;
         }
         // Slot livre
-        parts.push(`<div style="padding:10px 12px;margin-bottom:6px;border-radius:9px;border:0.5px solid #e0e0e0;display:flex;align-items:center;justify-content:space-between;${passadoHora?'opacity:0.3;filter:grayscale(1);background:#f7f7f7;':'background:var(--card);box-shadow:0 2px 12px rgba(0,0,0,0.15);'}">
+        parts.push(`<div style="padding:10px 12px;margin-bottom:8px;border-radius:12px;border:1px solid #E5D9C8;display:flex;align-items:center;justify-content:space-between;${passadoHora?'opacity:0.35;filter:grayscale(1);background:#F5F1EC;':'background:var(--card);box-shadow:0 2px 8px rgba(0,0,0,0.06);'}">
           <span style="font-weight:700;font-size:15px;color:#1a1a1a;">${h} — <span style="color:#1a1a1a;font-weight:400;">Livre</span></span>
           <div style="display:flex;gap:4px;">
-            <button style="font-family:inherit;height:28px;width:72px;border-radius:6px;border:0.5px solid #ccc;background:#fff;color:#555;font-size:11px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;" onclick="novoAgendamento('${diaSelecionado}','${h}')">Agendar</button>
-            ${!passadoHora ? `<button style="font-family:inherit;height:28px;width:72px;border-radius:6px;border:0.5px solid #ccc;background:#fff;color:#555;font-size:11px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;" onclick="bloquearHorario('${diaSelecionado}','${h}')">Bloquear</button>` : ''}
+            <button class="ag-btn ag-btn-edit" onclick="novoAgendamento('${diaSelecionado}','${h}')">Agendar</button>
+            ${!passadoHora ? `<button class="ag-btn ag-btn-edit" onclick="bloquearHorario('${diaSelecionado}','${h}')">Bloquear</button>` : ''}
           </div>
         </div>`);
       }
@@ -1744,7 +1744,7 @@ function renderGestao(empInicial){
       return `<div onclick="selecionarDiaGestao('${iso}')" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;flex:1;">
         <div style="font-size:10px;color:${isSelected?'#fff':isToday?'var(--accent)':'var(--ink-soft)'};font-weight:600;">${diaSem}</div>
         <div style="width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;
-          background:${isSelected?'#1c1917':'transparent'};color:${isSelected?'#fff':isToday?'var(--accent)':'var(--ink)'};
+          background:${isSelected?'var(--accent)':'transparent'};color:${isSelected?'#fff':isToday?'var(--accent)':'var(--ink)'};
           border:${isToday&&!isSelected?'1.5px solid var(--accent)':'1.5px solid transparent'};">${diaNum}</div>
         <div style="width:5px;height:5px;border-radius:50%;background:${temAg?'var(--ok)':'transparent'};"></div>
       </div>`;
@@ -1774,7 +1774,7 @@ function renderGestao(empInicial){
 
     return `
       ${editModalHtml}
-      <div style="font-size:22px;font-weight:700;color:#1a1a1a;margin-bottom:16px;padding:0 4px;">Agenda</div>
+      <div class="g-section-title">Agenda</div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
         <button style="background:none;border:none;font-size:22px;font-weight:300;color:#888;cursor:pointer;padding:4px 12px;line-height:1;" onclick="selecionarDiaGestao('${isoAddDias(diaSelecionado,-1)}')">&#8249;</button>
         <div style="position:relative;text-align:center;cursor:pointer;" onclick="document.getElementById('calGestao').showPicker ? document.getElementById('calGestao').showPicker() : document.getElementById('calGestao').click()">
@@ -1966,7 +1966,7 @@ function renderGestao(empInicial){
                 </div>
                 <div style="position:relative;">
                   <button onclick="event.stopPropagation();toggleWaMenuInativo('${c.id}')" class="ag-btn ag-btn-wa" style="padding:6px 10px;">${ICO_WA}</button>
-                  ${_inativoWaMenuId === c.id ? `<div style="position:absolute;top:calc(100% + 4px);right:0;min-width:130px;background:#fff;border:0.5px solid #d1d5db;border-radius:9px;overflow:hidden;z-index:50;box-shadow:0 4px 12px rgba(0,0,0,.10);" onclick="event.stopPropagation()">
+                  ${_inativoWaMenuId === c.id ? `<div style="position:absolute;top:calc(100% + 4px);right:0;min-width:130px;background:#fff;border:1px solid #E5D9C8;border-radius:9px;overflow:hidden;z-index:50;box-shadow:0 4px 16px rgba(0,0,0,.10);" onclick="event.stopPropagation()">
                     <button class="ag-wa-dd-item" onclick="waAcaoInativo('${c.id}','conversar','${emp.id}')">Conversar</button>
                     <button class="ag-wa-dd-item" style="border-bottom:none;" onclick="waAcaoInativo('${c.id}','inativo','${emp.id}')">Ausente ${c.ausenteEnviadoEm ? '<span style="color:#22c55e">&#10003;</span>' : ''}</button>
                   </div>` : ''}
@@ -1979,8 +1979,8 @@ function renderGestao(empInicial){
         : ausenteRows;
       return `
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding:0 4px;">
-          <div style="font-size:22px;font-weight:700;color:#1a1a1a;">Clientes</div>
-          <button onclick="abrirNovoCliente()" style="display:flex;align-items:center;gap:6px;height:36px;padding:0 14px;border-radius:10px;border:none;background:#1a1a1a;color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;">${ICO_PLUS} Novo</button>
+          <div class="g-section-title" style="margin:0;">Clientes</div>
+          <button onclick="abrirNovoCliente()" style="display:flex;align-items:center;gap:6px;height:36px;padding:0 14px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;">${ICO_PLUS} Novo</button>
         </div>
         ${tabs}
         ${faixaBtns}
@@ -2012,14 +2012,14 @@ function renderGestao(empInicial){
 
     return `
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding:0 4px;">
-        <div style="font-size:22px;font-weight:700;color:#1a1a1a;">Clientes</div>
-        <button onclick="abrirNovoCliente()" style="display:flex;align-items:center;gap:6px;height:36px;padding:0 14px;border-radius:10px;border:none;background:#1a1a1a;color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;">${ICO_PLUS} Novo</button>
+        <div class="g-section-title" style="margin:0;">Clientes</div>
+        <button onclick="abrirNovoCliente()" style="display:flex;align-items:center;gap:6px;height:36px;padding:0 14px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;">${ICO_PLUS} Novo</button>
       </div>
       ${banner}
       ${tabs}
       <div style="margin-bottom:14px;">
         <input id="clientesBuscaInput" type="search" value="${escapeAttr(_clientesBusca)}" placeholder="Buscar por nome ou telefone..." oninput="filtrarClientesLive(this.value)"
-          style="width:100%;border:0.5px solid #e4e4e7;border-radius:12px;padding:10px 14px;font-size:15px;font-family:inherit;color:#1a1a1a;background:#fff;box-sizing:border-box;"/>
+          style="width:100%;border:1px solid #E5D9C8;border-radius:12px;padding:10px 14px;font-size:15px;font-family:inherit;color:#1a1a1a;background:#fff;box-sizing:border-box;outline:none;"/>
       </div>
       <div id="clientesListaWrap">${listaHtml}</div>
       <div style="text-align:center;margin-top:12px;color:#8e8e93;font-size:13px;">${_clientes.length} cliente${_clientes.length!==1?'s':''} cadastrado${_clientes.length!==1?'s':''}</div>
@@ -2031,7 +2031,7 @@ function renderGestao(empInicial){
       const isMaster = currentProfile?.role === 'master';
       const ICO_CHV = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#c7c7cc" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>`;
       const mkItem = (onclick, iconBg, iconSvg, title, desc, divider=true) => `
-        <button onclick="${onclick}" style="display:flex;align-items:center;gap:14px;padding:0 20px;min-height:72px;background:#fff;border:none;text-align:left;cursor:pointer;width:100%;transition:background 150ms ease;" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background='#fff'">
+        <button onclick="${onclick}" style="display:flex;align-items:center;gap:14px;padding:0 20px;min-height:72px;background:#fff;border:none;text-align:left;cursor:pointer;width:100%;transition:background 150ms ease;" onmouseover="this.style.background='#FAF6F0'" onmouseout="this.style.background='#fff'">
           <div style="width:34px;height:34px;border-radius:10px;background:${iconBg};display:flex;align-items:center;justify-content:center;flex-shrink:0;">${iconSvg}</div>
           <div style="flex:1;min-width:0;padding:16px 0;">
             <div style="font-size:16px;font-weight:600;color:#1a1a1a;line-height:1.2;">${title}</div>
@@ -2039,15 +2039,15 @@ function renderGestao(empInicial){
           </div>
           ${ICO_CHV}
         </button>
-        ${divider ? `<div style="height:1px;background:#f2f2f7;margin-left:68px;"></div>` : ''}`;
+        ${divider ? `<div style="height:1px;background:#EDE5D8;margin-left:68px;"></div>` : ''}`;
       const ICO_BRIEF = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg>`;
       const ICO_CAL  = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`;
       const ICO_LINK = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>`;
       const ICO_MSG  = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`;
       const sairAction = isMaster ? `goto({empresa:'${emp.slug}'})` : `gestaoLogout('${emp.slug}')`;
       return `
-        <div style="font-size:22px;font-weight:700;color:#1a1a1a;margin-bottom:20px;padding:0 4px;">Configurações</div>
-        <div style="background:#fff;border-radius:22px;box-shadow:0 2px 16px rgba(0,0,0,0.06);overflow:hidden;">
+        <div class="g-section-title" style="margin-bottom:20px;">Configurações</div>
+        <div style="background:#fff;border-radius:18px;border:1px solid #E5D9C8;box-shadow:0 2px 10px rgba(0,0,0,0.06);overflow:hidden;">
           ${mkItem("configurarIr('servicos')",   '#eff6ff', ICO_BRIEF, 'Serviços oferecidos',      'Configure os serviços disponíveis')}
           ${mkItem("configurarIr('horarios')",   '#f0fdf4', ICO_CAL,   'Horários de agendamento',  'Defina dias e horários de agendamento')}
           ${mkItem("configurarIr('personalizar')","#fdf4ff", ICO_LINK,  'Personalize seu link',     'Nome, textos, logo, cor e botões')}
@@ -2072,19 +2072,19 @@ function renderGestao(empInicial){
           <div></div>
         </div>
         <div style="display:flex;flex-direction:column;gap:14px;">
-          <div style="background:#fff;border:0.5px solid #e4e4e7;border-radius:12px;padding:14px;box-shadow:0 1px 6px rgba(0,0,0,0.07);">
+          <div style="background:#fff;border:1px solid #E5D9C8;border-radius:12px;padding:14px;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
             <div style="font-size:13px;font-weight:700;color:#1a1a1a;margin-bottom:3px;">Mensagem de confirmacao</div>
             <div style="font-size:12px;color:#8e8e93;margin-bottom:10px;">Enviada ao clicar em "Confirmação" no agendamento.</div>
             <textarea id="msgConfirmacao" rows="5" style="width:100%;font-family:inherit;font-size:13px;border:0.5px solid #d1d5db;border-radius:8px;padding:10px 12px;resize:none;line-height:1.5;color:#1a1a1a;background:#f9f9f7;">${escapeHtml(msgConfirm)}</textarea>
             <div style="font-size:11px;color:#8e8e93;margin-top:6px;">Variaveis: {nome} {hora} {servico} {data} {link}</div>
           </div>
-          <div style="background:#fff;border:0.5px solid #e4e4e7;border-radius:12px;padding:14px;box-shadow:0 1px 6px rgba(0,0,0,0.07);">
+          <div style="background:#fff;border:1px solid #E5D9C8;border-radius:12px;padding:14px;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
             <div style="font-size:13px;font-weight:700;color:#1a1a1a;margin-bottom:3px;">Mensagem de lembrete</div>
             <div style="font-size:12px;color:#8e8e93;margin-bottom:10px;">Enviada ao clicar em "Lembrete" no agendamento.</div>
             <textarea id="msgLembrete" rows="5" style="width:100%;font-family:inherit;font-size:13px;border:0.5px solid #d1d5db;border-radius:8px;padding:10px 12px;resize:none;line-height:1.5;color:#1a1a1a;background:#f9f9f7;">${escapeHtml(msgLembrete)}</textarea>
             <div style="font-size:11px;color:#8e8e93;margin-top:6px;">Variaveis: {nome} {hora} {servico} {data}</div>
           </div>
-          <div style="background:#fff;border:0.5px solid #e4e4e7;border-radius:12px;padding:14px;box-shadow:0 1px 6px rgba(0,0,0,0.07);">
+          <div style="background:#fff;border:1px solid #E5D9C8;border-radius:12px;padding:14px;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
             <div style="font-size:13px;font-weight:700;color:#1a1a1a;margin-bottom:3px;">Mensagem de cliente ausente</div>
             <div style="font-size:12px;color:#8e8e93;margin-bottom:10px;">Enviada ao clicar em "Ausente" na aba Clientes ausentes.</div>
             <textarea id="msgInativo" rows="6" style="width:100%;font-family:inherit;font-size:13px;border:0.5px solid #d1d5db;border-radius:8px;padding:10px 12px;resize:none;line-height:1.5;color:#1a1a1a;background:#f9f9f7;">${escapeHtml(msgInativoTx)}</textarea>
@@ -2098,12 +2098,12 @@ function renderGestao(empInicial){
     if(configurarSub === 'link'){
       const url = `https://${emp.slug}.agenplus.com.br`;
       const mkLinkItem = (onclick, bg, stroke, icoPath, label, divider=true) => `
-        <button onclick="${onclick}" style="display:flex;align-items:center;gap:14px;padding:0 20px;min-height:64px;background:#fff;border:none;text-align:left;cursor:pointer;width:100%;font-family:inherit;transition:background 150ms ease;" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background='#fff'">
+        <button onclick="${onclick}" style="display:flex;align-items:center;gap:14px;padding:0 20px;min-height:64px;background:#fff;border:none;text-align:left;cursor:pointer;width:100%;font-family:inherit;transition:background 150ms ease;" onmouseover="this.style.background='#FAF6F0'" onmouseout="this.style.background='#fff'">
           <div style="width:34px;height:34px;border-radius:10px;background:${bg};display:flex;align-items:center;justify-content:center;flex-shrink:0;">${icoPath}</div>
           <div style="flex:1;font-size:16px;font-weight:600;color:#1a1a1a;">${label}</div>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#c7c7cc" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
         </button>
-        ${divider ? `<div style="height:1px;background:#f2f2f7;margin-left:68px;"></div>` : ''}`;
+        ${divider ? `<div style="height:1px;background:#EDE5D8;margin-left:68px;"></div>` : ''}`;
       return `
         <div style="position:relative;display:flex;align-items:center;margin-bottom:16px;min-height:36px;">
           <button onclick="configurarIr(null)" style="background:none;border:none;font-size:14px;font-weight:600;color:#555;cursor:pointer;padding:0;font-family:inherit;display:flex;align-items:center;gap:4px;">&#8249; Voltar</button>
@@ -2111,7 +2111,7 @@ function renderGestao(empInicial){
           <div></div>
         </div>
         <div style="background:#f7f7f7;border-radius:12px;padding:10px 16px;margin-bottom:14px;word-break:break-all;font-size:13px;color:#8e8e93;font-weight:500;">${url}</div>
-        <div style="background:#fff;border-radius:22px;box-shadow:0 2px 16px rgba(0,0,0,0.06);overflow:hidden;">
+        <div style="background:#fff;border-radius:18px;border:1px solid #E5D9C8;box-shadow:0 2px 10px rgba(0,0,0,0.06);overflow:hidden;">
           ${mkLinkItem(`linkAcao('abrir')`,         '#f0fdf4', '#16a34a', `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>`, 'Abrir')}
           ${mkLinkItem(`linkAcao('copiar')`,        '#eff6ff', '#3b82f6', `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`, 'Copiar link')}
           ${mkLinkItem(`linkAcao('compartilhar')`,  '#f5f3ff', '#8b5cf6', `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>`, 'Compartilhar', false)}
@@ -2422,17 +2422,21 @@ function renderGestao(empInicial){
   const GESTAO_CSS = `<style>
     .g-layout { display:flex; flex-direction:column; min-height:calc(100vh - 52px); }
     .g-content { flex:1; min-width:0; padding-bottom:72px; }
-    .g-dash-card { background:#fff; border:0.5px solid #ececee; border-radius:14px; padding:12px; display:flex; flex-direction:column; justify-content:center; box-shadow:0 1px 6px rgba(0,0,0,0.07); }
+    .g-layout { background:#F5F1EC; }
+    .g-content { background:#F5F1EC; }
+    .g-content .container.wide { padding-top:20px; }
+    .g-section-title { font-size:20px; font-weight:700; color:var(--ink); margin-bottom:16px; letter-spacing:-0.01em; }
+    .g-dash-card { background:#fff; border:1px solid #E5D9C8; border-radius:14px; padding:12px; display:flex; flex-direction:column; justify-content:center; box-shadow:0 2px 8px rgba(0,0,0,0.06); }
     .g-dash-ico { width:30px; height:30px; border-radius:9px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-    .g-dash-label { font-size:11px; color:#8e8e93; line-height:1.25; font-weight:600; }
+    .g-dash-label { font-size:11px; color:#8A7C6E; line-height:1.25; font-weight:600; }
     .g-dash-val { font-size:21px; font-weight:700; color:#1a1a1a; letter-spacing:-.02em; margin-top:8px; line-height:1.1; }
-    .g-dash-panel { background:#fff; border:0.5px solid #ececee; border-radius:14px; padding:12px; box-shadow:0 1px 6px rgba(0,0,0,0.07); }
+    .g-dash-panel { background:#fff; border:1px solid #E5D9C8; border-radius:14px; padding:12px; box-shadow:0 2px 8px rgba(0,0,0,0.06); }
     .g-dash-ttl { font-size:14px; font-weight:700; color:#1a1a1a; }
     .g-ag-row { padding:7px 0; }
-    .g-ag-row + .g-ag-row { border-top:0.5px solid #f4f4f5; }
+    .g-ag-row + .g-ag-row { border-top:0.5px solid #EDE5D8; }
     .g-ag-hora { font-size:12px; font-weight:700; color:#1a1a1a; flex-shrink:0; }
     .g-ag-nome { font-size:12px; color:#1a1a1a; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-    .g-ag-serv { font-size:10px; color:#8e8e93; margin-top:1px; padding-left:41px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .g-ag-serv { font-size:10px; color:#8A7C6E; margin-top:1px; padding-left:41px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .g-nota { border-radius:10px; padding:10px 11px; font-size:12px; color:#3d3d3a; line-height:1.4; display:flex; align-items:flex-start; gap:8px; }
     .g-nota-txt { flex:1; min-width:0; word-break:break-word; white-space:pre-wrap; }
     .g-nota-x { background:none; border:none; color:#00000055; cursor:pointer; font-size:16px; line-height:1; padding:0; min-height:0; flex-shrink:0; font-family:inherit; }
@@ -2448,9 +2452,9 @@ function renderGestao(empInicial){
       display:flex; flex-direction:column;
     }
     .g-dash-mode .card { flex:1; min-height:0; display:flex; flex-direction:column; }
-    .g-dash-root { flex:1; min-height:0; display:flex; flex-direction:column; gap:9px; }
+    .g-dash-root { flex:1; min-height:0; display:flex; flex-direction:column; gap:12px; }
     .g-dash-grid {
-      flex:1; min-height:0; display:grid; gap:9px;
+      flex:1; min-height:0; display:grid; gap:12px;
       grid-template-columns:repeat(2,minmax(0,1fr));
       grid-template-rows:auto auto auto auto 1fr;
       grid-template-areas:"prox agend" "agenda cli" "agenda fat" "agenda fatmes" "notas notas";
@@ -2463,7 +2467,7 @@ function renderGestao(empInicial){
       .g-dash-mode .container.wide { height:100dvh; padding:24px 16px 16px; }
     }
 
-    .g-topbar { height:52px; display:flex; align-items:center; justify-content:space-between; padding:0 20px; background:#fff; box-shadow:0 4px 16px rgba(0,0,0,0.10); color:#1a1a1a; }
+    .g-topbar { height:52px; display:flex; align-items:center; justify-content:space-between; padding:0 20px; background:#fff; border-bottom:1px solid #E5D9C8; box-shadow:0 2px 8px rgba(0,0,0,0.06); color:#1a1a1a; }
     .g-topbar .brand { font-family:'Nunito',sans-serif; font-weight:800; font-size:18px; }
 
     /* ── Botões de agendamento ── */
@@ -2491,7 +2495,7 @@ function renderGestao(empInicial){
     .ag-wa-dd-item {
       display:block; width:100%; padding:9px 14px; text-align:left;
       font-family:inherit; font-size:13px; font-weight:500; color:#1a1a1a;
-      background:none; border:none; border-bottom:0.5px solid #e4e4e7; cursor:pointer;
+      background:none; border:none; border-bottom:1px solid #EDE5D8; cursor:pointer;
     }
     .ag-wa-dd-item:last-child { border-bottom:none; }
     .ag-wa-dd-item:hover { background:#f9fafb; }
@@ -2499,7 +2503,7 @@ function renderGestao(empInicial){
     /* ── Bottom nav bar ── */
     .g-bottom-nav {
       position:fixed; bottom:0; left:0; right:0; height:60px; z-index:300;
-      background:#ffffff; box-shadow:0 -4px 16px rgba(0,0,0,0.10);
+      background:#ffffff; border-top:1px solid #E5D9C8; box-shadow:0 -2px 8px rgba(0,0,0,0.05);
       display:flex; align-items:stretch;
     }
     .g-bn-item {
@@ -2510,7 +2514,7 @@ function renderGestao(empInicial){
       padding:0;
     }
     .g-bn-item:hover { color:#888; }
-    .g-bn-item.active { color:#1a1a1a; }
+    .g-bn-item.active { color:var(--accent); }
     .g-bn-item.active .g-bn-ico { opacity:1; }
     .g-bn-ico { width:22px; height:22px; opacity:1; transition:opacity .15s; }
 
@@ -2527,7 +2531,7 @@ function renderGestao(empInicial){
         flex:none; flex-direction:row; justify-content:flex-start;
         gap:10px; padding:14px 18px; font-size:13px;
       }
-      .g-bn-item.active { background:#f5f5f5; }
+      .g-bn-item.active { background:var(--accent-light); border-radius:10px; }
       .g-bn-ico { width:18px; height:18px; }
     }
   </style>`;
@@ -2908,7 +2912,7 @@ function renderGestao(empInicial){
 
     return `
       ${modalHtml}
-      <div style="font-size:22px;font-weight:700;color:#1a1a1a;margin-bottom:16px;padding:0 4px;">Financeiro</div>
+      <div class="g-section-title">Financeiro</div>
       <div style="background:#e8e8e8;border-radius:8px;padding:3px;display:flex;margin-bottom:14px;">
         ${['dia','mes'].map(p=>`<button onclick="gFinSetPeriodo('${p}')" style="${CS}flex:1;padding:6px;border-radius:6px;border:none;font-size:13px;font-weight:700;
           background:${_gFinPeriodo===p?'#fff':'transparent'};color:${_gFinPeriodo===p?'#1a1a1a':'#888'};
@@ -2979,7 +2983,7 @@ function renderGestao(empInicial){
           <div style="position:absolute;left:0;right:0;text-align:center;font-weight:700;font-size:16px;pointer-events:none;">Relatórios</div>
           <div></div>
         </div>
-        <div style="background:#fff;border-radius:22px;box-shadow:0 2px 16px rgba(0,0,0,0.06);overflow:hidden;">
+        <div style="background:#fff;border-radius:18px;border:1px solid #E5D9C8;box-shadow:0 2px 10px rgba(0,0,0,0.06);overflow:hidden;">
           ${mkCard("setRelAba('financeiro')",   '#f0fdf4', ICO_FIN,   'Financeiro',    'Receitas, despesas e saldo por mês')}
           ${mkCard("setRelAba('agendamentos')", '#eff6ff', ICO_CAL2,  'Agendamentos',  'Todos os agendamentos do mês')}
           ${mkCard("setRelAba('clientes')",     '#f5f3ff', ICO_PESS,  'Clientes',      'Clientes ativos e frequência no mês')}
@@ -4016,7 +4020,7 @@ function renderMaster(){
 
 // ---------- LOGIN UNIFICADO ----------
 function renderCadastro(){
-  applyAccent('#1c1917');
+  applyAccent('#B8540A');
   render(`
     <div style="min-height:100vh;background:#0A0A09;padding:16px 20px;">
       <div style="width:100%;max-width:400px;margin:0 auto;">
@@ -4109,7 +4113,7 @@ window.tentarCadastro = async ()=>{
 };
 
 function renderLoginUnificado(){
-  applyAccent('#1c1917');
+  applyAccent('#B8540A');
   mostrarBannerPWA();
   render(`
     <div style="min-height:100vh;background:#0A0A09;padding:16px 20px;">
@@ -4210,7 +4214,7 @@ window.tentarLoginUnificado = async ()=>{
 
 // ---------- TELA: REDEFINIR SENHA ----------
 function renderRedefinirSenha(){
-  applyAccent('#1c1917');
+  applyAccent('#B8540A');
   render(`
     <div class="container">
       <div class="card">
@@ -4295,7 +4299,7 @@ function finStatusInfo(reg){
 }
 
 function renderMasterPanel(){
-  applyAccent('#1c1917');
+  applyAccent('#B8540A');
   document.title = 'Painel Master — Agen+';
   mostrarBannerPWA();
 
