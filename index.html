@@ -98,6 +98,7 @@ nav{
 }
 .btn-amber-lg-full{width:100%;}
 .btn-amber-lg:hover{background:var(--gold-deep);}
+.btn-amber:hover,.btn-amber-lg:hover{transform:translateY(-2px);}
 .btn-ink{
   background:var(--ink);color:var(--cream);
   padding:15px 32px;font-size:17px;font-weight:800;letter-spacing:-0.01em;
@@ -216,6 +217,7 @@ nav{
   font-weight:800;font-size:14px;
   display:flex;align-items:center;justify-content:center;
   margin-bottom:16px;flex-shrink:0;
+  position:relative;
 }
 .step-title{
   font-family:'Bricolage Grotesque',system-ui,sans-serif;
@@ -443,7 +445,6 @@ footer{
   0%{transform:scale(0.85);opacity:0.9;}
   100%{transform:scale(1.8);opacity:0;}
 }
-.step-num{position:relative;}
 .step.in .step-num::after{
   content:'';
   position:absolute;inset:-5px;border-radius:50%;
@@ -461,8 +462,9 @@ footer{
 .reveal{
   opacity:0;
   transition:opacity 0.7s cubic-bezier(0.16,1,0.3,1),transform 0.7s cubic-bezier(0.16,1,0.3,1);
-  will-change:opacity,transform;
 }
+.reveal.animating{will-change:opacity,transform;}
+.reveal.in{will-change:auto;}
 .reveal.in{opacity:1;transform:none!important;}
 .rv-up{transform:translateY(28px);}
 .rv-left{transform:translateX(-32px);}
@@ -475,10 +477,6 @@ footer{
 .rv-d5{transition-delay:0.35s;}
 .rv-d6{transition-delay:0.42s;}
 
-/* Button hover lift */
-.btn-amber:hover{transform:translateY(-2px);}
-.btn-amber-lg:hover{transform:translateY(-2px);}
-
 @media(prefers-reduced-motion:reduce){
   .reveal{opacity:1!important;transform:none!important;transition:none!important;}
   .btn-amber:hover,.btn-amber-lg:hover{transform:none;}
@@ -486,7 +484,7 @@ footer{
 </style>
 </head>
 <body>
-<nav>
+<nav aria-label="Menu principal">
   <div class="nav-inner">
     <a href="/" class="logo-link"><img src="/logoagen+.png" alt="Agen+" class="nav-logo"/></a>
     <div class="nav-actions">
@@ -505,7 +503,7 @@ footer{
       </div>
     </div>
     <div class="phone-wrap">
-      <img src="/mockuphero.png" alt="Painel de agendamento agen+" class="hero-img"/>
+      <img src="/mockuphero.png" alt="Painel de agendamento agen+" class="hero-img" fetchpriority="high"/>
     </div>
   </div>
 </section>
@@ -663,7 +661,11 @@ footer{
   if('IntersectionObserver' in window){
     var io=new IntersectionObserver(function(entries){
       entries.forEach(function(e){
-        if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}
+        if(e.isIntersecting){
+          e.target.classList.add('animating');
+          e.target.classList.add('in');
+          io.unobserve(e.target);
+        }
       });
     },{threshold:0.12});
     revealEls.forEach(function(el){io.observe(el);});
