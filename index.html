@@ -120,8 +120,18 @@ nav{
   align-items:center;
 }
 @media(max-width:800px){
-  .hero{grid-template-columns:1fr;gap:48px;padding-top:100px;padding-bottom:0;}
-  .hero-section{align-items:flex-end;}
+  .hero-section{align-items:stretch;}
+  .hero{
+    grid-template-columns:1fr;
+    gap:48px;
+    padding-top:100px;
+    padding-bottom:0;
+    min-height:100svh;
+    display:flex;
+    flex-direction:column;
+    justify-content:flex-start;
+  }
+  .phone-wrap{margin-top:auto;}
   .close-section{padding:60px max(24px,5vw);}
 }
 @media(max-width:480px){
