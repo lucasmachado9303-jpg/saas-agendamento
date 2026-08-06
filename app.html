@@ -789,7 +789,7 @@ function renderHome(emp){
         <!-- Botão principal de agendamento -->
         <div style="width:100%;max-width:240px;margin:0 auto 10px;">
           <button onclick="goto({empresa:'${emp.slug}', page:'agendar'})"
-            style="width:100%;background:#fff;color:var(--ink);border:1.5px solid var(--line);border-radius:14px;padding:14px 20px;font-size:15px;font-weight:600;cursor:pointer;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,0.06);font-family:inherit;">
+            style="width:100%;background:#fff;color:var(--ink);border:1.5px solid var(--line);border-radius:14px;padding:14px 20px;font-size:15px;font-weight:600;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.06);font-family:inherit;display:flex;align-items:center;justify-content:center;">
             ${escapeHtml(emp.textoAgendar || 'Agendar horário')}
           </button>
         </div>
