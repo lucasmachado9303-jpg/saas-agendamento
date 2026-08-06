@@ -4,8 +4,8 @@
   "description": "Plataforma de agendamentos para pequenos negocios",
   "start_url": "/app.html",
   "display": "standalone",
-  "background_color": "#f7f5f8",
-  "theme_color": "#1a1a1a",
+  "background_color": "#0A0A09",
+  "theme_color": "#0A0A09",
   "icons": [
     {
       "src": "icon.png",

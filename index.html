@@ -120,8 +120,8 @@ nav{
   align-items:center;
 }
 @media(max-width:800px){
-  .hero{grid-template-columns:1fr;gap:24px;padding-top:80px;padding-bottom:0;}
-  .hero-img{width:100%;height:auto;}
+  .hero-section{min-height:unset;padding-top:80px;padding-bottom:48px;}
+  .hero{grid-template-columns:1fr;gap:24px;padding-top:0;padding-bottom:0;}
   .close-section{padding:60px max(24px,5vw);}
 }
 @media(max-width:480px){
@@ -129,10 +129,8 @@ nav{
   .btn-amber-lg{width:100%;text-align:center;}
   .close-section{padding:48px 24px;}
   .phone-wrap{max-width:calc(100vw - 48px);}
-  .phone-frame{max-width:100%;}
 }
 @media(prefers-reduced-motion:reduce){
-  .phone-frame{animation:none;}
   .hero-headline,.hero-sub,.hero-cta-row,.phone-wrap{animation:none;}
 }
 .hero-headline{
@@ -167,82 +165,9 @@ nav{
   display:inline-block;
   animation:phonefloat 5s ease-in-out infinite;
 }
-/* botao power (direita) */
-.phone-frame::after{
-  content:'';
-  position:absolute;
-  right:-3px;top:120px;
-  width:3px;height:52px;
-  background:linear-gradient(to bottom,#2a2a2a,#1a1a1a 40%,#2a2a2a);
-  border-radius:0 2px 2px 0;
-}
-/* botoes de volume (esquerda) */
-.phone-frame::before{
-  content:'';
-  position:absolute;
-  left:-3px;top:100px;
-  width:3px;height:32px;
-  background:linear-gradient(to bottom,#2a2a2a,#1a1a1a 40%,#2a2a2a);
-  border-radius:2px 0 0 2px;
-  box-shadow:0 42px 0 #1e1e1e;
-}
-.phone{
-  width:272px;height:548px;
-  background:#f6f6f6;
-  border-radius:44px;
-  border:none;
-  outline:2.5px solid #2c2c2c;
-  overflow:hidden;position:relative;
-  box-shadow:
-    0 0 0 1px #111,
-    0 0 0 3.5px #242424,
-    0 0 0 4px rgba(255,255,255,0.06),
-    0 32px 72px rgba(0,0,0,0.7),
-    0 8px 24px rgba(0,0,0,0.4),
-    inset 0 1px 0 rgba(255,255,255,0.1),
-    inset 0 -1px 0 rgba(0,0,0,0.5);
-}
 @keyframes phonefloat{
   0%,100%{transform:translateY(0);}
   50%{transform:translateY(-5px);}
-}
-.phone-notch{
-  position:absolute;top:10px;left:50%;transform:translateX(-50%);
-  width:68px;height:20px;
-  background:#000;
-  border-radius:20px;
-  z-index:10;
-}
-.phone-notch::after{
-  content:'';
-  position:absolute;right:8px;top:50%;transform:translateY(-50%);
-  width:8px;height:8px;
-  border-radius:50%;
-  background:#1a1a1a;
-  border:1.5px solid #2a2a2a;
-}
-.phone-screen{
-  position:absolute;inset:0;
-  border-radius:42px;
-  overflow:hidden;
-}
-.phone-slide{
-  position:absolute;inset:0;
-  opacity:0;
-  transform:translateY(8px) scale(0.98);
-  transition:opacity 0.6s ease, transform 0.6s cubic-bezier(0.22,1,0.36,1);
-  will-change:opacity,transform;
-}
-.phone-slide.active{
-  opacity:1;
-  transform:translateY(0) scale(1);
-}
-.phone-slide img{
-  width:100%;height:100%;
-  object-fit:contain;
-  object-position:center;
-  background:#fff;
-  display:block;
 }
 
 /* PAIN */
@@ -572,7 +497,7 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
 -->
 <nav>
   <div class="nav-inner">
-    <a href="/" class="logo-link"><img src="/logoagen+.png" alt="agen+" class="nav-logo"/></a>
+    <a href="/" class="logo-link"><img src="/logoagen+.png" alt="Agen+" class="nav-logo"/></a>
     <div class="nav-actions">
       <a href="/cadastro" class="btn btn-amber">Criar minha agenda</a>
     </div>
@@ -696,7 +621,7 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
         <span class="price-number">29</span>
         <span class="price-period">,90&nbsp;/&nbsp;mês</span>
       </div>
-      <p style="font-size:13px;color:var(--gold);font-weight:600;margin-bottom:6px;">menos de R$ 1 por dia</p>
+      <p class="price-trial" style="margin-bottom:6px;">menos de R$ 1 por dia</p>
       <p class="price-trial">7 dias grátis &mdash; sem cartão de crédito</p>
       <hr class="price-divider"/>
       <ul class="price-feats">
@@ -731,10 +656,10 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
 </section>
 
 <footer>
-  <img src="/logoagen+.png" alt="agen+" class="footer-logo"/>
+  <img src="/logoagen+.png" alt="Agen+" class="footer-logo"/>
   <div class="footer-links">
-    <a href="#" class="footer-link">Termos de uso</a>
-    <a href="#" class="footer-link">Privacidade</a>
+    <a href="/termos" class="footer-link">Termos de uso</a>
+    <a href="/privacidade" class="footer-link">Privacidade</a>
     <a href="/login" class="footer-link">Entrar</a>
   </div>
   <p class="footer-cr">&copy; 2026 AgenPlus</p>
@@ -742,26 +667,6 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
 
 <script>
 (function(){
-  var images=[
-    '/assets/imagens/passo-1-inicio.jpg',
-    '/assets/imagens/passo-2-servico.jpg',
-    '/assets/imagens/passo-3-horario.jpg',
-    '/assets/imagens/passo-4-dados.jpg',
-    '/assets/imagens/passo-5-confirmacao.jpg'
-  ];
-  images.forEach(function(src){var i=new Image();i.src=src;});
-
-  var slides=document.querySelectorAll('#phoneMockup .phone-slide');
-  if(slides.length){
-    var current=0;
-    function next(){
-      slides[current].classList.remove('active');
-      current=(current+1)%slides.length;
-      slides[current].classList.add('active');
-    }
-    setInterval(next,2500);
-  }
-
   // Scroll reveals
   var revealEls=document.querySelectorAll('.reveal');
   if('IntersectionObserver' in window){
