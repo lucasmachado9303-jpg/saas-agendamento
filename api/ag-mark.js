@@ -16,23 +16,48 @@ module.exports = async function handler(req, res) {
   const SERVICE_KEY  = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!SUPABASE_URL || !SERVICE_KEY) return res.status(500).json({ error: 'Env não configurado' });
 
-  const { ag_id, campo } = req.body || {};
-  if (!ag_id || !campo) return res.status(400).json({ error: 'ag_id e campo obrigatórios' });
-  if (!['confirmacao_enviada', 'lembrete_enviado'].includes(campo)) {
-    return res.status(400).json({ error: 'campo inválido' });
+  const { ag_id, cliente_id, campo } = req.body || {};
+  if (!campo) return res.status(400).json({ error: 'campo obrigatório' });
+
+  // Agendamentos
+  if (ag_id) {
+    if (!['confirmacao_enviada', 'lembrete_enviado'].includes(campo)) {
+      return res.status(400).json({ error: 'campo inválido' });
+    }
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/agendamentos?id=eq.${ag_id}`, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Bearer ${SERVICE_KEY}`,
+        'apikey': SERVICE_KEY,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify({ [campo]: true })
+    });
+    if (!r.ok) return res.status(500).json({ error: 'Erro ao atualizar' });
+    return res.status(200).json({ success: true });
   }
 
-  const r = await fetch(`${SUPABASE_URL}/rest/v1/agendamentos?id=eq.${ag_id}`, {
-    method: 'PATCH',
-    headers: {
-      'Authorization': `Bearer ${SERVICE_KEY}`,
-      'apikey': SERVICE_KEY,
-      'Content-Type': 'application/json',
-      'Prefer': 'return=minimal'
-    },
-    body: JSON.stringify({ [campo]: true })
-  });
+  // Clientes
+  if (cliente_id) {
+    if (!['ausente_enviado_em'].includes(campo)) {
+      return res.status(400).json({ error: 'campo inválido' });
+    }
+    const { reset } = req.body || {};
+    const valor = reset ? null : new Date().toISOString();
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/clientes?id=eq.${cliente_id}`, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Bearer ${SERVICE_KEY}`,
+        'apikey': SERVICE_KEY,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify({ [campo]: valor })
+    });
+    if (!r.ok) return res.status(500).json({ error: 'Erro ao atualizar' });
+    return res.status(200).json({ success: true });
+  }
 
-  if (!r.ok) return res.status(500).json({ error: 'Erro ao atualizar' });
-  return res.status(200).json({ success: true });
+  return res.status(400).json({ error: 'ag_id ou cliente_id obrigatório' });
 };

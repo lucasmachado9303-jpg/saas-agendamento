@@ -3345,6 +3345,12 @@ function renderGestao(empInicial){
       data, hora, token_curto: gerarTokenCurto()
     }).select().single();
     if(error){ toast(friendlyError(error,'Erro ao agendar.'),'err'); return; }
+    // Resetar ausente ao reagendar
+    const clienteAusente = _clientes.find(x=>x.id===cliente.id);
+    if(clienteAusente && clienteAusente.ausenteEnviadoEm){
+      clienteAusente.ausenteEnviadoEm = null;
+      fetch('/api/ag-mark', { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ cliente_id: cliente.id, campo: 'ausente_enviado_em', reset: true }) });
+    }
     agendamentos.push({
       id:row.id, slug:emp.slug,
       nome:row.nome_cliente, telefone:row.telefone,
@@ -3512,8 +3518,8 @@ function renderGestao(empInicial){
     }
     if(tipo === 'inativo'){
       const agora = new Date().toISOString();
-      supabaseClient.from('clientes').update({ ausente_enviado_em: agora }).eq('id', clienteId);
       const cf = _clientes.find(x=>x.id===clienteId); if(cf) cf.ausenteEnviadoEm = agora;
+      fetch('/api/ag-mark', { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ cliente_id: clienteId, campo: 'ausente_enviado_em' }) });
     }
     _inativoWaMenuId = null;
     draw();
