@@ -752,13 +752,15 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
   images.forEach(function(src){var i=new Image();i.src=src;});
 
   var slides=document.querySelectorAll('#phoneMockup .phone-slide');
-  var current=0;
-  function next(){
-    slides[current].classList.remove('active');
-    current=(current+1)%slides.length;
-    slides[current].classList.add('active');
+  if(slides.length){
+    var current=0;
+    function next(){
+      slides[current].classList.remove('active');
+      current=(current+1)%slides.length;
+      slides[current].classList.add('active');
+    }
+    setInterval(next,2500);
   }
-  setInterval(next,2500);
 
   // Scroll reveals
   var revealEls=document.querySelectorAll('.reveal');
