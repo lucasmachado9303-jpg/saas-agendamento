@@ -163,14 +163,17 @@ nav{
 }
 @media(max-width:800px){
   .phone-wrap{
+    display:flex;
+    align-items:flex-end;
     overflow:hidden;
-    max-height:420px;
-    border-radius:16px;
   }
   .hero-img{
-    height:auto;
     width:100%;
-    margin-top:-60px;
+    height:auto;
+    border-radius:16px 16px 0 0;
+    animation:none;
+    margin-bottom:0;
+    display:block;
   }
 }
 .phone-frame{
