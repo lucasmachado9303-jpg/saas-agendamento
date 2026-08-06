@@ -20,9 +20,21 @@ module.exports = async function handler(req, res) {
     return res.status(400).json({ error: 'Campos obrigatórios: empresa_id, nome, telefone' });
   }
 
+  // Valida formato do telefone: '0' + DDD (2) + 9 + 8 digitos = 12 caracteres
+  const tel = String(telefone).replace(/\D/g, '');
+  if (tel.length !== 12 || tel[0] !== '0' || tel[3] !== '9') {
+    return res.status(400).json({ error: 'Telefone inválido' });
+  }
+
+  // Valida nome
+  const nomeLimpo = String(nome).trim();
+  if (nomeLimpo.length < 2 || nomeLimpo.length > 120) {
+    return res.status(400).json({ error: 'Nome deve ter entre 2 e 120 caracteres' });
+  }
+
   // Verifica se ja existe cliente com mesmo nome + telefone + empresa
   const checkRes = await fetch(
-    `${SUPABASE_URL}/rest/v1/clientes?empresa_id=eq.${empresa_id}&nome=eq.${encodeURIComponent(nome)}&telefone=eq.${encodeURIComponent(telefone)}&select=id&limit=1`,
+    `${SUPABASE_URL}/rest/v1/clientes?empresa_id=eq.${empresa_id}&nome=eq.${encodeURIComponent(nomeLimpo)}&telefone=eq.${encodeURIComponent(tel)}&select=id&limit=1`,
     { headers: { 'Authorization': `Bearer ${SERVICE_KEY}`, 'apikey': SERVICE_KEY } }
   );
   const existentes = await checkRes.json();
@@ -39,10 +51,12 @@ module.exports = async function handler(req, res) {
       'Content-Type': 'application/json',
       'Prefer': 'return=representation'
     },
-    body: JSON.stringify({ empresa_id, nome, telefone })
+    body: JSON.stringify({ empresa_id, nome: nomeLimpo, telefone: tel })
   });
   if (!insertRes.ok) {
-    return res.status(200).json({ success: true, created: false });
+    const errBody = await insertRes.text();
+    console.error('[upsert-cliente] erro ao inserir:', errBody);
+    return res.status(500).json({ error: 'Erro ao cadastrar cliente' });
   }
   const rows = await insertRes.json();
   return res.status(200).json({ success: true, cliente_id: rows[0]?.id, created: true });

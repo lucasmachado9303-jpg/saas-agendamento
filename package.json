@@ -1,5 +1,6 @@
 {
-  "devDependencies": {
-    "sharp": "^0.35.3"
-  }
+  "name": "agenplus",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Agen+ — plataforma de agendamentos para pequenos negocios"
 }

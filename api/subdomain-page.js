@@ -5,6 +5,9 @@
 const fs   = require('fs');
 const path = require('path');
 
+// app.html tem ~5000 linhas — le do disco uma vez e reusa entre requisicoes
+let _appHtmlCache = null;
+
 module.exports = async function handler(req, res) {
   const SUPABASE_URL = process.env.SUPABASE_URL;
   const SERVICE_KEY  = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -16,7 +19,10 @@ module.exports = async function handler(req, res) {
   // Le o app.html do disco (api/ fica uma pasta abaixo da raiz)
   let html;
   try {
-    html = fs.readFileSync(path.join(__dirname, '..', 'app.html'), 'utf8');
+    if (!_appHtmlCache) {
+      _appHtmlCache = fs.readFileSync(path.join(__dirname, '..', 'app.html'), 'utf8');
+    }
+    html = _appHtmlCache;
   } catch(e) {
     console.error('[subdomain-page] erro ao ler app.html:', e.message, 'cwd:', process.cwd(), '__dirname:', __dirname);
     return res.status(500).send('Erro ao carregar página: ' + e.message);
@@ -37,7 +43,7 @@ module.exports = async function handler(req, res) {
     );
     const rows = await r.json();
     if (Array.isArray(rows) && rows.length) emp = rows[0];
-  } catch(e) {}
+  } catch(e) { console.error('[subdomain-page] erro ao buscar empresa:', e.message); }
 
   // Busca agendamento se ?ag= presente
   const agId = (req.query && req.query.ag) || new URL('https://x.com' + req.url).searchParams.get('ag');
@@ -52,7 +58,7 @@ module.exports = async function handler(req, res) {
       );
       const rows = await r.json();
       if (Array.isArray(rows) && rows.length) ag = rows[0];
-    } catch(e) {}
+    } catch(e) { console.error('[subdomain-page] erro ao buscar agendamento:', e.message); }
   }
 
   // Monta titulo e descricao

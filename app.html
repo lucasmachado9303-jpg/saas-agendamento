@@ -236,11 +236,6 @@ let currentUser      = null;
 let currentProfile   = null;
 let modoRecuperacao  = false;   // true quando o usuário chega pelo link de redefinir senha
 
-// Ícones padrão por tipo de botão
-const ICONE_POR_TIPO = {
-  whatsapp: '', instagram: '', telefone: '',
-  maps: '', site: '', link: ''
-};
 const LABEL_POR_TIPO = {
   whatsapp: 'WhatsApp', instagram: 'Instagram',
   maps: 'Google Maps', site: 'Site'
@@ -253,8 +248,6 @@ let loaded = false;
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('/sw.js').catch(()=>{});
 }
-function mostrarBannerPWA(){}
-function dispensarPWA(){}
 
 async function loadData(){
   try{
@@ -1336,183 +1329,6 @@ window.agConfirmar = async (agId, acao, empSlug) => {
   }
 };
 
-// ---------- CLIENTE LOGIN / MEUS AGENDAMENTOS ----------
-let _clienteSession = null; // { nome, telefone, agendamentos: [] }
-
-function renderClienteLogin(emp){
-  applyAccent(emp.corPrincipal);
-  const cor = emp.corPrincipal || '#3d1f3a';
-  const logoHtml = emp.logo
-    ? `<img src="${escapeAttr(emp.logo)}" alt="Logo" style="width:64px;height:64px;border-radius:50%;object-fit:cover;border:2px solid #e5e7eb;margin-bottom:12px;">`
-    : `<div style="width:64px;height:64px;border-radius:50%;background:${cor};display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:700;color:#fff;margin-bottom:12px;">${escapeHtml(emp.nome.charAt(0).toUpperCase())}</div>`;
-  render(`
-    <div style="min-height:100vh;background:var(--paper);display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:40px 20px;">
-      <div style="width:100%;max-width:380px;">
-        <button onclick="goto({empresa:'${emp.slug}'})" style="background:none;border:none;font-size:14px;font-weight:600;color:#8e8e93;cursor:pointer;font-family:inherit;margin-bottom:24px;padding:0;display:flex;align-items:center;gap:4px;">&#8249; Voltar</button>
-        <div style="display:flex;flex-direction:column;align-items:center;margin-bottom:28px;">
-          ${logoHtml}
-          <div style="font-size:22px;font-weight:700;color:var(--ink);">${escapeHtml(emp.nome)}</div>
-          <div style="font-size:14px;color:#8e8e93;margin-top:4px;">Meus agendamentos</div>
-        </div>
-        <div style="background:#fff;border-radius:16px;padding:22px;box-shadow:0 2px 12px rgba(0,0,0,0.07);">
-          <div class="field">
-            <label>Nome completo</label>
-            <input id="cliLoginNome" type="text" placeholder="SEU NOME" style="text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()" onkeydown="if(event.key==='Enter')document.getElementById('cliLoginTel').focus()"/>
-          </div>
-          <div class="field">
-            <label>Telefone (WhatsApp)</label>
-            <input id="cliLoginTel" type="tel" inputmode="numeric" maxlength="16" placeholder="(xx) xxxxx-xxxx" oninput="maskTel(this)" onkeydown="if(event.key==='Enter')clienteLoginSubmit('${emp.slug}')"/>
-          </div>
-          <div id="cliLoginErr" style="display:none;color:#e53935;font-size:13px;margin-bottom:10px;"></div>
-          <button onclick="clienteLoginSubmit('${emp.slug}')"
-            style="width:100%;height:48px;border-radius:12px;border:none;background:${cor};color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:4px;">
-            Entrar
-          </button>
-        </div>
-      </div>
-    </div>
-  `);
-}
-
-window.clienteLoginSubmit = async (slug)=>{
-  const nome = (document.getElementById('cliLoginNome')?.value||'').trim().toUpperCase();
-  const telRaw = (document.getElementById('cliLoginTel')?.value||'').replace(/\D/g,'').replace(/^(55|0)/,'');
-  const errEl = document.getElementById('cliLoginErr');
-  if(!nome||telRaw.length!==11||telRaw[2]!=='9'){
-    if(errEl){ errEl.style.display='block'; errEl.textContent='Preencha nome e telefone válidos.'; } return;
-  }
-  const telefone = '0'+telRaw;
-  if(errEl){ errEl.style.display='none'; }
-  const btn = document.querySelector('button[onclick*="clienteLoginSubmit"]');
-  if(btn){ btn.disabled=true; btn.textContent='Buscando...'; }
-
-  try{
-    const emp2 = empresas.find(e=>e.slug===slug);
-    const resp = await fetch('/api/cliente-login', {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ empresa_id: emp2?.id, nome, telefone })
-    });
-    const json = await resp.json();
-    if(!resp.ok){
-      if(errEl){ errEl.style.display='block'; errEl.textContent = json.error || 'Erro ao buscar agendamentos.'; }
-      if(btn){ btn.disabled=false; btn.textContent='Entrar'; } return;
-    }
-    _clienteSession = { nome, telefone, agendamentos: json.agendamentos || [] };
-    goto({ empresa: slug, page: 'confirmar-lista' });
-  }catch(e){
-    if(errEl){ errEl.style.display='block'; errEl.textContent='Erro de conexão. Tente novamente.'; }
-    if(btn){ btn.disabled=false; btn.textContent='Entrar'; }
-  }
-};
-
-function renderMeusAgendamentos(emp){
-  applyAccent(emp.corPrincipal);
-  const cor = emp.corPrincipal || '#3d1f3a';
-  if(!_clienteSession){ goto({ empresa: emp.slug, page: 'confirmar' }); return; }
-  const { nome, agendamentos: ags } = _clienteSession;
-  const agora = new Date();
-  const hojeStr = isoData(agora);
-  const horaAgora = agora.getHours().toString().padStart(2,'0')+':'+agora.getMinutes().toString().padStart(2,'0');
-
-  const futuros = ags.filter(a => a.data > hojeStr || (a.data === hojeStr && a.hora > horaAgora));
-  const passados = ags.filter(a => a.data < hojeStr || (a.data === hojeStr && a.hora <= horaAgora));
-
-  const fmtData = iso => new Date(iso+"T00:00:00").toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'2-digit',year:'numeric'});
-
-  const cancelamentoHoras = emp.cancelamentoHoras || 0;
-
-  const renderAg = (a, podeInteragir) => {
-    const dataFmt = fmtData(a.data);
-    const limiteCancelMs = new Date(`${a.data}T${a.hora}:00`).getTime() - cancelamentoHoras*3600*1000;
-    const dentroPrazo = cancelamentoHoras > 0 && Date.now() < limiteCancelMs;
-    const status = a.status || 'nao_confirmado';
-    const statusCor = status==='confirmado' ? '#16a34a' : status==='cancelado' ? '#dc2626' : '#1a1a1a';
-    const statusLabel = status==='confirmado' ? 'Confirmado' : status==='cancelado' ? 'Cancelado' : 'Não confirmado';
-    const nomeStyle = status==='cancelado' ? 'text-decoration:line-through;' : '';
-    const cardOpacity = status==='cancelado' ? 'opacity:0.6;' : '';
-    const linkReagendar = 'https://' + emp.slug + '.agenplus.com.br/agendar';
-    const botoesHtml = podeInteragir && status==='nao_confirmado' ? `
-      <div style="display:flex;gap:8px;margin-top:12px;">
-        ${dentroPrazo ? `<button onclick="cancelarMeuAg('${a.id}','${emp.slug}')"
-          style="flex:1;height:36px;border-radius:9px;border:1.5px solid #e53935;background:#fff;color:#e53935;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;">
-          Cancelar</button>` : ''}
-        <button onclick="confirmarMeuAg('${a.id}','${emp.slug}')"
-          style="flex:1;height:36px;border-radius:9px;border:1.5px solid #22c55e;background:#f0fdf4;color:#16a34a;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;">
-          Confirmar</button>
-      </div>
-      ${cancelamentoHoras > 0 && !dentroPrazo ? `<div style="font-size:12px;color:#8e8e93;margin-top:8px;">Prazo de cancelamento encerrado.</div>` : ''}` :
-    podeInteragir && status==='cancelado' ? `
-      <div style="margin-top:12px;">
-        <a href="${escapeAttr(linkReagendar)}" target="_blank" rel="noopener noreferrer"
-          style="display:block;width:100%;height:36px;border-radius:9px;border:1.5px solid #3d1f3a;background:#fff;color:#3d1f3a;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;text-decoration:none;display:flex;align-items:center;justify-content:center;box-sizing:border-box;">
-          Reagendar</a>
-      </div>` : '';
-    return `
-      <div style="background:#fff;border:0.5px solid #e4e4e7;border-radius:14px;padding:16px;box-shadow:0 1px 6px rgba(0,0,0,0.07);margin-bottom:10px;box-shadow:0 1px 6px rgba(0,0,0,0.07);${cardOpacity}">
-        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">
-          <div style="font-size:16px;font-weight:700;color:#1a1a1a;margin-bottom:4px;${nomeStyle}">${escapeHtml(a.servico_nome||'Serviço')}</div>
-          <div style="font-size:12px;font-weight:600;color:${statusCor};white-space:nowrap;margin-top:2px;">${statusLabel}</div>
-        </div>
-        <div style="font-size:14px;color:#8e8e93;text-transform:capitalize;">${dataFmt} às ${a.hora}</div>
-        ${botoesHtml}
-      </div>`;
-  };
-
-  const futHtml = futuros.length
-    ? futuros.map(a=>renderAg(a,true)).join('')
-    : `<p class="muted" style="text-align:center;padding:16px 0;">Nenhum agendamento futuro.</p>`;
-
-  const pastHtml = passados.length
-    ? passados.map(a=>renderAg(a,false)).join('')
-    : '';
-
-  render(`
-    <div style="min-height:100vh;background:var(--paper);padding:0 0 40px;">
-      <div style="background:#fff;border-bottom:0.5px solid var(--line);padding:16px 20px;display:flex;align-items:center;gap:12px;">
-        <button onclick="goto({empresa:'${emp.slug}',page:'confirmar'})" style="background:none;border:none;font-size:20px;color:#555;cursor:pointer;padding:0;min-height:0;">&#8249;</button>
-        <div>
-          <div style="font-size:17px;font-weight:700;color:#1a1a1a;">Meus agendamentos</div>
-          <div style="font-size:13px;color:#8e8e93;">${escapeHtml(nome)}</div>
-        </div>
-      </div>
-      <div style="max-width:480px;margin:0 auto;padding:20px 16px 0;">
-        <div style="font-size:13px;font-weight:700;color:#8e8e93;letter-spacing:.05em;text-transform:uppercase;margin-bottom:10px;">Próximos</div>
-        ${futHtml}
-        ${passados.length ? `
-          <div style="font-size:13px;font-weight:700;color:#8e8e93;letter-spacing:.05em;text-transform:uppercase;margin:20px 0 10px;">Histórico</div>
-          ${pastHtml}` : ''}
-      </div>
-    </div>
-  `);
-}
-
-window.cancelarMeuAg = async (id, slug)=>{
-  if(!confirm('Cancelar este agendamento?')) return;
-  const resp = await fetch('/api/cliente-login', {
-    method:'PATCH',
-    headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({ agendamento_id: id, nome: _clienteSession?.nome, telefone: _clienteSession?.telefone, acao: 'cancelar' })
-  });
-  if(!resp.ok){ toast('Erro ao cancelar. Tente novamente.','err'); return; }
-  if(_clienteSession) { const a = _clienteSession.agendamentos.find(x=>x.id===id); if(a) a.status='cancelado'; }
-  const emp2 = empresas.find(e=>e.slug===slug);
-  if(emp2) renderMeusAgendamentos(emp2);
-  toast('Agendamento cancelado.','ok');
-};
-window.confirmarMeuAg = async (id, slug)=>{
-  const resp = await fetch('/api/cliente-login', {
-    method:'PATCH',
-    headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({ agendamento_id: id, nome: _clienteSession?.nome, telefone: _clienteSession?.telefone, acao: 'confirmar' })
-  });
-  if(!resp.ok){ toast('Erro ao confirmar. Tente novamente.','err'); return; }
-  if(_clienteSession) { const a = _clienteSession.agendamentos.find(x=>x.id===id); if(a) a.status='confirmado'; }
-  const emp2 = empresas.find(e=>e.slug===slug);
-  if(emp2) renderMeusAgendamentos(emp2);
-  toast('Agendamento confirmado.','ok');
-};
-
 window.loginComGoogle = async (slug)=>{
   if(slug) localStorage.setItem('ob_goto', JSON.stringify({ empresa: slug, page: 'gestao' }));
   const redirectTo = 'https://agenplus.com.br/app.html';
@@ -1542,9 +1358,7 @@ function renderGestao(empInicial){
   setFavicon(false);
   applyAccent('#1c1917');
   document.title = `Gestão — ${emp.nome}`;
-  dispensarPWA();
   let corner = 'dashboard'; // 'dashboard' | null=agendamentos | 'configurar' | 'personalizar' | 'financeiro'
-  let gestaoNavAberta = false;
   let diaSelecionado = null;
   let editandoId = null;
   let novoAgState = null;
@@ -1553,11 +1367,9 @@ function renderGestao(empInicial){
   let _inativoWaMenuId = null; // id do cliente inativo com dropdown WA aberto
 
   let personalizarDirty = false;
-  let mesHorario = mesKey(new Date());
   let novoBotaoState = null;
   let editandoBotaoId = null;
   let _removendoServicoIdx = null;
-  let _linkMenuAberto = false;
   let _editandoServicoIdx = null;
   let _novoServicoForm = false;
 
@@ -2548,7 +2360,6 @@ function renderGestao(empInicial){
     const horaAgora= agora.getHours().toString().padStart(2,'0')+':'+agora.getMinutes().toString().padStart(2,'0');
     const ags     = agendamentos.filter(a => a.slug === emp.slug);
     const agsHoje = ags.filter(a => a.data === hoje).sort((a,b)=>a.hora.localeCompare(b.hora));
-    const agHoje  = agsHoje.length;
 
     // Próximo atendimento (qualquer dia futuro)
     const agsFuturos = ags.filter(a => a.status !== 'cancelado' && (a.data > hoje || (a.data === hoje && a.hora >= horaAgora)))
@@ -3275,7 +3086,7 @@ function renderGestao(empInicial){
   window.setCorner = (c)=>{
     // Reset de estado comum
     corner=c; editandoId=null; novoAgState=null; configurarSub=null;
-    _removendoServicoIdx=null; _waMenuId=null; _gFinModal=null; _notaModal=null; _linkMenuAberto=false;
+    _removendoServicoIdx=null; _waMenuId=null; _gFinModal=null; _notaModal=null;
     _novoAgClienteId=null; _novoAgClienteBusca=''; _novoAgClienteResultados=[];
     _clientePerfilId=null; _clientePerfilEditando=false; _clienteModalNovo=false;
     draw();
@@ -3472,13 +3283,6 @@ function renderGestao(empInicial){
     emp.servicos.splice(i,1);
     draw();
   };
-  window.updServico = async (i,field,val)=>{
-    const s = emp.servicos[i];
-    const dbVal = (field==='duracao'||field==='preco') ? Number(val) : val;
-    s[field] = dbVal;
-    const { error } = await supabaseClient.from('servicos').update({ [field]: dbVal }).eq('id', s.id);
-    if(error) console.error('Erro ao atualizar serviço:', error);
-  };
 
   window.toggleWaMenu = (agId)=>{
     _waMenuId = _waMenuId === agId ? null : agId;
@@ -3588,13 +3392,12 @@ function renderGestao(empInicial){
     if(empObj){ empObj.msgConfirmacao = c.value; empObj.msgLembrete = l.value; if(i) empObj.msgInativo = i.value; }
     toast('Mensagens salvas!','ok');
   };
-  window.toggleLinkMenu = ()=>{ _linkMenuAberto = !_linkMenuAberto; draw(); };
   window.linkAcao = (acao)=>{
     const url = `https://${emp.slug}.agenplus.com.br`;
     if(acao==='abrir'){ window.open(url, '_blank'); }
     else if(acao==='copiar'){ navigator.clipboard.writeText(url).then(()=>toast('Link copiado!','ok')); }
     else if(acao==='compartilhar'){ if(navigator.share) navigator.share({ title: emp.nome, url }); else navigator.clipboard.writeText(url).then(()=>toast('Link copiado!','ok')); }
-    _linkMenuAberto = false; draw();
+    draw();
   };
   async function carregarClientes(){
     _clientesCarregando = true; draw();
@@ -3604,7 +3407,6 @@ function renderGestao(empInicial){
     _clientes = (data||[]).map(c=>({ id:c.id, nome:c.nome, telefone:c.telefone, ausenteEnviadoEm:c.ausente_enviado_em||null }));
     draw();
   }
-  window.filtrarClientes = (v)=>{ _clientesBusca=v; draw(); };
   window.filtrarClientesLive = (v)=>{
     _clientesBusca = v;
     const wrap = document.getElementById('clientesListaWrap');
@@ -3998,16 +3800,6 @@ function renderGestao(empInicial){
     draw();
   };
 
-  window.compartilharLink = async ()=>{
-    const url = `https://${emp.slug}.agenplus.com.br`;
-    if(navigator.share){
-      try{ await navigator.share({ title: emp.nome, url }); } catch(e){}
-    } else {
-      try{ await navigator.clipboard.writeText(url); toast('Link copiado!','ok'); }
-      catch(e){ prompt('Copie o link abaixo:', url); }
-    }
-  };
-
   draw();
   gFinCarregar();
   carregarNotas();
@@ -4131,7 +3923,6 @@ window.tentarCadastro = async ()=>{
 function renderLoginUnificado(){
   setFavicon(false);
   applyAccent('#1c1917');
-  mostrarBannerPWA();
   render(`
     <div style="min-height:100vh;background:#0A0A09;padding:16px 20px;">
       <div style="width:100%;max-width:400px;margin:0 auto;">
@@ -4266,14 +4057,10 @@ window.confirmarRedefinicaoSenha = async ()=>{
 };
 
 let editingSlug = null;
-let masterShowForm = false;
 let masterSearch = '';
 let masterAba = 'dashboard'; // 'dashboard' | 'empresas' | 'financeiro'
-let masterNavAberta = false;
 let _filtroEmpStatus = 'todos'; // 'todos' | 'ativa' | 'trial' | 'bloqueada'
 let financeiroData = []; // registros da tabela financeiro
-let _finForm = null; // { mode:'configurar'|'editar', empresaId, regId, valor, dia }
-let _filtroFin = 'todos';
 let _masterDetalheSlug = null; // slug da empresa aberta no detalhe
 let mensalidades = []; // historico de mensalidades por empresa
 let _finPeriodo = (()=>{ const n=new Date(); return {mes:n.getMonth(),ano:n.getFullYear()}; })();
@@ -4290,35 +4077,9 @@ async function carregarMensalidades(){
   if(!error && data) mensalidades = data;
 }
 
-function finStatusInfo(reg){
-  if(!reg) return { label:'Sem dados', cor:'#9e9e9e', bg:'#f5f5f5' };
-  const hoje = new Date();
-  const ano = hoje.getFullYear();
-  const mes = hoje.getMonth(); // 0-based
-  const diaHoje = hoje.getDate();
-  const dia = reg.dia_vencimento;
-  // Verificar se pagou no mês atual
-  if(reg.pago_em){
-    const mesStr = `${ano}-${String(mes+1).padStart(2,'0')}`;
-    if(reg.pago_em.slice(0,7) === mesStr){
-      return { label:'Pago', cor:'#2e7d32', bg:'#e8f5e9' };
-    }
-  }
-  // Vencido: já passou o dia de vencimento este mês e não pagou
-  if(diaHoje > dia){
-    return { label:'Vencido', cor:'#c62828', bg:'#ffebee' };
-  }
-  // A vencer: faltam 7 dias ou menos
-  if(dia - diaHoje <= 7){
-    return { label:`Vence em ${dia - diaHoje === 0 ? 'hoje' : (dia - diaHoje) + ' dia(s)'}`, cor:'#e65100', bg:'#fff3e0' };
-  }
-  return { label:'Em dia', cor:'#2e7d32', bg:'#e8f5e9' };
-}
-
 function renderMasterPanel(){
   applyAccent('#1c1917');
   document.title = 'Painel Master — Agen+';
-  mostrarBannerPWA();
 
   const M_ICO = {
     dashboard:   `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:100%;height:100%;"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>`,
@@ -4583,7 +4344,7 @@ function renderMasterPanel(){
     `);
   }
 
-  window.masterFecharDrawer = () => { masterDrawerMode = null; editingSlug = null; masterShowForm = false; draw(); };
+  window.masterFecharDrawer = () => { masterDrawerMode = null; editingSlug = null; draw(); };
   window.masterAbrirDrawer  = (mode) => { masterDrawerMode = mode; editingSlug = null; draw(); };
 
   function draw(){
@@ -5071,51 +4832,6 @@ function renderMasterPanel(){
     URL.revokeObjectURL(url);
   };
 
-  window.finCancelarForm = () => { _finForm = null; draw(); };
-  window.finConfigurar = (empresaId) => { _finForm = { mode:'configurar', empresaId, regId:null, valor:'', dia:'' }; draw(); };
-  window.finEditar = (empresaId, regId, valorAtual, diaAtual) => { _finForm = { mode:'editar', empresaId, regId, valor:valorAtual, dia:diaAtual }; draw(); };
-
-  window.finSalvarForm = async () => {
-    const valorEl = document.getElementById('finFormValor');
-    const diaEl   = document.getElementById('finFormDia');
-    const valor = parseFloat(valorEl?.value) || 0;
-    const diaNum = parseInt(diaEl?.value);
-    if(isNaN(diaNum) || diaNum < 1 || diaNum > 28){ toast('Dia inválido. Use um número entre 1 e 28.','err'); return; }
-    const form = _finForm;
-    _finForm = null;
-    if(form.mode === 'configurar'){
-      const { error } = await supabaseClient.from('financeiro').insert({ empresa_id: form.empresaId, valor, dia_vencimento: diaNum });
-      if(error){ toast('Erro ao salvar. Tente novamente.','err'); return; }
-    } else {
-      const { error } = await supabaseClient.from('financeiro').update({ valor, dia_vencimento: diaNum, updated_at: new Date().toISOString() }).eq('id', form.regId);
-      if(error){ toast('Erro ao salvar. Tente novamente.','err'); return; }
-    }
-    await carregarFinanceiro();
-    draw();
-  };
-
-  window.finMarcarPago = (regId) => {
-    if(!confirm("Confirmar pagamento recebido?")) return;
-    const _d = new Date();
-    const hoje = `${_d.getFullYear()}-${String(_d.getMonth()+1).padStart(2,'0')}-${String(_d.getDate()).padStart(2,'0')}`;
-    supabaseClient.from('financeiro').update({ pago_em: hoje, updated_at: new Date().toISOString() }).eq('id', regId)
-      .then(async ({ error }) => {
-        if(error){ toast('Erro ao registrar pagamento.','err'); return; }
-        await carregarFinanceiro();
-        draw();
-      });
-  };
-
-  window.masterSwatchCor = (c, viaInput=false) => {
-    if(!viaInput){
-      const inp = document.getElementById('novaCor');
-      if(inp) inp.value = c;
-    }
-    document.querySelectorAll('.master-cor-sw').forEach(el => {
-      el.style.borderColor = el.dataset.cor === c ? '#1a1a1a' : 'transparent';
-    });
-  };
-
   window.masterCriar = async ()=>{
     const nome  = document.getElementById('novoNome').value.trim();
     const email = document.getElementById('novoEmail').value.trim();
@@ -5150,7 +4866,7 @@ function renderMasterPanel(){
     if(!empCriada?.id){
       empresas = empresas.filter(e=>e.slug!==s2);
       toast('Não foi possível criar a empresa. Verifique sua conexão e tente novamente.','err',6000);
-      masterShowForm = false; masterDrawerMode = null; draw(); return;
+      masterDrawerMode = null; draw(); return;
     }
 
     // 2. Cria o usuário gestor via API segura
@@ -5175,7 +4891,7 @@ function renderMasterPanel(){
       toast('Empresa criada, mas não foi possível contatar a API. Crie o usuário manualmente no Supabase.','err',8000);
     }
 
-    masterShowForm = false; masterDrawerMode = null;
+    masterDrawerMode = null;
     if(apiOk){
       toast(`"${nome}" criada! Gestor: ${email}. Compartilhe a senha por canal seguro.`,'ok',8000);
     }
@@ -5261,10 +4977,6 @@ function renderMasterPanel(){
     toast('Alteracoes salvas!','ok');
     editingSlug = null; masterDrawerMode = null; draw();
   };
-  window.masterUpd = async (field,val)=>{
-    const e = empresas.find(x=>x.slug===editingSlug);
-    e[field] = val; await saveEmpresas();
-  };
   window.masterSalvarEmail = async ()=>{
     const e = empresas.find(x=>x.slug===editingSlug);
     if(!e){ toast('Empresa não encontrada.','err'); return; }
@@ -5285,21 +4997,6 @@ function renderMasterPanel(){
     e.gestorEmail = novoEmail;
     toast('E-mail atualizado com sucesso!','ok');
     draw();
-  };
-  window.masterToggleBloqueio = async ()=>{
-    const e = empresas.find(x=>x.slug===editingSlug);
-    if(e.status === 'bloqueada'){
-      e.status = 'ativa'; e.bloqueada = false;
-    } else {
-      e.status = 'bloqueada'; e.bloqueada = true;
-    }
-    await saveEmpresas(); draw();
-  };
-  window.masterAtivarEmpresa = async (slug)=>{
-    const e = empresas.find(x=>x.slug===slug);
-    if(!e) return;
-    e.status = 'ativa'; e.bloqueada = false;
-    await saveEmpresas(); draw();
   };
   window.masterToggleEmpStatus = async (slug)=>{
     const e = empresas.find(x=>x.slug===slug);
@@ -5337,7 +5034,7 @@ function renderMasterPanel(){
 function _limparEstado(){
   empresas = []; agendamentos = []; loaded = false;
   editingSlug = null; masterSearch = ''; masterAba = 'dashboard'; _filtroEmpStatus = 'todos';
-  financeiroData = []; _finForm = null; _filtroFin = 'todos';
+  financeiroData = [];
   _masterDetalheSlug = null; mensalidades = []; _finEmpFiltro = ''; _finEmpExpandido = null;
   _finPeriodo = (()=>{ const n=new Date(); return {mes:n.getMonth(),ano:n.getFullYear()}; })();
   // gestão financeiro — resetado pelo closure de gestaoApp, mas zeramos referências globais por segurança
