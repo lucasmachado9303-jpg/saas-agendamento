@@ -147,10 +147,17 @@ nav{
 .hero-cta-row{display:flex;flex-direction:column;align-items:flex-start;gap:14px;}
 .risk-copy{font-size:13px;color:var(--muted);letter-spacing:0.01em;}
 
-/* PHONE MOCKUP */
+/* HERO IMAGE */
 .phone-wrap{
   display:flex;justify-content:center;align-items:center;
   animation:heroUp 0.9s cubic-bezier(0.22,1,0.36,1) 0.15s both;
+}
+.hero-img{
+  width:100%;
+  max-width:520px;
+  height:auto;
+  display:block;
+  border-radius:16px;
 }
 .phone-frame{
   position:relative;
@@ -579,18 +586,7 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
       </div>
     </div>
     <div class="phone-wrap">
-      <div class="phone-frame">
-        <div class="phone" id="phoneMockup">
-          <div class="phone-notch"></div>
-          <div class="phone-screen">
-            <div class="phone-slide active" id="slide-0"><img src="/assets/imagens/passo-1-inicio.jpg" alt="Tela inicial da página de agendamento"/></div>
-            <div class="phone-slide" id="slide-1"><img src="/assets/imagens/passo-2-servico.jpg" alt="Escolha do serviço"/></div>
-            <div class="phone-slide" id="slide-2"><img src="/assets/imagens/passo-3-horario.jpg" alt="Escolha do horário disponível"/></div>
-            <div class="phone-slide" id="slide-3"><img src="/assets/imagens/passo-4-dados.jpg" alt="Preenchimento dos dados do cliente"/></div>
-            <div class="phone-slide" id="slide-4"><img src="/assets/imagens/passo-5-confirmacao.jpg" alt="Confirmação do agendamento"/></div>
-          </div>
-        </div>
-      </div>
+      <img src="/mockuphero.png" alt="Painel de agendamento agen+" class="hero-img"/>
     </div>
   </div>
 </section>
