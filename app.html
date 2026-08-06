@@ -8,7 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css">
 <link rel="manifest" href="/manifest.json">
-<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="icon" id="favicon" href="data:,">
 <meta name="theme-color" content="#ffffff">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1539,6 +1539,7 @@ function renderGestao(empInicial){
   // 'let' porque o polling recria os objetos de empresa a cada 30s
   // e precisamos trocar a referência, senão a tela congela nos dados antigos.
   let emp = empInicial;
+  setFavicon(false);
   applyAccent('#1c1917');
   document.title = `Gestão — ${emp.nome}`;
   dispensarPWA();
@@ -4009,8 +4010,14 @@ function renderGestao(empInicial){
 }
 
 // ---------- PAINEL MASTER ----------
+function setFavicon(show){
+  const el = document.getElementById('favicon');
+  if(el) el.href = show ? '/favicon.png' : 'data:,';
+}
+
 function renderMaster(){
   if(currentProfile?.role !== 'master'){ renderLoginUnificado(); return; }
+  setFavicon(true);
   renderMasterPanel();
 }
 
@@ -4109,6 +4116,7 @@ window.tentarCadastro = async ()=>{
 };
 
 function renderLoginUnificado(){
+  setFavicon(false);
   applyAccent('#1c1917');
   mostrarBannerPWA();
   render(`
@@ -5429,7 +5437,7 @@ function linkSeguro(url){
   return /^(https?:|tel:|mailto:)/i.test(u) ? u : '#';
 }
 function checkCapsLock(e, id){ const el=document.getElementById(id); if(el) el.style.display=e.getModifierState('CapsLock')?'flex':'none'; }
-function applyAccent(cor){ document.documentElement.style.setProperty('--accent', cor || '#3d1f3a'); }
+function applyAccent(cor){ document.documentElement.style.setProperty('--accent', cor || '#3d1f3a'); setFavicon(false); }
 
 init();
 </script>
