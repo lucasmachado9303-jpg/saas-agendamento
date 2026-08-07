@@ -331,7 +331,7 @@ async function loadData(){
       if(emp) emp.botoes.push({
         id: b.id, nome: b.nome, tipo: b.tipo, link: b.link,
         icone: b.icone || '', ordem: b.ordem, ativo: b.ativo,
-        abrirNovaAba: b.abrir_nova_aba
+        abrirNovaAba: b.abrir_nova_aba, cor: b.cor || ''
       });
     });
     empresas.forEach(e => e.botoes.sort((a, b) => a.ordem - b.ordem));
@@ -754,8 +754,12 @@ function renderHome(emp){
 
   const botoesHtml = botoesAtivos.map(b => {
     const target = b.abrirNovaAba ? 'target="_blank" rel="noopener noreferrer"' : '';
+    const usarCor = emp.tipo === 'pagina' && b.cor;
+    const btnStyle = usarCor
+      ? `background:${b.cor};border:none;color:#fff;`
+      : `background:#fff;border:1.5px solid var(--line);color:var(--ink);`;
     return `<a href="${escapeAttr(linkSeguro(b.link))}" ${target} style="text-decoration:none;display:block;width:100%;max-width:240px;margin:0 auto 10px;">
-      <div style="background:#fff;border:1.5px solid var(--line);border-radius:14px;padding:14px 20px;font-size:15px;font-weight:600;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,0.06);color:var(--ink);display:flex;align-items:center;justify-content:center;gap:8px;">
+      <div style="${btnStyle}border-radius:14px;padding:14px 20px;font-size:15px;font-weight:600;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,0.06);display:flex;align-items:center;justify-content:center;gap:8px;">
         ${b.icone ? `<span style="font-size:18px;">${escapeHtml(b.icone)}</span>` : ''}${escapeHtml(b.nome)}
       </div>
     </a>`;
@@ -2149,10 +2153,11 @@ function renderGestao(empInicial){
       site:         { label:'Link',    desc:'Cole o link do seu site, caso tenha', ph:'https://seusite.com.br' },
       personalizado:{ label:'Link',    desc:'Cole o link do botão', ph:'https://...' },
     };
-    const mkBotaoModal = (titulo, tipoSel, valorLink, tipoIdEl, linkIdEl, hintIdEl, onCancelar, onSalvar, salvarLabel, valorNome='') => {
+    const mkBotaoModal = (titulo, tipoSel, valorLink, tipoIdEl, linkIdEl, hintIdEl, onCancelar, onSalvar, salvarLabel, valorNome='', valorCor='') => {
       const bi = BINFO[tipoSel] || BINFO.whatsapp;
       const isWa = tipoSel === 'whatsapp';
       const isCustom = tipoSel === 'personalizado';
+      const isPagina = emp.tipo === 'pagina';
       return `<div style="position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9000;display:flex;align-items:flex-end;justify-content:center;" onclick="if(event.target===this){${onCancelar}}">
         <div style="background:#fff;border-radius:18px 18px 0 0;padding:28px 24px 40px;width:100%;max-width:520px;">
           <h3 style="font-family:inherit;font-weight:700;font-size:18px;margin:0 0 20px;">${titulo}</h3>
@@ -2175,6 +2180,13 @@ function renderGestao(empInicial){
             <input id="${linkIdEl}" value="${escapeAttr(valorLink)}" placeholder="${bi.ph}" ${isWa?'type="tel" inputmode="numeric" maxlength="16" oninput="maskTel(this)"':'type="text" maxlength="500"'}/>
             <div id="${hintIdEl}" style="font-size:12px;color:var(--danger);margin-top:6px;display:none;">Número inválido. Ex: (11) 98765-4321</div>
           </div>
+          ${isPagina ? `<div class="field" style="margin-top:4px;">
+            <label>Cor do botão</label>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <input type="color" id="${tipoIdEl}CorEl" value="${valorCor||'#3d1f3a'}" style="width:44px;height:44px;border:0.5px solid #e4e4e7;border-radius:10px;padding:2px;cursor:pointer;background:none;"/>
+              <span style="font-size:13px;color:#8e8e93;">Escolha a cor do fundo do botão</span>
+            </div>
+          </div>` : ''}
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px;">
             <button class="btn ghost" onclick="${onCancelar}">Cancelar</button>
             <button class="btn" onclick="${onSalvar}">${salvarLabel}</button>
@@ -2185,7 +2197,7 @@ function renderGestao(empInicial){
     const formNovoBotao = novoBotaoState !== null
       ? mkBotaoModal('Novo botão', 'whatsapp', '', 'bTipo', 'bLink', 'bLinkHint', 'cancelarNovoBotao()', 'salvarNovoBotao()', 'Adicionar')
       : editandoBotaoId !== null ? (()=>{ const eb = emp.botoes.find(x=>x.id===editandoBotaoId)||{tipo:'whatsapp'};
-          return mkBotaoModal('Editar botão', eb.tipo||'whatsapp', eb.tipo==='whatsapp'?fmtTelStr(eb.link):eb.link||'', 'ebTipo', 'ebLink', 'ebLinkHint', 'cancelarEdicaoBotao()', `salvarEdicaoBotao('${editandoBotaoId}')`, 'Salvar', eb.tipo==='personalizado'?eb.nome:'');
+          return mkBotaoModal('Editar botão', eb.tipo||'whatsapp', eb.tipo==='whatsapp'?fmtTelStr(eb.link):eb.link||'', 'ebTipo', 'ebLink', 'ebLinkHint', 'cancelarEdicaoBotao()', `salvarEdicaoBotao('${editandoBotaoId}')`, 'Salvar', eb.tipo==='personalizado'?eb.nome:'', eb.cor||'');
         })()
       : `<button onclick="iniciarNovoBotao()" style="width:100%;margin-top:14px;padding:14px;border:2px dashed #bbb;border-radius:12px;background:none;font-size:14px;font-weight:600;color:#888;cursor:pointer;letter-spacing:.01em;">+ Adicionar botão</button>`;
 
@@ -3797,11 +3809,12 @@ function renderGestao(empInicial){
       toast('O link deve começar com https://, http://, tel: ou mailto:','err'); return;
     }
     const existingB = emp.botoes.find(x=>x.id===id);
+    const corBotao = emp.tipo === 'pagina' ? (document.getElementById('ebTipoCorEl')?.value || '') : '';
     const { error } = await supabaseClient.from('botoes_empresa').update({
-      nome, tipo, link, icone: '', abrir_nova_aba: true
+      nome, tipo, link, icone: '', abrir_nova_aba: true, cor: corBotao || null
     }).eq('id', id);
     if(error){ toast('Erro ao salvar. Tente novamente.','err'); return; }
-    Object.assign(existingB, { nome, tipo, link, icone: '', abrirNovaAba: true });
+    Object.assign(existingB, { nome, tipo, link, icone: '', abrirNovaAba: true, cor: corBotao });
     editandoBotaoId = null;
     draw();
   };
@@ -3826,17 +3839,19 @@ function renderGestao(empInicial){
       toast('O link deve começar com https://, http://, tel: ou mailto:','err'); return;
     }
     const ordemMax = emp.botoes.length > 0 ? Math.max(...emp.botoes.map(b=>b.ordem)) + 1 : 0;
+    const corBotao = emp.tipo === 'pagina' ? (document.getElementById('bTipoCorEl')?.value || '') : '';
     const { data: row, error } = await supabaseClient.from('botoes_empresa').insert({
       empresa_id:    emp.id,
       nome, tipo, link,
       icone:         '',
       ordem:         ordemMax,
       ativo:         true,
-      abrir_nova_aba: true
+      abrir_nova_aba: true,
+      cor:           corBotao || null
     }).select().single();
     if(error){ console.error('Erro ao adicionar botão:', error); toast('Erro ao salvar. Tente novamente.','err'); return; }
     emp.botoes.push({ id:row.id, nome:row.nome, tipo:row.tipo, link:row.link,
-      icone:row.icone, ordem:row.ordem, ativo:row.ativo, abrirNovaAba:row.abrir_nova_aba });
+      icone:row.icone, ordem:row.ordem, ativo:row.ativo, abrirNovaAba:row.abrir_nova_aba, cor:row.cor||'' });
     emp.botoes.sort((a,b)=>a.ordem-b.ordem);
     novoBotaoState = null;
     draw();
