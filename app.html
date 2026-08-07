@@ -798,12 +798,12 @@ function renderHome(emp){
       </div>
 
       <!-- Rodapé -->
-      <div style="text-align:center;padding:16px 20px calc(16px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--line);margin-top:24px;">
+      ${emp.tipo !== 'pagina' ? `<div style="text-align:center;padding:16px 20px calc(16px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--line);margin-top:24px;">
         <button class="icon-btn" onclick="goto({empresa:'${emp.slug}', page:'gestao'})"
           style="font-size:12px;color:var(--ink-soft);opacity:0.7;letter-spacing:.04em;text-decoration:none;">
           Gestor
         </button>
-      </div>
+      </div>` : ''}
 
     </div>
   `);
@@ -2190,9 +2190,10 @@ function renderGestao(empInicial){
       : `<button onclick="iniciarNovoBotao()" style="width:100%;margin-top:14px;padding:14px;border:2px dashed #bbb;border-radius:12px;background:none;font-size:14px;font-weight:600;color:#888;cursor:pointer;letter-spacing:.01em;">+ Adicionar botão</button>`;
 
     const hsl = hexToHsl(cor);
-    const corH = hsl[0], corL = hsl[2];
+    const corH = hsl[0], corS = hsl[1], corL = hsl[2];
     const hueGrad = 'linear-gradient(to right,hsl(0,70%,45%),hsl(30,70%,45%),hsl(60,70%,45%),hsl(90,70%,45%),hsl(120,70%,45%),hsl(150,70%,45%),hsl(180,70%,45%),hsl(210,70%,45%),hsl(240,70%,45%),hsl(270,70%,45%),hsl(300,70%,45%),hsl(330,70%,45%),hsl(360,70%,45%))';
-    const lightGrad = 'linear-gradient(to right,hsl('+corH+',70%,15%),hsl('+corH+',70%,50%),hsl('+corH+',70%,85%))';
+    const satGrad  = 'linear-gradient(to right,hsl('+corH+',0%,50%),hsl('+corH+',100%,45%))';
+    const lightGrad = 'linear-gradient(to right,hsl('+corH+','+corS+'%,5%),hsl('+corH+','+corS+'%,50%),hsl('+corH+','+corS+'%,95%))';
     const corSliderHtml = '<div style="background:#fff;border:0.5px solid #e4e4e7;border-radius:14px;padding:16px;box-shadow:0 1px 6px rgba(0,0,0,0.07);">'
       + '<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">'
       + '<div id="pCorPreview" style="width:44px;height:44px;border-radius:12px;background:'+cor+';flex-shrink:0;border:0.5px solid rgba(0,0,0,0.1);"></div>'
@@ -2200,8 +2201,10 @@ function renderGestao(empInicial){
       + '<div style="font-size:12px;color:#8e8e93;margin-top:2px;">Usada nos botões e destaques</div></div></div>'
       + '<div style="margin-bottom:14px;"><div style="font-size:12px;font-weight:600;color:#8e8e93;margin-bottom:8px;">Tom</div>'
       + '<input type="range" class="cor-slider" id="pCorHue" min="0" max="360" value="'+corH+'" style="background:'+hueGrad+';" oninput="atualizarCorPersonalizar()"/></div>'
+      + '<div style="margin-bottom:14px;"><div style="font-size:12px;font-weight:600;color:#8e8e93;margin-bottom:8px;">Saturação</div>'
+      + '<input type="range" class="cor-slider" id="pCorSat" min="0" max="100" value="'+corS+'" style="background:'+satGrad+';" oninput="atualizarCorPersonalizar()"/></div>'
       + '<div><div style="font-size:12px;font-weight:600;color:#8e8e93;margin-bottom:8px;">Claridade</div>'
-      + '<input type="range" class="cor-slider" id="pCorLight" min="15" max="75" value="'+corL+'" style="background:'+lightGrad+';" oninput="atualizarCorPersonalizar()"/></div>'
+      + '<input type="range" class="cor-slider" id="pCorLight" min="5" max="95" value="'+corL+'" style="background:'+lightGrad+';" oninput="atualizarCorPersonalizar()"/></div>'
       + '<input type="hidden" id="pCor" value="'+escapeAttr(cor)+'"/>'
       + '</div>';
 
@@ -3618,17 +3621,20 @@ function renderGestao(empInicial){
   window.configurarIr = (sub)=>{ configurarSub=sub; personalizarDirty=false; _removendoServicoIdx=null; draw(); };
   window.irParaHorarios = ()=>{ corner='configurar'; configurarSub='horarios'; draw(); };
   window.atualizarCorPersonalizar = ()=>{
-    const hue = parseInt(document.getElementById('pCorHue')?.value || 0);
+    const hue   = parseInt(document.getElementById('pCorHue')?.value   || 0);
+    const sat   = parseInt(document.getElementById('pCorSat')?.value   || 70);
     const light = parseInt(document.getElementById('pCorLight')?.value || 45);
-    const cor = hslToHex(hue, 70, light);
-    const preview = document.getElementById('pCorPreview');
-    const hexEl = document.getElementById('pCorHex');
-    const hidden = document.getElementById('pCor');
-    const lightSlider = document.getElementById('pCorLight');
+    const cor = hslToHex(hue, sat, light);
+    const preview    = document.getElementById('pCorPreview');
+    const hexEl      = document.getElementById('pCorHex');
+    const hidden     = document.getElementById('pCor');
+    const satSlider  = document.getElementById('pCorSat');
+    const lightSlider= document.getElementById('pCorLight');
     if(preview) preview.style.background = cor;
-    if(hexEl) hexEl.textContent = cor;
-    if(hidden) hidden.value = cor;
-    if(lightSlider) lightSlider.style.background = 'linear-gradient(to right,hsl('+hue+',70%,15%),hsl('+hue+',70%,50%),hsl('+hue+',70%,85%))';
+    if(hexEl)   hexEl.textContent = cor;
+    if(hidden)  hidden.value = cor;
+    if(satSlider)   satSlider.style.background   = 'linear-gradient(to right,hsl('+hue+',0%,50%),hsl('+hue+',100%,45%))';
+    if(lightSlider) lightSlider.style.background = 'linear-gradient(to right,hsl('+hue+','+sat+'%,5%),hsl('+hue+','+sat+'%,50%),hsl('+hue+','+sat+'%,95%))';
     marcarPersonalizarDirty();
   };
   window.salvarSlugEmpresa = async ()=>{
