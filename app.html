@@ -2195,16 +2195,20 @@ function renderGestao(empInicial){
     const satGrad  = 'linear-gradient(to right,hsl('+corH+',0%,50%),hsl('+corH+',100%,45%))';
     const lightGrad = 'linear-gradient(to right,hsl('+corH+','+corS+'%,5%),hsl('+corH+','+corS+'%,50%),hsl('+corH+','+corS+'%,95%))';
     const corSliderHtml = '<div style="background:#fff;border:0.5px solid #e4e4e7;border-radius:14px;padding:16px;box-shadow:0 1px 6px rgba(0,0,0,0.07);">'
-      + '<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">'
+      + '<div style="display:flex;align-items:center;gap:12px;cursor:pointer;" onclick="toggleCorPicker()">'
       + '<div id="pCorPreview" style="width:44px;height:44px;border-radius:12px;background:'+cor+';flex-shrink:0;border:0.5px solid rgba(0,0,0,0.1);"></div>'
-      + '<div><div style="font-size:15px;font-weight:600;color:#1a1a1a;" id="pCorHex">'+cor+'</div>'
-      + '<div style="font-size:12px;color:#8e8e93;margin-top:2px;">Usada nos botões e destaques</div></div></div>'
+      + '<div style="flex:1;"><div style="font-size:15px;font-weight:600;color:#1a1a1a;" id="pCorHex">'+cor+'</div>'
+      + '<div style="font-size:12px;color:#8e8e93;margin-top:2px;">Toque para alterar a cor</div></div>'
+      + '<div id="pCorChevron" style="font-size:18px;color:#8e8e93;transition:transform .2s;">&#8964;</div>'
+      + '</div>'
+      + '<div id="pCorSliders" style="display:none;margin-top:16px;">'
       + '<div style="margin-bottom:14px;"><div style="font-size:12px;font-weight:600;color:#8e8e93;margin-bottom:8px;">Tom</div>'
       + '<input type="range" class="cor-slider" id="pCorHue" min="0" max="360" value="'+corH+'" style="background:'+hueGrad+';" oninput="atualizarCorPersonalizar()"/></div>'
       + '<div style="margin-bottom:14px;"><div style="font-size:12px;font-weight:600;color:#8e8e93;margin-bottom:8px;">Saturação</div>'
       + '<input type="range" class="cor-slider" id="pCorSat" min="0" max="100" value="'+corS+'" style="background:'+satGrad+';" oninput="atualizarCorPersonalizar()"/></div>'
       + '<div><div style="font-size:12px;font-weight:600;color:#8e8e93;margin-bottom:8px;">Claridade</div>'
       + '<input type="range" class="cor-slider" id="pCorLight" min="5" max="95" value="'+corL+'" style="background:'+lightGrad+';" oninput="atualizarCorPersonalizar()"/></div>'
+      + '</div>'
       + '<input type="hidden" id="pCor" value="'+escapeAttr(cor)+'"/>'
       + '</div>';
 
@@ -3620,6 +3624,14 @@ function renderGestao(empInicial){
 
   window.configurarIr = (sub)=>{ configurarSub=sub; personalizarDirty=false; _removendoServicoIdx=null; draw(); };
   window.irParaHorarios = ()=>{ corner='configurar'; configurarSub='horarios'; draw(); };
+  window.toggleCorPicker = ()=>{
+    const sliders  = document.getElementById('pCorSliders');
+    const chevron  = document.getElementById('pCorChevron');
+    if(!sliders) return;
+    const aberto = sliders.style.display !== 'none';
+    sliders.style.display  = aberto ? 'none' : 'block';
+    if(chevron) chevron.style.transform = aberto ? '' : 'rotate(180deg)';
+  };
   window.atualizarCorPersonalizar = ()=>{
     const hue   = parseInt(document.getElementById('pCorHue')?.value   || 0);
     const sat   = parseInt(document.getElementById('pCorSat')?.value   || 70);
