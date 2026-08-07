@@ -3107,28 +3107,23 @@ function renderGestao(empInicial){
     _removendoServicoIdx=null; _waMenuId=null; _gFinModal=null; _notaModal=null;
     _novoAgClienteId=null; _novoAgClienteBusca=''; _novoAgClienteResultados=[];
     _clientePerfilId=null; _clientePerfilEditando=false; _clienteModalNovo=false;
-    draw();
-
-    // Recarrega dados e executa ação específica da aba
-    loadData().then(()=>{
-      const a = empresas.find(e=>e.slug===emp.slug); if(a) emp=a;
-      if(c==='financeiro'){
-        _gFinData = isoData(new Date()); _gFinPeriodo='dia'; _gFinLancamentos=[]; _gFinModal=null;
-        draw(); gFinCarregar();
-      } else if(c==='dashboard'){
-        draw();
-        if(!_gFinLancamentos.length) gFinCarregar();
-        carregarNotas();
-      } else if(c==='relatorios'){
-        _relAba=null; _relMes = isoData(new Date()).slice(0,7);
-        draw();
-        if(!_gFinLancamentos.length) gFinCarregar();
-      } else if(c==='clientes'){
-        carregarClientes();
-      } else {
-        draw();
-      }
-    });
+    // Executa ação específica da aba sem recarregar todos os dados
+    if(c==='financeiro'){
+      _gFinData = isoData(new Date()); _gFinPeriodo='dia'; _gFinLancamentos=[]; _gFinModal=null;
+      draw(); gFinCarregar();
+    } else if(c==='dashboard'){
+      draw();
+      if(!_gFinLancamentos.length) gFinCarregar();
+      carregarNotas();
+    } else if(c==='relatorios'){
+      _relAba=null; _relMes = isoData(new Date()).slice(0,7);
+      draw();
+      if(!_gFinLancamentos.length) gFinCarregar();
+    } else if(c==='clientes'){
+      draw(); carregarClientes();
+    } else {
+      draw();
+    }
   };
   window.selecionarDiaGestao = (iso)=>{
     if(!iso || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return;
