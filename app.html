@@ -2215,7 +2215,7 @@ function renderGestao(empInicial){
       ${slugHtml}
       <div class="field"><label>Descrição curta</label><textarea id="pDescricao" rows="2" style="resize:vertical;min-height:80px;" oninput="marcarPersonalizarDirty()">${escapeHtml(emp.descricao||'')}</textarea></div>
       <div class="field"><label>Texto de destaque</label><input id="pTextoDestaque" value="${escapeAttr(emp.textoDestaque||'')}" placeholder="Ex: Atendimento premium" oninput="marcarPersonalizarDirty()"/></div>
-      <div class="field"><label>Texto do botao de agendamento</label><input id="pTextoAgendar" value="${escapeAttr(emp.textoAgendar||'')}" placeholder="Agendar horário" oninput="marcarPersonalizarDirty()"/></div>
+      ${emp.tipo !== 'pagina' ? `<div class="field"><label>Texto do botao de agendamento</label><input id="pTextoAgendar" value="${escapeAttr(emp.textoAgendar||'')}" placeholder="Agendar horário" oninput="marcarPersonalizarDirty()"/></div>` : '<input type="hidden" id="pTextoAgendar" value=""/>'}
       <div class="field">
         <label>Logo</label>
         ${emp.logo ? `<img src="${escapeAttr(emp.logo)}" style="width:90px;height:90px;object-fit:cover;border-radius:50%;display:block;margin-bottom:10px;border:2px solid var(--line);"/>` : `<div style="width:90px;height:90px;border-radius:50%;background:#f0f0f0;display:flex;align-items:center;justify-content:center;margin-bottom:10px;color:#999999;font-size:13px;text-align:center;">Sem logo</div>`}
@@ -3089,7 +3089,7 @@ function renderGestao(empInicial){
     const exitIco   = isMaster ? G_ICO.voltar : G_ICO.sair;
 
     const navFiltrado = emp.tipo === 'pagina'
-      ? GESTAO_NAV.filter(n => n.id === 'configurar' || n.id === 'financeiro')
+      ? GESTAO_NAV.filter(n => n.id === 'configurar')
       : GESTAO_NAV;
     const navItems = navFiltrado.map(n => `
       <button class="g-bn-item ${corner===n.id?'active':''}" onclick="setCorner(${n.id===null?'null':`'${n.id}'`})">
