@@ -91,7 +91,7 @@ module.exports = async function handler(req, res) {
     },
     body: JSON.stringify({
       id: newUser.id, nome: nome_empresa.trim(), email,
-      role: 'owner_empresa', empresa_id: empCriada.id, status: 'ativo'
+      role: 'owner_empresa', empresa_id: empCriada.id, status: 'trial'
     })
   });
   if (!profilePost.ok) {
