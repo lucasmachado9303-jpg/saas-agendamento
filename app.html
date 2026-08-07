@@ -1486,7 +1486,6 @@ function renderGestao(empInicial){
         };
         if(ag){
           parts.push(cardAgendamento(ag));
-          cancelados.forEach(c=>parts.push(cardAgendamento(c)));
           continue;
         }
         if(bloqueado){
@@ -1494,7 +1493,6 @@ function renderGestao(empInicial){
             <span style="font-weight:700;font-size:13px;color:#e53935;">${h} — Bloqueado</span>
             <button style="font-family:inherit;height:24px;border-radius:5px;border:0.5px solid #ccc;background:#fff;color:#555;font-size:10px;font-weight:600;cursor:pointer;" onclick="desbloquearHorario('${diaSelecionado}','${h}')">Desbloquear</button>
           </div>`);
-          cancelados.forEach(c=>parts.push(cardAgendamento(c)));
           continue;
         }
         if(novoAgState && novoAgState.data===diaSelecionado && novoAgState.hora===h){
