@@ -238,7 +238,7 @@ let modoRecuperacao  = false;   // true quando o usuário chega pelo link de red
 
 const LABEL_POR_TIPO = {
   whatsapp: 'WhatsApp', instagram: 'Instagram',
-  maps: 'Google Maps', site: 'Site'
+  maps: 'Google Maps', site: 'Site', personalizado: 'Personalizado'
 };
 
 let empresas = [];
@@ -2143,14 +2143,16 @@ function renderGestao(empInicial){
     `).join('')}</div>` : `<p class="muted" style="text-align:center;padding:16px 0;">Nenhum botão cadastrado ainda.</p>`;
 
     const BINFO = {
-      whatsapp: { label:'Número',  desc:'Digite o número com DDD', ph:'(xx) xxxxx-xxxx' },
-      instagram:{ label:'Link',    desc:'Cole aqui o link do seu Instagram', ph:'https://instagram.com/seuusuario' },
-      maps:     { label:'Link',    desc:'Pesquise seu endereço no Google Maps e cole o link aqui', ph:'https://maps.app.goo.gl/...' },
-      site:     { label:'Link',    desc:'Cole o link do seu site, caso tenha', ph:'https://seusite.com.br' },
+      whatsapp:     { label:'Número',  desc:'Digite o número com DDD', ph:'(xx) xxxxx-xxxx' },
+      instagram:    { label:'Link',    desc:'Cole aqui o link do seu Instagram', ph:'https://instagram.com/seuusuario' },
+      maps:         { label:'Link',    desc:'Pesquise seu endereço no Google Maps e cole o link aqui', ph:'https://maps.app.goo.gl/...' },
+      site:         { label:'Link',    desc:'Cole o link do seu site, caso tenha', ph:'https://seusite.com.br' },
+      personalizado:{ label:'Link',    desc:'Cole o link do botão', ph:'https://...' },
     };
-    const mkBotaoModal = (titulo, tipoSel, valorLink, tipoIdEl, linkIdEl, hintIdEl, onCancelar, onSalvar, salvarLabel) => {
+    const mkBotaoModal = (titulo, tipoSel, valorLink, tipoIdEl, linkIdEl, hintIdEl, onCancelar, onSalvar, salvarLabel, valorNome='') => {
       const bi = BINFO[tipoSel] || BINFO.whatsapp;
       const isWa = tipoSel === 'whatsapp';
+      const isCustom = tipoSel === 'personalizado';
       return `<div style="position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9000;display:flex;align-items:flex-end;justify-content:center;" onclick="if(event.target===this){${onCancelar}}">
         <div style="background:#fff;border-radius:18px 18px 0 0;padding:28px 24px 40px;width:100%;max-width:520px;">
           <h3 style="font-family:inherit;font-weight:700;font-size:18px;margin:0 0 20px;">${titulo}</h3>
@@ -2160,7 +2162,12 @@ function renderGestao(empInicial){
               <option value="instagram" ${tipoSel==='instagram'?'selected':''}>Instagram</option>
               <option value="maps" ${tipoSel==='maps'?'selected':''}>Google Maps</option>
               <option value="site" ${tipoSel==='site'?'selected':''}>Site</option>
+              <option value="personalizado" ${isCustom?'selected':''}>Personalizado</option>
             </select>
+          </div>
+          <div class="field" id="${tipoIdEl}NomeWrap" style="display:${isCustom?'block':'none'};">
+            <label>Nome do botao</label>
+            <input id="${tipoIdEl}NomeEl" value="${escapeAttr(valorNome)}" placeholder="Ex: Cardapio, TikTok, Portfólio..." maxlength="50"/>
           </div>
           <div class="field">
             <label id="${tipoIdEl}LabelEl">${bi.label}</label>
@@ -2178,7 +2185,7 @@ function renderGestao(empInicial){
     const formNovoBotao = novoBotaoState !== null
       ? mkBotaoModal('Novo botão', 'whatsapp', '', 'bTipo', 'bLink', 'bLinkHint', 'cancelarNovoBotao()', 'salvarNovoBotao()', 'Adicionar')
       : editandoBotaoId !== null ? (()=>{ const eb = emp.botoes.find(x=>x.id===editandoBotaoId)||{tipo:'whatsapp'};
-          return mkBotaoModal('Editar botão', eb.tipo||'whatsapp', eb.tipo==='whatsapp'?fmtTelStr(eb.link):eb.link||'', 'ebTipo', 'ebLink', 'ebLinkHint', 'cancelarEdicaoBotao()', `salvarEdicaoBotao('${editandoBotaoId}')`, 'Salvar');
+          return mkBotaoModal('Editar botão', eb.tipo||'whatsapp', eb.tipo==='whatsapp'?fmtTelStr(eb.link):eb.link||'', 'ebTipo', 'ebLink', 'ebLinkHint', 'cancelarEdicaoBotao()', `salvarEdicaoBotao('${editandoBotaoId}')`, 'Salvar', eb.tipo==='personalizado'?eb.nome:'');
         })()
       : `<button onclick="iniciarNovoBotao()" style="width:100%;margin-top:14px;padding:14px;border:2px dashed #bbb;border-radius:12px;background:none;font-size:14px;font-weight:600;color:#888;cursor:pointer;letter-spacing:.01em;">+ Adicionar botão</button>`;
 
@@ -3726,16 +3733,19 @@ function renderGestao(empInicial){
     const desc  = descId  ? document.getElementById(descId)  : null;
     if(!inp) return;
     const BINFO = {
-      whatsapp: { label:'Número',  desc:'Digite o número com DDD', ph:'(xx) xxxxx-xxxx' },
-      instagram:{ label:'Link',    desc:'Cole aqui o link do seu Instagram', ph:'https://instagram.com/seuusuario' },
-      maps:     { label:'Link',    desc:'Pesquise seu endereço no Google Maps e cole o link aqui', ph:'https://maps.app.goo.gl/...' },
-      site:     { label:'Link',    desc:'Cole o link do seu site, caso tenha', ph:'https://seusite.com.br' },
+      whatsapp:     { label:'Número',  desc:'Digite o número com DDD', ph:'(xx) xxxxx-xxxx' },
+      instagram:    { label:'Link',    desc:'Cole aqui o link do seu Instagram', ph:'https://instagram.com/seuusuario' },
+      maps:         { label:'Link',    desc:'Pesquise seu endereço no Google Maps e cole o link aqui', ph:'https://maps.app.goo.gl/...' },
+      site:         { label:'Link',    desc:'Cole o link do seu site, caso tenha', ph:'https://seusite.com.br' },
+      personalizado:{ label:'Link',    desc:'Cole o link do botão', ph:'https://...' },
     };
     const bi = BINFO[tipo] || BINFO.whatsapp;
     if(label) label.textContent = bi.label;
     if(desc)  desc.textContent  = bi.desc;
     inp.placeholder = bi.ph;
     inp.value = '';
+    const nomeWrap = document.getElementById(tipoId + 'NomeWrap');
+    if(nomeWrap) nomeWrap.style.display = tipo === 'personalizado' ? 'block' : 'none';
     if(tipo === 'whatsapp'){
       inp.type = 'tel'; inp.inputMode = 'numeric'; inp.maxLength = 16;
       inp.oninput = ()=>window.maskTel(inp);
@@ -3751,7 +3761,10 @@ function renderGestao(empInicial){
   window.cancelarEdicaoBotao = ()=>{ editandoBotaoId = null; draw(); };
   window.salvarEdicaoBotao = async (id)=>{
     const tipo = document.getElementById('ebTipo').value;
-    const nome = LABEL_POR_TIPO[tipo] || tipo;
+    let nome = tipo === 'personalizado'
+      ? (document.getElementById('ebTipoNomeEl')?.value.trim() || '')
+      : (LABEL_POR_TIPO[tipo] || tipo);
+    if(tipo === 'personalizado' && !nome){ toast('Digite o nome do botão.','err'); return; }
     let link   = document.getElementById('ebLink').value.trim();
     if(!link){ toast('Preencha o link do botão.','err'); return; }
     if(tipo === 'whatsapp'){
@@ -3777,7 +3790,10 @@ function renderGestao(empInicial){
 
   window.salvarNovoBotao = async ()=>{
     const tipo = document.getElementById('bTipo').value;
-    const nome = LABEL_POR_TIPO[tipo] || tipo;
+    let nome = tipo === 'personalizado'
+      ? (document.getElementById('bTipoNomeEl')?.value.trim() || '')
+      : (LABEL_POR_TIPO[tipo] || tipo);
+    if(tipo === 'personalizado' && !nome){ toast('Digite o nome do botão.','err'); return; }
     let link   = document.getElementById('bLink').value.trim();
     if(!link){ toast('Preencha o link do botão.','err'); return; }
     if(tipo === 'whatsapp'){
