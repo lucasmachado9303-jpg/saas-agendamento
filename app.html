@@ -555,8 +555,16 @@ async function init(){
   const _hp = new URLSearchParams(location.hash.slice(1));
   const _at = _hp.get('access_token'), _rt = _hp.get('refresh_token');
   if(_at && _rt){
+    const _tipo = _hp.get('type');
     try { await supabaseClient.auth.setSession({ access_token: _at, refresh_token: _rt }); } catch(e){}
     history.replaceState(null, '', location.pathname + location.search);
+    if(_tipo === 'recovery'){
+      modoRecuperacao = true;
+      const { data: { session: _sr } } = await supabaseClient.auth.getSession();
+      currentUser = _sr?.user || null;
+      renderRedefinirSenha();
+      return;
+    }
     // Busca perfil e roteia diretamente, sem depender do onAuthStateChange
     const { data: { session: _s } } = await supabaseClient.auth.getSession();
     if(_s?.user){
