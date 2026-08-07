@@ -1339,12 +1339,15 @@ window.loginComGoogle = async (slug)=>{
   if(error){ localStorage.removeItem('ob_goto'); toast('Erro ao iniciar login com Google.','err'); }
 };
 window.recuperarSenha = async (slug)=>{
-  const email = prompt("Digite seu e-mail para receber o link de redefinição de senha:");
-  if(!email) return;
-  const base = location.hostname === 'localhost' || location.hostname === '127.0.0.1'
-    ? location.origin
-    : 'https://saas-agendamento-seven.vercel.app';
-  const redirectTo = base + '/app.html';
+  // Le o email do campo ja preenchido na tela de login; evita prompt() nativo
+  const inputEl = document.getElementById('loginEmail');
+  const email = (inputEl?.value || '').trim();
+  if(!email){
+    toast('Preencha seu e-mail no campo acima antes de recuperar a senha.','err',4000);
+    inputEl?.focus();
+    return;
+  }
+  const redirectTo = 'https://agenplus.com.br/app.html';
   const { error } = await supabaseClient.auth.resetPasswordForEmail(email, { redirectTo });
   if(error){ toast('Erro ao enviar. Tente novamente.','err'); return; }
   toast('Se o e-mail estiver cadastrado, você receberá um link em breve.','ok',5000);
@@ -4263,7 +4266,11 @@ function renderMasterPanel(){
       .m-sw { width:100%; aspect-ratio:1; border-radius:8px; cursor:pointer; border:3px solid transparent; box-sizing:border-box; transition:border-color .1s; }
 
       /* Empresa card clicavel */
-      .m-ec { cursor:pointer; }
+      .m-ec { cursor:pointer; display:flex; align-items:center; gap:12px; padding:13px 16px; background:#fff; border:1px solid var(--line); border-radius:14px; transition:background .1s; }
+      .m-ec:hover { background:#faf9fc; }
+      .m-ec-body { flex:1; min-width:0; }
+      .m-ec-name { font-size:14px; font-weight:700; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+      .m-ec-link { font-size:12px; color:var(--ink-soft); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
       .m-chevron { color:var(--line); flex-shrink:0; }
       .m-chevron svg { width:16px; height:16px; display:block; }
 
@@ -4705,9 +4712,11 @@ function renderMasterPanel(){
       if(!val) return;
       if(mens?.pago_em){ totalRecebido+=val; cntRecebido++; }
       else {
-        const hoje=new Date(); const diaHoje=hoje.getDate();
+        const hoje=new Date();
+        const refHoje=`${hoje.getFullYear()}-${String(hoje.getMonth()+1).padStart(2,'0')}`;
         const finDia = finReg?.dia_vencimento||28;
-        if(diaHoje>finDia){ totalAtraso+=val; cntAtraso++; }
+        const emAtraso = refAtual < refHoje || (refAtual === refHoje && hoje.getDate() > finDia);
+        if(emAtraso){ totalAtraso+=val; cntAtraso++; }
         else { totalPendente+=val; cntPendente++; }
       }
     });
@@ -4859,7 +4868,8 @@ function renderMasterPanel(){
     const csv = linhas.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
     const blob = new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8;'});
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href=url; a.download=`financeiro-${refAtual}.csv`; a.click();
+    const a = document.createElement('a'); a.href=url; a.download=`financeiro-${refAtual}.csv`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
     URL.revokeObjectURL(url);
   };
 
@@ -4886,7 +4896,11 @@ function renderMasterPanel(){
     while(empresas.some(e=>e.slug===s2)){ s2 = slug+"-"+(++n); }
     const nova = defaultEmpresa();
     nova.slug = s2; nova.nome = nome;
-    nova.whatsapp = document.getElementById('novoWhats').value.trim();
+    // Salva digitos limpos, sem mascara
+    let _wdLimpo = document.getElementById('novoWhats').value.trim().replace(/\D/g,'');
+    if(_wdLimpo.startsWith('55') && _wdLimpo.length > 11) _wdLimpo = _wdLimpo.slice(2);
+    if(_wdLimpo.startsWith('0')) _wdLimpo = _wdLimpo.slice(1);
+    nova.whatsapp = _wdLimpo;
     nova.corPrincipal = sanitizeCor(document.getElementById('novaCor')?.value || '#3d1f3a');
     nova.status = 'trial';
     nova.trialExpiraEm = new Date(Date.now() + 7*24*60*60*1000).toISOString();
@@ -4957,7 +4971,13 @@ function renderMasterPanel(){
     const novoStatus = selOpt ? ['ativa','trial','bloqueada'].find(s=>selOpt.classList.contains('s-'+s)) : null;
 
     if(novoNome) e.nome = novoNome;
-    if(novoWhats !== undefined){ let _wd = novoWhats.replace(/\D/g,''); if(_wd.startsWith('55') && _wd.length>11) _wd=_wd.slice(2); if(_wd.startsWith('0')) _wd=_wd.slice(1); e.whatsapp = _wd; }
+    if(novoWhats !== undefined){
+      let _wd = novoWhats.replace(/\D/g,'');
+      if(_wd.startsWith('55') && _wd.length>11) _wd=_wd.slice(2);
+      if(_wd.startsWith('0')) _wd=_wd.slice(1);
+      if(_wd && (_wd.length < 10 || _wd.length > 11)){ toast('WhatsApp invalido. Use o formato (xx) xxxxx-xxxx.','err'); return; }
+      e.whatsapp = _wd;
+    }
     if(novoStatus && novoStatus !== e.status){
       e.status = novoStatus;
       e.bloqueada = novoStatus === 'bloqueada';
@@ -4995,6 +5015,9 @@ function renderMasterPanel(){
     await saveEmpresas();
 
     // Salvar email se mudou
+    if(novoEmail && novoEmail !== e.gestorEmail && !e.gestorUserId){
+      toast('Nao foi possivel atualizar o e-mail: dados do gestor nao carregados. Reabra a tela de edicao e tente novamente.','err',6000);
+    }
     if(novoEmail && novoEmail !== e.gestorEmail && e.gestorUserId){
       const { data: { session } } = await supabaseClient.auth.getSession();
       const resp = await fetch('/api/update-email', {
@@ -5017,27 +5040,28 @@ function renderMasterPanel(){
     else { e.status='bloqueada'; e.bloqueada=true; }
     await saveEmpresas(); draw();
   };
-  window.masterExcluir = async (slug)=>{
+  window.masterExcluir = (slug)=>{
     const e = empresas.find(x=>x.slug===slug);
-    if(!confirm(`Excluir "${e.nome}" definitivamente? Isso também apaga os agendamentos dela. Essa ação não pode ser desfeita.`)) return;
-    if(e.id){
-      // Remove o auth user do gestor via API (service role)
-      try {
-        const { data: { session } } = await supabaseClient.auth.getSession();
-        await fetch('/api/delete-user', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session?.access_token },
-          body: JSON.stringify({ empresa_id: e.id })
-        });
-      } catch(_){}
-      const { error } = await supabaseClient.from('empresas').delete().eq('id', e.id);
-      if(error){ toast(friendlyError(error,'Erro ao excluir empresa. Tente novamente.'),'err'); return; }
-    }
-    empresas = empresas.filter(x=>x.slug!==slug);
-    agendamentos = agendamentos.filter(a=>a.slug!==slug);
-    await excluirImagensEmpresa(slug);
-    editingSlug = null;
-    draw();
+    confirmarAcao(`Excluir <strong>${escapeHtml(e.nome)}</strong> definitivamente? Isso também apaga os agendamentos dela. Essa ação não pode ser desfeita.`, async ()=>{
+      if(e.id){
+        // Remove o auth user do gestor via API (service role)
+        try {
+          const { data: { session } } = await supabaseClient.auth.getSession();
+          await fetch('/api/delete-user', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session?.access_token },
+            body: JSON.stringify({ empresa_id: e.id })
+          });
+        } catch(_){}
+        const { error } = await supabaseClient.from('empresas').delete().eq('id', e.id);
+        if(error){ toast(friendlyError(error,'Erro ao excluir empresa. Tente novamente.'),'err'); return; }
+      }
+      empresas = empresas.filter(x=>x.slug!==slug);
+      agendamentos = agendamentos.filter(a=>a.slug!==slug);
+      await excluirImagensEmpresa(slug);
+      editingSlug = null;
+      draw();
+    });
   };
   Promise.all([carregarFinanceiro(), carregarMensalidades()]).then(draw);
   pararPolling();
@@ -5075,10 +5099,11 @@ window.masterRedefinirSenha = async ()=>{
     toast('Carregue o e-mail do gestor antes de redefinir a senha.','err');
     return;
   }
-  if(!confirm(`Enviar link de redefinicao de senha para "${email}"?`)) return;
-  const { error } = await supabaseClient.auth.resetPasswordForEmail(email, { redirectTo: location.origin + '/app.html' });
-  if(error){ toast('Erro ao enviar. Tente novamente.','err'); return; }
-  toast('Link de redefinicao enviado para ' + email,'ok',5000);
+  confirmarAcao(`Enviar link de redefinicao de senha para <strong>${escapeHtml(email)}</strong>?`, async ()=>{
+    const { error } = await supabaseClient.auth.resetPasswordForEmail(email, { redirectTo: 'https://agenplus.com.br/app.html' });
+    if(error){ toast('Erro ao enviar. Tente novamente.','err'); return; }
+    toast('Link de redefinicao enviado para ' + email,'ok',5000);
+  });
 };
 
 // ── UPLOAD DE IMAGENS ────────────────────────────────────────
@@ -5124,6 +5149,7 @@ async function confirmarCrop(){
   const w = isLogo ? 540 : 1280, h = isLogo ? 540 : 720;
   const canvas = _cropInstance.getCroppedCanvas({ width: w, height: h, imageSmoothingQuality: 'high' });
   canvas.toBlob(async (blob)=>{
+    if(!blob){ toast('Nao foi possivel processar a imagem. Tente novamente.','err'); btn.disabled=false; btn.textContent='Confirmar recorte'; return; }
     const bucket = isLogo ? 'logos' : 'backgrounds';
     const path   = `${_cropSlug}/${isLogo ? 'logo' : 'background'}.jpg`;
     const { error: upErr } = await supabaseClient.storage.from(bucket).upload(path, blob, { contentType: 'image/jpeg', upsert: true });
@@ -5157,7 +5183,31 @@ async function excluirImagensEmpresa(slug){
 }
 // ─────────────────────────────────────────────────────────────
 
+// Modal de confirmacao customizado — substitui confirm() nativo que pode ser bloqueado
+function confirmarAcao(msg, onConfirm){
+  let ov = document.getElementById('_confOverlay');
+  if(ov) ov.remove();
+  ov = document.createElement('div');
+  ov.id = '_confOverlay';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+  ov.innerHTML = `
+    <div style="background:#fff;border-radius:18px;padding:24px 20px;max-width:340px;width:100%;box-shadow:0 8px 40px rgba(0,0,0,.18);">
+      <div style="font-size:15px;font-weight:700;color:#1a1a1a;margin-bottom:8px;">Confirmar</div>
+      <div style="font-size:14px;color:#555;margin-bottom:20px;line-height:1.5;">${msg}</div>
+      <div style="display:flex;gap:8px;">
+        <button id="_confCancel" style="flex:1;height:40px;border:1.5px solid #e5e5ea;border-radius:10px;background:#fff;font-size:14px;font-weight:600;color:#555;cursor:pointer;font-family:inherit;">Cancelar</button>
+        <button id="_confOk" style="flex:1;height:40px;border:none;border-radius:10px;background:#dc2626;font-size:14px;font-weight:700;color:#fff;cursor:pointer;font-family:inherit;">Confirmar</button>
+      </div>
+    </div>`;
+  document.body.appendChild(ov);
+  const fecharOv = () => ov.remove();
+  document.getElementById('_confCancel').onclick = fecharOv;
+  ov.onclick = (ev) => { if(ev.target === ov) fecharOv(); };
+  document.getElementById('_confOk').onclick = () => { fecharOv(); onConfirm(); };
+}
+
 function escapeHtml(s){ return String(s==null?"":s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+// Alias intencional: escapeAttr usa a mesma logica de escapeHtml para valores em atributos HTML entre aspas duplas
 function escapeAttr(s){ return escapeHtml(s); }
 function sanitizeCor(c){ return /^#[0-9a-fA-F]{3,8}$/.test(c) ? c : '#3d1f3a'; }
 

@@ -1,5 +1,5 @@
 const CACHE = 'agendaplus-v4';
-const ASSETS = ['/', '/index.html', '/app.html', '/supabase.js', '/manifest.json', '/icon.png', '/favicon.png'];
+const ASSETS = ['/', '/index.html', '/app.html', '/manifest.json', '/icon.png', '/favicon.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
@@ -34,7 +34,7 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  // Cache-first para outros assets estaticos (icones, manifesto, js)
+  // Network-first para outros assets estaticos (icones, manifesto, js)
   e.respondWith(
     fetch(e.request).catch(() => caches.match(e.request))
   );
