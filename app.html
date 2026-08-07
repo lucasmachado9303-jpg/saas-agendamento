@@ -1462,6 +1462,7 @@ function renderGestao(empInicial){
           const botoesAtivo = `
             <div style="display:flex;gap:5px;justify-content:flex-end;">
               <button style="${BTN}" onclick="editarAgendamento('${ag.id}')">Editar</button>
+              <button style="${BTN}border-color:#fed7aa;color:#c2410c;" onclick="cancelarAgendamento('${ag.id}')">Cancelar</button>
               <button style="${BTN}border-color:#fca5a5;color:#dc2626;" onclick="excluirAgendamento('${ag.id}')">Excluir</button>
               <div style="position:relative;">
                 <button style="${BTN}border-color:#86efac;color:#16a34a;" onclick="toggleWaMenu('${ag.id}')">WhatsApp</button>
@@ -1666,13 +1667,20 @@ function renderGestao(empInicial){
         .sort((a,b)=>b.data.localeCompare(a.data)||b.hora.localeCompare(a.hora));
 
       const histRows = hist.length
-        ? hist.map(a=>`
-          <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:0.5px solid #f2f2f7;">
-            <div>
-              <div style="font-size:14px;font-weight:600;color:#1a1a1a;">${escapeHtml(a.servicoNome||'Agendamento')}</div>
+        ? hist.map(a=>{
+          const cancelado = a.status==='cancelado';
+          const confirmado = a.status==='confirmado';
+          const statusCor = cancelado ? '#dc2626' : confirmado ? '#16a34a' : '#8e8e93';
+          const statusLabel = cancelado ? 'Cancelado' : confirmado ? 'Confirmado' : 'Nao confirmado';
+          return `
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:0.5px solid #f2f2f7;${cancelado?'opacity:0.6;':''}">
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:14px;font-weight:600;color:#1a1a1a;${cancelado?'text-decoration:line-through;':''}">${escapeHtml(a.servicoNome||'Agendamento')}</div>
               <div style="font-size:13px;color:#8e8e93;margin-top:2px;">${fmtData(a.data)} ${a.hora}</div>
             </div>
-          </div>`).join('')
+            <div style="font-size:11px;font-weight:600;color:${statusCor};flex-shrink:0;margin-left:8px;">${statusLabel}</div>
+          </div>`;
+        }).join('')
         : `<p class="muted" style="text-align:center;padding:24px 0;">Nenhum agendamento encontrado.</p>`;
 
       const histSection = `
@@ -2865,27 +2873,37 @@ function renderGestao(empInicial){
     if(_relAba === 'agendamentos'){
       const agsMes = agendamentos.filter(a=>a.slug===emp.slug && a.data.startsWith(_relMes));
       const ags = agsMes.filter(a=>a.status!=='cancelado').sort((a,b)=>a.data.localeCompare(b.data)||a.hora.localeCompare(b.hora));
-      const nCancelados = agsMes.filter(a=>a.status==='cancelado').length;
+      const agsCancelados = agsMes.filter(a=>a.status==='cancelado').sort((a,b)=>a.data.localeCompare(b.data)||a.hora.localeCompare(b.hora));
+      const nCancelados = agsCancelados.length;
       const resumo = `
         <div style="background:#fff;border:0.5px solid #eee;border-radius:10px;padding:12px;text-align:center;margin-bottom:16px;">
           <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#8e8e93;margin-bottom:4px;">Total de agendamentos</div>
           <div style="font-size:28px;font-weight:700;color:#1a1a1a;line-height:1;">${ags.length}</div>
           ${nCancelados ? `<div style="font-size:12px;color:#dc2626;margin-top:6px;font-weight:600;">${nCancelados} cancelado${nCancelados!==1?'s':''} no mês</div>` : ''}
         </div>`;
-      const linhas = ags.length === 0
-        ? `<div style="text-align:center;padding:28px;color:#aaa;font-size:13px;">Nenhum agendamento neste mês</div>`
-        : ags.map(a=>`
-            <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:0.5px solid #f2f2f7;">
+      const renderLinhaAg = (a, cancelado=false) => `
+            <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:0.5px solid #f2f2f7;${cancelado?'opacity:0.55;':''}">
               <div style="flex-shrink:0;min-width:50px;text-align:center;">
-                <div style="font-size:12px;font-weight:700;color:#1a1a1a;">${fmtData(a.data)}</div>
+                <div style="font-size:12px;font-weight:700;color:${cancelado?'#dc2626':'#1a1a1a'};${cancelado?'text-decoration:line-through;':''}">${fmtData(a.data)}</div>
                 <div style="font-size:11px;color:#8e8e93;">${a.hora}</div>
               </div>
               <div style="flex:1;min-width:0;">
-                <div style="font-size:14px;font-weight:600;color:#1a1a1a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(a.nome||'-')}</div>
+                <div style="font-size:14px;font-weight:600;color:#1a1a1a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;${cancelado?'text-decoration:line-through;':''}">${escapeHtml(a.nome||'-')}</div>
                 <div style="font-size:12px;color:#8e8e93;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(a.servicoNome||'-')}</div>
               </div>
-            </div>`).join('');
-      const lista = ags.length
+              ${cancelado ? `<div style="font-size:11px;font-weight:600;color:#dc2626;flex-shrink:0;">Cancelado</div>` : ''}
+            </div>`;
+      const todasLinhas = [
+        ...ags.map(a=>renderLinhaAg(a, false)),
+        ...(agsCancelados.length ? [
+          `<div style="padding:8px 14px 4px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#dc2626;background:#fff9f9;border-top:0.5px solid #fecaca;border-bottom:0.5px solid #f2f2f7;">Cancelados</div>`,
+          ...agsCancelados.map(a=>renderLinhaAg(a, true))
+        ] : [])
+      ];
+      const linhas = todasLinhas.length === 0
+        ? `<div style="text-align:center;padding:28px;color:#aaa;font-size:13px;">Nenhum agendamento neste mês</div>`
+        : todasLinhas.join('');
+      const lista = todasLinhas.length
         ? `<div style="background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.05);margin-bottom:16px;">${linhas}</div>`
         : `<div style="margin-bottom:16px;">${linhas}</div>`;
       conteudo = resumo + lista + `<button onclick="exportarRelCSV('agendamentos')" style="width:100%;height:44px;border-radius:12px;border:1.5px solid #d1d5db;background:#fff;color:#1a1a1a;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;">${ICO_DOWN} Exportar CSV</button>`;
@@ -3215,6 +3233,14 @@ function renderGestao(empInicial){
     if(error){ toast(friendlyError(error,'Erro ao salvar agendamento. Tente novamente.'),'err'); return; }
     ag.nome = nome; ag.telefone = telNorm; ag.servicoId = servicoId; ag.servicoNome = servico?servico.nome:ag.servicoNome; ag.hora = hora;
     editandoId = null; draw();
+  };
+  window.cancelarAgendamento = async (id)=>{
+    if(!confirm('Cancelar este agendamento? O horário será liberado para novos agendamentos.')) return;
+    const { error } = await supabaseClient.from('agendamentos').update({ status: 'cancelado' }).eq('id', id);
+    if(error){ toast(friendlyError(error,'Erro ao cancelar agendamento. Tente novamente.'),'err'); return; }
+    const ag = agendamentos.find(a=>a.id===id);
+    if(ag) ag.status = 'cancelado';
+    draw();
   };
   window.excluirAgendamento = async (id)=>{
     if(!confirm('Excluir este agendamento? Essa ação não pode ser desfeita.')) return;
