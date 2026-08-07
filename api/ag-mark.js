@@ -8,13 +8,24 @@ module.exports = async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Origin', origin);
   }
   res.setHeader('Access-Control-Allow-Methods', 'PATCH, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'PATCH') return res.status(405).json({ error: 'Method not allowed' });
 
+  // Verifica autenticacao: requer Bearer token de um usuario ativo
+  const authHeader = req.headers.authorization || '';
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+  if (!token) return res.status(401).json({ error: 'Autenticacao obrigatoria' });
+
   const SUPABASE_URL = process.env.SUPABASE_URL;
   const SERVICE_KEY  = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!SUPABASE_URL || !SERVICE_KEY) return res.status(500).json({ error: 'Env não configurado' });
+  if (!SUPABASE_URL || !SERVICE_KEY) return res.status(500).json({ error: 'Env nao configurado' });
+
+  // Valida o token chamando /auth/v1/user com o token do usuario
+  const userRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+    headers: { 'Authorization': `Bearer ${token}`, 'apikey': SERVICE_KEY }
+  });
+  if (!userRes.ok) return res.status(401).json({ error: 'Token invalido ou expirado' });
 
   const { ag_id, cliente_id, campo } = req.body || {};
   if (!campo) return res.status(400).json({ error: 'campo obrigatório' });

@@ -5,8 +5,11 @@
 const fs   = require('fs');
 const path = require('path');
 
-// app.html tem ~5000 linhas — le do disco uma vez e reusa entre requisicoes
+// app.html tem ~5000 linhas — le do disco uma vez e reusa entre requisicoes.
+// TTL de 5 minutos: apos um deploy, instancias em execucao recarregam o arquivo.
 let _appHtmlCache = null;
+let _appHtmlCachedAt = 0;
+const APP_HTML_TTL_MS = 5 * 60 * 1000;
 
 module.exports = async function handler(req, res) {
   const SUPABASE_URL = process.env.SUPABASE_URL;
@@ -19,8 +22,10 @@ module.exports = async function handler(req, res) {
   // Le o app.html do disco (api/ fica uma pasta abaixo da raiz)
   let html;
   try {
-    if (!_appHtmlCache) {
+    const now = Date.now();
+    if (!_appHtmlCache || (now - _appHtmlCachedAt) > APP_HTML_TTL_MS) {
       _appHtmlCache = fs.readFileSync(path.join(__dirname, '..', 'app.html'), 'utf8');
+      _appHtmlCachedAt = now;
     }
     html = _appHtmlCache;
   } catch(e) {
@@ -38,7 +43,7 @@ module.exports = async function handler(req, res) {
   let emp = null;
   try {
     const r = await fetch(
-      `${SUPABASE_URL}/rest/v1/empresas?slug=eq.${encodeURIComponent(slug)}&select=id,nome,logo&limit=1`,
+      `${SUPABASE_URL}/rest/v1/empresas?slug=eq.${encodeURIComponent(slug)}&select=id,nome,logo,bloqueada&limit=1`,
       { headers: { 'Authorization': `Bearer ${SERVICE_KEY}`, 'apikey': SERVICE_KEY } }
     );
     const rows = await r.json();
@@ -65,17 +70,19 @@ module.exports = async function handler(req, res) {
   const empNome   = emp ? emp.nome : 'Agen+';
   const currentUrl = req.headers['x-original-url'] || `https://${host}${req.url}`;
 
+  const empLogo = emp && emp.logo ? emp.logo : null;
+
   let ogTitle, ogDesc, ogImage;
   if (ag) {
-    // Link de confirmacao: sem imagem, descricao simples
+    // Link de confirmacao: usa logo da empresa se disponivel
     ogTitle = `${empNome} — Confirme seu agendamento`;
     ogDesc  = `Acesse o link para confirmar ou cancelar seu agendamento.`;
-    ogImage = null;
+    ogImage = empLogo;
   } else {
     // Pagina inicial da empresa
     ogTitle = `${empNome} — Agende seu horário`;
     ogDesc  = `Agende online de forma rápida e simples.`;
-    ogImage = null;
+    ogImage = empLogo;
   }
 
   function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }

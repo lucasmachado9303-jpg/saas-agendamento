@@ -489,7 +489,7 @@ function isoData(d){
 function gerarTokenCurto(){
   const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
   let t = '';
-  for(let i=0;i<6;i++) t += chars[Math.floor(Math.random()*chars.length)];
+  for(let i=0;i<8;i++) t += chars[Math.floor(Math.random()*chars.length)];
   return t;
 }
 
@@ -1350,6 +1350,20 @@ window.recuperarSenha = async (slug)=>{
   toast('Se o e-mail estiver cadastrado, você receberá um link em breve.','ok',5000);
 };
 
+// Wrapper fire-and-forget para /api/ag-mark com autenticacao
+async function agMarkFetch(body){
+  try {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    const token = session?.access_token;
+    if(!token) return;
+    fetch('/api/ag-mark', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify(body)
+    });
+  } catch(_){}
+}
+
 // ---------- GESTÃO (PAINEL) ----------
 function renderGestao(empInicial){
   // 'let' porque o polling recria os objetos de empresa a cada 30s
@@ -1400,14 +1414,13 @@ function renderGestao(empInicial){
   let _excluirClienteModal = null; // id do cliente aguardando confirmação de exclusão
   // Inativos
   let _clientesAba = 'todos'; // 'todos' | 'ausentes'
-  let _clientesInativosFiltro = 15; // faixa selecionada: 15 | 30 | 45
+  let _clientesInativosFiltro = 30; // faixa selecionada: 15 | 30 | 45 (compartilhada com o dashboard)
   let _clientesBannerDismissed = false;
 
   // Estado do bloco de notas (dashboard)
   let _notas = [];          // registros da tabela notas
   let _notaModal = null;    // { texto, cor, editId? }
   let _notasCarregando = false;
-  let _dashInativosFiltro = 30;
 
   function agendamentosBody(){
     if(diaSelecionado===null){
@@ -1539,7 +1552,7 @@ function renderGestao(empInicial){
             ${!passadoHora ? `<button style="font-family:inherit;height:28px;width:72px;border-radius:6px;border:0.5px solid #ccc;background:#fff;color:#555;font-size:11px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;" onclick="bloquearHorario('${diaSelecionado}','${h}')">Bloquear</button>` : ''}
           </div>
         </div>`);
-        cancelados.forEach(c=>parts.push(cardAgendamento(c)));
+        // Agendamentos cancelados nao sao exibidos na agenda (visíveis apenas em historico e relatorios)
       }
       return parts.join('');
     })()
@@ -2393,7 +2406,7 @@ function renderGestao(empInicial){
       const ultima = cAgs.map(a=>a.data).sort().pop();
       return Math.floor((new Date() - new Date(ultima+'T00:00:00')) / 86400000);
     }
-    const inativosAtual = _clientes.filter(c => { const d=diasSemVoltarDash(c); return d!==null && d>=_dashInativosFiltro; }).length;
+    const inativosAtual = _clientes.filter(c => { const d=diasSemVoltarDash(c); return d!==null && d>=_clientesInativosFiltro; }).length;
 
     // Faturamento de hoje
     const fatHoje = _gFinLancamentos.filter(l=>l.tipo==='receita' && l.data===hoje)
@@ -2800,9 +2813,7 @@ function renderGestao(empInicial){
       const ICO_SERV  = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ea580c" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>`;
       return `
         <div style="position:relative;display:flex;align-items:center;margin-bottom:16px;min-height:36px;">
-          <button onclick="configurarIr(null)" style="background:none;border:none;font-size:14px;font-weight:600;color:#555;cursor:pointer;padding:0;font-family:inherit;display:flex;align-items:center;gap:4px;">&#8249; Voltar</button>
-          <div style="position:absolute;left:0;right:0;text-align:center;font-weight:700;font-size:16px;pointer-events:none;">Relatórios</div>
-          <div></div>
+          <div style="font-weight:700;font-size:16px;">Relatórios</div>
         </div>
         <div style="background:#fff;border-radius:22px;box-shadow:0 2px 16px rgba(0,0,0,0.06);overflow:hidden;">
           ${mkCard("setRelAba('financeiro')",   '#f0fdf4', ICO_FIN,   'Financeiro',    'Receitas, despesas e saldo por mês')}
@@ -3184,7 +3195,7 @@ function renderGestao(empInicial){
     const clienteAusente = _clientes.find(x=>x.id===cliente.id);
     if(clienteAusente && clienteAusente.ausenteEnviadoEm){
       clienteAusente.ausenteEnviadoEm = null;
-      fetch('/api/ag-mark', { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ cliente_id: cliente.id, campo: 'ausente_enviado_em', reset: true }) });
+      agMarkFetch({ cliente_id: cliente.id, campo: 'ausente_enviado_em', reset: true });
     }
     agendamentos.push({
       id:row.id, slug:emp.slug,
@@ -3358,7 +3369,7 @@ function renderGestao(empInicial){
     if(tipo === 'inativo'){
       const agora = new Date().toISOString();
       const cf = _clientes.find(x=>x.id===clienteId); if(cf) cf.ausenteEnviadoEm = agora;
-      fetch('/api/ag-mark', { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ cliente_id: clienteId, campo: 'ausente_enviado_em' }) });
+      agMarkFetch({ cliente_id: clienteId, campo: 'ausente_enviado_em' });
     }
     _inativoWaMenuId = null;
     draw();
@@ -3388,7 +3399,7 @@ function renderGestao(empInicial){
         .replace(/{link}/g, linkConfirmar);
       link = `https://wa.me/${waNum}?text=${encodeURIComponent(msg)}`;
       const campo = tipo === 'confirmacao' ? 'confirmacao_enviada' : 'lembrete_enviado';
-      fetch('/api/ag-mark', { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ ag_id: agId, campo }) });
+      agMarkFetch({ ag_id: agId, campo });
       if(tipo === 'confirmacao') ag.confirmacaoEnviada = true;
       else ag.lembreteEnviado = true;
     }
@@ -3572,8 +3583,8 @@ function renderGestao(empInicial){
   };
 
   window.salvarCancelamentoHoras = async (empresaId)=>{
-    const val = parseInt(document.getElementById('cancelamentoHoras')?.value||'0', 10);
-    if(isNaN(val)||val<0){ toast('Valor inválido.','err'); return; }
+    const val = parseInt(document.getElementById('cancelamentoHoras')?.value||'', 10);
+    if(isNaN(val)||val<0){ toast('Digite um número de horas válido (0 = sem limite).','err'); return; }
     const { error } = await supabaseClient.from('empresas').update({ cancelamento_horas: val }).eq('id', empresaId);
     if(error){ toast('Erro ao salvar.','err'); return; }
     emp.cancelamentoHoras = val;
@@ -3802,6 +3813,7 @@ function renderGestao(empInicial){
   };
   window.dragBotaoEnd = (e)=>{
     e.currentTarget.style.opacity = '';
+    _dragFromId = null;
   };
   window.dragBotaoDrop = async (e, toId)=>{
     e.preventDefault();
@@ -3823,6 +3835,7 @@ function renderGestao(empInicial){
   gFinCarregar();
   carregarNotas();
   carregarClientes();
+  pararPolling();
   iniciarPolling(()=>{
     // Reaponta para o objeto novo criado pelo loadData()
     const atual = empresas.find(e => e.slug === emp.slug);
@@ -4222,7 +4235,6 @@ function renderMasterPanel(){
       .m-link-row { display:flex; align-items:center; gap:3px; }
       .m-link-pfx { font-size:13px; color:var(--ink-soft); white-space:nowrap; }
       .m-link-inp { flex:1; border:1.5px solid var(--line); border-radius:9px; outline:none; font-size:15px; color:var(--accent); font-family:inherit; background:#fff; font-weight:600; min-width:0; padding:7px 10px; }
-      .m-link-inp:focus { border-color:#3d1f3a; }
       .m-link-inp:focus { border-color:#3d1f3a; }
       .m-status-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; padding:12px 16px; }
       .m-status-opt { border:2px solid var(--line); border-radius:12px; padding:10px 6px; text-align:center; cursor:pointer; transition:all .14s; background:var(--paper); }
@@ -4927,7 +4939,9 @@ function renderMasterPanel(){
     }
   };
   window.masterSelStatus = (el, novoStatus) => {
-    document.querySelectorAll('.m-status-opt').forEach(o => o.className = 'm-status-opt');
+    const grid = el.closest('.m-status-grid');
+    if(grid) grid.querySelectorAll('.m-status-opt').forEach(o => o.className = 'm-status-opt');
+    else document.querySelectorAll('.m-status-opt').forEach(o => o.className = 'm-status-opt');
     el.classList.add('s-' + novoStatus);
   };
   window.masterSalvarEdicao = async ()=>{
@@ -4996,27 +5010,6 @@ function renderMasterPanel(){
     toast('Alteracoes salvas!','ok');
     editingSlug = null; masterDrawerMode = null; draw();
   };
-  window.masterSalvarEmail = async ()=>{
-    const e = empresas.find(x=>x.slug===editingSlug);
-    if(!e){ toast('Empresa não encontrada.','err'); return; }
-    const novoEmail = (document.getElementById('masterEmailInput')?.value||'').trim();
-    if(!novoEmail){ toast('Digite um e-mail.','err'); return; }
-    if(novoEmail === e.gestorEmail){ toast('O e-mail é o mesmo atual.','err'); return; }
-    if(!confirm('Tem certeza que deseja trocar o e-mail de login do gestor para "' + novoEmail + '"? O gestor precisará usar o novo e-mail para entrar.')){ return; }
-    if(!e.gestorUserId){ toast('Não foi possível identificar o usuário. Reabra a empresa e tente novamente.','err'); return; }
-    toast('Atualizando e-mail...','ok',2000);
-    const { data: { session } } = await supabaseClient.auth.getSession();
-    const resp = await fetch('/api/update-email', {
-      method:'POST',
-      headers:{'Content-Type':'application/json', 'Authorization': 'Bearer ' + session?.access_token},
-      body: JSON.stringify({ user_id: e.gestorUserId, email: novoEmail })
-    });
-    const json = await resp.json().catch(()=>({}));
-    if(!resp.ok){ toast(json.error||'Erro ao atualizar e-mail.','err'); return; }
-    e.gestorEmail = novoEmail;
-    toast('E-mail atualizado com sucesso!','ok');
-    draw();
-  };
   window.masterToggleEmpStatus = async (slug)=>{
     const e = empresas.find(x=>x.slug===slug);
     if(!e) return;
@@ -5047,6 +5040,7 @@ function renderMasterPanel(){
     draw();
   };
   Promise.all([carregarFinanceiro(), carregarMensalidades()]).then(draw);
+  pararPolling();
   iniciarPolling(()=>{ if(!editingSlug && masterDrawerMode === null) Promise.all([carregarFinanceiro(), carregarMensalidades()]).then(()=>{ if(!editingSlug && masterDrawerMode === null) draw(); }); });
 }
 
@@ -5074,11 +5068,17 @@ window.gestaoLogout = async (slug)=>{
   goto({empresa: slug});
 };
 window.masterRedefinirSenha = async ()=>{
-  const email = prompt("Digite o e-mail do gestor para enviar a redefinição de senha:");
-  if(!email) return;
+  // Usa o e-mail ja carregado no formulario de edicao; se ausente, pede via campo de texto
+  const inputEl = document.getElementById('masterEmailInput');
+  const email = (inputEl?.value || '').trim();
+  if(!email){
+    toast('Carregue o e-mail do gestor antes de redefinir a senha.','err');
+    return;
+  }
+  if(!confirm(`Enviar link de redefinicao de senha para "${email}"?`)) return;
   const { error } = await supabaseClient.auth.resetPasswordForEmail(email, { redirectTo: location.origin + '/app.html' });
   if(error){ toast('Erro ao enviar. Tente novamente.','err'); return; }
-  toast('E-mail de redefinição enviado para ' + email,'ok',5000);
+  toast('Link de redefinicao enviado para ' + email,'ok',5000);
 };
 
 // ── UPLOAD DE IMAGENS ────────────────────────────────────────
