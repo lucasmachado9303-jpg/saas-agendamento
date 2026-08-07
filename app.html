@@ -278,7 +278,8 @@ async function loadData(){
       horariosPorMes:       {},
       bloqueios:            [],
       botoes:               [],
-      cancelamentoHoras:    e.cancelamento_horas || 0
+      cancelamentoHoras:    e.cancelamento_horas || 0,
+      tipo:                 e.tipo || 'agendamento'
     }));
   }catch(e){ console.error('Erro ao carregar empresas:', e); empresas = []; }
 
@@ -388,6 +389,7 @@ async function saveEmpresas(){
     cor_principal:         e.corPrincipal          || '#3d1f3a',
     texto_destaque:        e.textoDestaque         || null,
     cancelamento_horas:    e.cancelamentoHoras != null ? e.cancelamentoHoras : 2,
+    tipo:                  e.tipo || 'agendamento',
   });
 
   const novas     = empresas.filter(e => !e.id);
@@ -467,7 +469,8 @@ function defaultEmpresa(){
   return {
     slug:"", nome:"", fotoUrl:"", whatsapp:"", bloqueada:false, msgInativo:"",
     descricao:"", logo:"", corPrincipal:"#3d1f3a", textoDestaque:"",
-    servicos:[], horariosPorMes:{}, bloqueios:[], botoes:[], cancelamentoHoras:0
+    servicos:[], horariosPorMes:{}, bloqueios:[], botoes:[], cancelamentoHoras:0,
+    tipo:"agendamento"
   };
 }
 
@@ -779,13 +782,14 @@ function renderHome(emp){
 
         <div style="height:24px;"></div>
 
-        <!-- Botão principal de agendamento -->
+        <!-- Botão principal de agendamento (apenas para empresas do tipo agendamento) -->
+        ${emp.tipo !== 'pagina' ? `
         <div style="width:100%;max-width:240px;margin:0 auto 10px;">
           <button onclick="goto({empresa:'${emp.slug}', page:'agendar'})"
             style="width:100%;background:#fff;color:var(--ink);border:1.5px solid var(--line);border-radius:14px;padding:14px 20px;font-size:15px;font-weight:600;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.06);font-family:inherit;display:flex;align-items:center;justify-content:center;">
             ${escapeHtml(emp.textoAgendar || 'Agendar horário')}
           </button>
-        </div>
+        </div>` : ''}
 
 
         <!-- Botões personalizados -->
@@ -1375,11 +1379,11 @@ function renderGestao(empInicial){
   setFavicon(false);
   applyAccent('#1c1917');
   document.title = `Gestão — ${emp.nome}`;
-  let corner = 'dashboard'; // 'dashboard' | null=agendamentos | 'configurar' | 'personalizar' | 'financeiro'
+  let corner = emp.tipo === 'pagina' ? 'configurar' : 'dashboard';
   let diaSelecionado = null;
   let editandoId = null;
   let novoAgState = null;
-  let configurarSub = null; // null | 'servicos' | 'horarios' | 'personalizar' | 'mensagens'
+  let configurarSub = emp.tipo === 'pagina' ? 'personalizar' : null; // null | 'servicos' | 'horarios' | 'personalizar' | 'mensagens'
   let _waMenuId = null; // id do agendamento com dropdown WA aberto
   let _inativoWaMenuId = null; // id do cliente inativo com dropdown WA aberto
 
@@ -1886,16 +1890,21 @@ function renderGestao(empInicial){
       const ICO_LINK = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>`;
       const ICO_MSG  = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`;
       const sairAction = isMaster ? `goto({empresa:'${emp.slug}'})` : `gestaoLogout('${emp.slug}')`;
-      return `
-        <div style="font-size:22px;font-weight:700;color:#1a1a1a;margin-bottom:20px;padding:0 4px;">Configurações</div>
-        <div style="background:#fff;border-radius:22px;box-shadow:0 2px 16px rgba(0,0,0,0.06);overflow:hidden;">
+      const itensPagina = `
+          ${mkItem("configurarIr('personalizar')","#fdf4ff", ICO_LINK,  'Personalize sua pagina',   'Nome, textos, logo, cor e botões')}
+          ${mkItem("configurarIr('link')", '#f0f9ff', `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0ea5e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>`, 'Link publico', 'Compartilhar, copiar ou abrir seu link', false)}`;
+      const itensAgendamento = `
           ${mkItem("configurarIr('servicos')",   '#eff6ff', ICO_BRIEF, 'Serviços oferecidos',      'Configure os serviços disponíveis')}
           ${mkItem("configurarIr('horarios')",   '#f0fdf4', ICO_CAL,   'Horários de agendamento',  'Defina dias e horários de agendamento')}
           ${mkItem("configurarIr('personalizar')","#fdf4ff", ICO_LINK,  'Personalize seu link',     'Nome, textos, logo, cor e botões')}
           ${mkItem("configurarIr('mensagens')",    '#fff7ed', ICO_MSG,   'Configurar mensagens',     'Personalize mensagens automáticas')}
           ${mkItem("configurarIr('cancelamento')","#fff1f2", `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#e53935" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>`, 'Cancelamento', 'Prazo mínimo para cancelar agendamento')}
           ${mkItem("configurarIr('relatorios')", '#f0fdf4', G_ICO.relatorios, 'Relatórios', 'Financeiro e agendamentos por mês')}
-          ${mkItem("configurarIr('link')", '#f0f9ff', `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0ea5e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>`, 'Link público', 'Compartilhar, copiar ou abrir seu link', false)}
+          ${mkItem("configurarIr('link')", '#f0f9ff', `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0ea5e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>`, 'Link público', 'Compartilhar, copiar ou abrir seu link', false)}`;
+      return `
+        <div style="font-size:22px;font-weight:700;color:#1a1a1a;margin-bottom:20px;padding:0 4px;">${emp.tipo === 'pagina' ? 'Minha Pagina' : 'Configurações'}</div>
+        <div style="background:#fff;border-radius:22px;box-shadow:0 2px 16px rgba(0,0,0,0.06);overflow:hidden;">
+          ${emp.tipo === 'pagina' ? itensPagina : itensAgendamento}
         </div>
         <div style="text-align:center;margin-top:40px;">
           <button onclick="${sairAction}" style="background:none;border:none;font-size:13px;font-weight:500;color:#8e8e93;cursor:pointer;padding:8px 16px;font-family:inherit;">Sair da conta</button>
@@ -3079,10 +3088,13 @@ function renderGestao(empInicial){
     const exitLabel = isMaster ? 'Voltar' : 'Sair';
     const exitIco   = isMaster ? G_ICO.voltar : G_ICO.sair;
 
-    const navItems = GESTAO_NAV.map(n => `
+    const navFiltrado = emp.tipo === 'pagina'
+      ? GESTAO_NAV.filter(n => n.id === 'configurar' || n.id === 'financeiro')
+      : GESTAO_NAV;
+    const navItems = navFiltrado.map(n => `
       <button class="g-bn-item ${corner===n.id?'active':''}" onclick="setCorner(${n.id===null?'null':`'${n.id}'`})">
         <span class="g-bn-ico">${n.ico}</span>
-        <span>${n.label}</span>
+        <span>${n.label === 'Configurar' && emp.tipo === 'pagina' ? 'Pagina' : n.label}</span>
       </button>`).join('');
 
     const body = corner==='dashboard'    ? dashboardBody()
@@ -4261,6 +4273,15 @@ function renderMasterPanel(){
       .m-btn-del { flex:1; height:38px; border:1.5px solid #fca5a5; border-radius:10px; background:var(--paper); font-size:13px; font-weight:600; color:#dc2626; cursor:pointer; font-family:inherit; }
       .m-btn-del:hover { background:#fee2e2; }
 
+      /* Seletor de tipo de conta */
+      .m-tipo-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:6px; }
+      .m-tipo-opt { border:2px solid var(--line); border-radius:12px; padding:12px 10px; cursor:pointer; transition:all .14s; background:var(--paper); }
+      .m-tipo-opt:hover { border-color:#c4b5c0; }
+      .m-tipo-opt.sel { border-color:#3d1f3a; background:#f3eef5; }
+      .m-tipo-opt-title { font-size:13px; font-weight:700; color:var(--ink); margin-bottom:3px; }
+      .m-tipo-opt-sub { font-size:11px; color:var(--ink-soft); line-height:1.4; }
+      .m-tipo-opt.sel .m-tipo-opt-title { color:#3d1f3a; }
+
       /* Color swatches */
       .m-swatches { display:grid; grid-template-columns:repeat(6,1fr); gap:8px; margin-bottom:10px; }
       .m-sw { width:100%; aspect-ratio:1; border-radius:8px; cursor:pointer; border:3px solid transparent; box-sizing:border-box; transition:border-color .1s; }
@@ -4460,6 +4481,20 @@ function renderMasterPanel(){
       drawMasterShell(`
         <button class="m-back" onclick="masterFecharDrawer()">${ICO_BACK} Voltar</button>
         <div class="m-form-title">Nova empresa</div>
+        <div class="field">
+          <label>Tipo de conta</label>
+          <div class="m-tipo-grid">
+            <div class="m-tipo-opt sel" id="tipoAgendamento" onclick="masterSelTipo('agendamento')">
+              <div class="m-tipo-opt-title">Agendamento</div>
+              <div class="m-tipo-opt-sub">Agenda, clientes, relatorios e financeiro</div>
+            </div>
+            <div class="m-tipo-opt" id="tipoPagina" onclick="masterSelTipo('pagina')">
+              <div class="m-tipo-opt-title">Pagina</div>
+              <div class="m-tipo-opt-sub">Apenas links e presenca online</div>
+            </div>
+          </div>
+          <input type="hidden" id="novoTipo" value="agendamento"/>
+        </div>
         <div class="field"><label>Nome da empresa</label><input id="novoNome" placeholder="Ex: Studio Bella"/></div>
         <div class="field"><label>WhatsApp</label><input id="novoWhats" type="tel" inputmode="numeric" maxlength="16" placeholder="(xx) xxxxx-xxxx" onkeydown="if(event.key.length===1&&!/[0-9]/.test(event.key))event.preventDefault()" oninput="maskTel(this)"/></div>
         <div class="field"><label>E-mail do gestor</label><input type="email" id="novoEmail" placeholder="gestor@email.com"/></div>
@@ -4517,6 +4552,20 @@ function renderMasterPanel(){
           </div>
         </div>
         <div class="m-section">
+          <div class="m-section-title">Tipo de conta</div>
+          <div class="m-tipo-grid" style="padding:12px 16px;">
+            <div class="m-tipo-opt${(editing.tipo||'agendamento')==='agendamento'?' sel':''}" id="editTipoAgendamento" onclick="masterSelTipoEdit('agendamento')">
+              <div class="m-tipo-opt-title">Agendamento</div>
+              <div class="m-tipo-opt-sub">Agenda, clientes e financeiro</div>
+            </div>
+            <div class="m-tipo-opt${(editing.tipo||'agendamento')==='pagina'?' sel':''}" id="editTipoPagina" onclick="masterSelTipoEdit('pagina')">
+              <div class="m-tipo-opt-title">Pagina</div>
+              <div class="m-tipo-opt-sub">Apenas links e presenca</div>
+            </div>
+          </div>
+          <input type="hidden" id="editTipoInput" value="${escapeAttr(editing.tipo||'agendamento')}"/>
+        </div>
+        <div class="m-section">
           <div class="m-section-title">Status da conta</div>
           <div class="m-status-grid">
             ${['trial','ativa','bloqueada'].map(s=>`
@@ -4552,12 +4601,16 @@ function renderMasterPanel(){
     const AV_CORES = ['#3d1f3a','#15803d','#1d4ed8','#be185d','#c2410c','#0f766e','#7e22ce','#b45309'];
     function empAvCor(slug){ let h=0; for(let i=0;i<slug.length;i++) h=(h*31+slug.charCodeAt(i))&0x7fffffff; return AV_CORES[h%AV_CORES.length]; }
 
+    const _tipoBadge = e => e.tipo === 'pagina'
+      ? `<span style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;background:#e0f2fe;color:#0369a1;white-space:nowrap;">Pagina</span>`
+      : '';
+
     const empRow = e => {
       const cor = empAvCor(e.slug);
       return `<div class="m-ec" onclick="masterAbrirDetalhe('${e.slug}')">
         <div class="m-ec-body">
           <div class="m-ec-name">${escapeHtml(e.nome)}</div>
-          <div class="m-ec-link">${e.slug}.agenplus.com.br</div>
+          <div class="m-ec-link" style="display:flex;align-items:center;gap:6px;">${e.slug}.agenplus.com.br ${_tipoBadge(e)}</div>
         </div>
         ${_statusBadgeHtml(e)}
         <div class="m-chevron">${ICO_CHV}</div>
@@ -4902,6 +4955,7 @@ function renderMasterPanel(){
     if(_wdLimpo.startsWith('0')) _wdLimpo = _wdLimpo.slice(1);
     nova.whatsapp = _wdLimpo;
     nova.corPrincipal = sanitizeCor(document.getElementById('novaCor')?.value || '#3d1f3a');
+    nova.tipo = document.getElementById('novoTipo')?.value || 'agendamento';
     nova.status = 'trial';
     nova.trialExpiraEm = new Date(Date.now() + 7*24*60*60*1000).toISOString();
     empresas.push(nova);
@@ -4952,6 +5006,16 @@ function renderMasterPanel(){
       if(data?.email){ emp.gestorEmail = data.email; emp.gestorUserId = data.id; draw(); }
     }
   };
+  window.masterSelTipo = (tipo) => {
+    document.getElementById('novoTipo').value = tipo;
+    document.getElementById('tipoAgendamento').classList.toggle('sel', tipo === 'agendamento');
+    document.getElementById('tipoPagina').classList.toggle('sel', tipo === 'pagina');
+  };
+  window.masterSelTipoEdit = (tipo) => {
+    document.getElementById('editTipoInput').value = tipo;
+    document.getElementById('editTipoAgendamento').classList.toggle('sel', tipo === 'agendamento');
+    document.getElementById('editTipoPagina').classList.toggle('sel', tipo === 'pagina');
+  };
   window.masterSelStatus = (el, novoStatus) => {
     const grid = el.closest('.m-status-grid');
     if(grid) grid.querySelectorAll('.m-status-opt').forEach(o => o.className = 'm-status-opt');
@@ -4967,10 +5031,12 @@ function renderMasterPanel(){
     const novoWhats = (document.getElementById('editWhats')?.value||'').trim();
     const novoSlug  = (document.getElementById('masterSlugInput')?.value||'').trim();
     const novoEmail = (document.getElementById('masterEmailInput')?.value||'').trim();
+    const novoTipo  = (document.getElementById('editTipoInput')?.value||'agendamento');
     const selOpt    = document.querySelector('.m-status-opt.s-ativa,.m-status-opt.s-trial,.m-status-opt.s-bloqueada');
     const novoStatus = selOpt ? ['ativa','trial','bloqueada'].find(s=>selOpt.classList.contains('s-'+s)) : null;
 
     if(novoNome) e.nome = novoNome;
+    if(novoTipo) e.tipo = novoTipo;
     if(novoWhats !== undefined){
       let _wd = novoWhats.replace(/\D/g,'');
       if(_wd.startsWith('55') && _wd.length>11) _wd=_wd.slice(2);
