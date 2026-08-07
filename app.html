@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Agen+</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://byrcbihwqgostesuoztd.supabase.co" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css">
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" id="favicon" href="data:,">
 <meta name="theme-color" content="#ffffff">
@@ -229,7 +229,6 @@
 <!-- Supabase SDK -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
 
 <script>
 let currentUser      = null;
@@ -5244,13 +5243,27 @@ function validarArquivo(file){
   return null;
 }
 
+function _carregarCropper(){
+  return new Promise((resolve)=>{
+    if(window.Cropper) return resolve();
+    const css = document.createElement('link');
+    css.rel = 'stylesheet';
+    css.href = 'https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css';
+    document.head.appendChild(css);
+    const js = document.createElement('script');
+    js.src = 'https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js';
+    js.onload = resolve;
+    document.head.appendChild(js);
+  });
+}
 function abrirCrop(tipo, slug, callback){
   _cropTipo = tipo; _cropSlug = slug; _cropCallback = callback;
   const input = document.createElement('input');
   input.type = 'file'; input.accept = 'image/jpeg,image/png,image/webp';
-  input.onchange = (ev)=>{
+  input.onchange = async (ev)=>{
     const file = ev.target.files[0]; if(!file) return;
     const err = validarArquivo(file); if(err){ toast(err,'err'); return; }
+    await _carregarCropper();
     const reader = new FileReader();
     reader.onload = (e)=>{
       const modal = document.getElementById('cropModal');
