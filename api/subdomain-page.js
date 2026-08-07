@@ -74,10 +74,10 @@ module.exports = async function handler(req, res) {
 
   let ogTitle, ogDesc, ogImage;
   if (ag) {
-    // Link de confirmacao: usa logo da empresa se disponivel
+    // Link de confirmacao: sem imagem
     ogTitle = `${empNome} — Confirme seu agendamento`;
     ogDesc  = `Acesse o link para confirmar ou cancelar seu agendamento.`;
-    ogImage = empLogo;
+    ogImage = null;
   } else {
     // Pagina inicial da empresa
     ogTitle = `${empNome} — Agende seu horário`;
