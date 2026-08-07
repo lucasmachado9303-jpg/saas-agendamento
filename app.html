@@ -1678,7 +1678,17 @@ function renderGestao(empInicial){
     const fmtData = d => { const [y,m,dd]=d.split('-'); return `${dd}/${m}/${y}`; };
 
     function _diasSemVoltar(c) {
-      const ags = agendamentos.filter(a => a.slug===emp.slug && a.nome===c.nome && a.telefone===c.telefone);
+      const hojeIso = isoData(new Date());
+      const temFuturoAtivo = agendamentos.some(a =>
+        a.slug===emp.slug && a.nome===c.nome && a.telefone===c.telefone
+        && a.status !== 'cancelado' && a.data > hojeIso
+      );
+      if(temFuturoAtivo) return null;
+      const ags = agendamentos.filter(a =>
+        a.slug===emp.slug && a.nome===c.nome && a.telefone===c.telefone
+        && a.status !== 'cancelado'
+        && a.data <= hojeIso
+      );
       if(!ags.length) return null;
       const ultima = ags.map(a=>a.data).sort().pop();
       return Math.floor((new Date() - new Date(ultima+'T00:00:00')) / 86400000);
