@@ -82,7 +82,7 @@ module.exports = async function handler(req, res) {
     // Pagina inicial da empresa
     ogTitle = `${empNome} — Agende seu horário`;
     ogDesc  = `Agende online de forma rápida e simples.`;
-    ogImage = empLogo;
+    ogImage = null;
   }
 
   function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
