@@ -43,7 +43,7 @@ module.exports = async function handler(req, res) {
   let emp = null;
   try {
     const r = await fetch(
-      `${SUPABASE_URL}/rest/v1/empresas?slug=eq.${encodeURIComponent(slug)}&select=id,nome,logo,bloqueada&limit=1`,
+      `${SUPABASE_URL}/rest/v1/empresas?slug=eq.${encodeURIComponent(slug)}&select=id,nome,logo,bloqueada,tipo&limit=1`,
       { headers: { 'Authorization': `Bearer ${SERVICE_KEY}`, 'apikey': SERVICE_KEY } }
     );
     const rows = await r.json();
@@ -78,8 +78,13 @@ module.exports = async function handler(req, res) {
     ogTitle = `${empNome} — Confirme seu agendamento`;
     ogDesc  = `Acesse o link para confirmar ou cancelar seu agendamento.`;
     ogImage = null;
+  } else if (emp && emp.tipo === 'pagina') {
+    // Empresa de pagina: so o nome
+    ogTitle = empNome;
+    ogDesc  = '';
+    ogImage = null;
   } else {
-    // Pagina inicial da empresa
+    // Empresa de agendamento
     ogTitle = `${empNome} — Agende seu horário`;
     ogDesc  = `Agende online de forma rápida e simples.`;
     ogImage = null;
