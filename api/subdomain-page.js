@@ -110,6 +110,6 @@ module.exports = async function handler(req, res) {
   html = html.replace('</head>', ogTags + '\n</head>');
 
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
-  res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
   return res.status(200).send(html);
 };
