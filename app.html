@@ -4851,71 +4851,71 @@ function renderMasterPanel(){
                 }
               </div>
               <div style="flex:1;min-width:0;">
-                <div style="font-size:14px;font-weight:700;color:var(--ink);text-transform:capitalize;">${mesLbl}</div>
+                <div style="font-size:14px;font-weight:700;color:var(--ink);">${mesLbl}</div>
                 <div style="font-size:12px;color:var(--ink-soft);margin-top:1px;">${ok ? 'Pago em ' + dataStr : 'Não pago'}</div>
               </div>
               <div style="font-size:14px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums;">${valStr}</div>
             </div>`;
         }).join('') : `<div style="padding:20px 0;font-size:14px;color:var(--ink-soft);text-align:center;">Nenhum lançamento ainda.</div>`;
 
+        const INP = `width:100%;padding:11px 14px;border:1.5px solid var(--line);border-radius:10px;font-size:15px;background:var(--paper);color:var(--ink);font-family:inherit;outline:none;box-sizing:border-box;`;
+        const LBL = `font-size:12px;font-weight:700;color:var(--ink-soft);display:block;margin-bottom:6px;`;
+        const SEC = `font-size:13px;font-weight:800;color:var(--ink);margin:20px 0 10px;`;
+
         drawMasterShell(`
           <button class="m-back" onclick="finVoltarLista()">${ICO_BACK} Financeiro</button>
-          <div style="margin-bottom:24px;">
+          <div style="margin-bottom:20px;">
             <div style="font-size:20px;font-weight:800;color:var(--ink);">${escapeHtml(e.nome)}</div>
             <div style="font-size:13px;color:var(--ink-soft);margin-top:2px;">${e.slug}.agenplus.com.br</div>
           </div>
 
-          <div class="m-section">
-            <div class="m-section-title">Cobrança mensal</div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+          <div style="${SEC}">Cobrança mensal</div>
+          <div style="background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:4px;">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
               <div>
-                <label style="font-size:12px;font-weight:700;color:var(--ink-soft);display:block;margin-bottom:5px;">Valor mensal (R$)</label>
+                <label style="${LBL}">Valor mensal (R$)</label>
                 <input id="finValor_${e.id}" type="number" step="0.01" placeholder="0,00"
-                  value="${escapeAttr(String(finReg?.valor||''))}"
-                  style="width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;font-size:15px;background:var(--paper);color:var(--ink);font-family:inherit;outline:none;box-sizing:border-box;"/>
+                  value="${escapeAttr(String(finReg?.valor||''))}" style="${INP}"/>
               </div>
               <div>
-                <label style="font-size:12px;font-weight:700;color:var(--ink-soft);display:block;margin-bottom:5px;">Dia de vencimento</label>
+                <label style="${LBL}">Dia de vencimento</label>
                 <input id="finDia_${e.id}" type="number" min="1" max="31" placeholder="Ex: 10"
-                  value="${escapeAttr(String(finReg?.dia_vencimento||''))}"
-                  style="width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;font-size:15px;background:var(--paper);color:var(--ink);font-family:inherit;outline:none;box-sizing:border-box;"/>
+                  value="${escapeAttr(String(finReg?.dia_vencimento||''))}" style="${INP}"/>
               </div>
             </div>
             <button onclick="masterSalvarFinConfig('${e.id}')"
-              style="width:100%;padding:11px;background:#111;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">
+              style="width:100%;padding:12px;background:#111;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">
               Salvar configuração
             </button>
           </div>
 
-          <div class="m-section">
-            <div class="m-section-title">Registrar pagamento</div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+          <div style="${SEC}">Registrar pagamento</div>
+          <div style="background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:4px;">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
               <div>
-                <label style="font-size:12px;font-weight:700;color:var(--ink-soft);display:block;margin-bottom:5px;">Referência</label>
-                <input id="finLancRef_${e.id}" type="month" value="${refPadrao}"
-                  style="width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;font-size:14px;background:var(--paper);color:var(--ink);font-family:inherit;outline:none;box-sizing:border-box;"/>
+                <label style="${LBL}">Referência</label>
+                <input id="finLancRef_${e.id}" type="month" value="${refPadrao}" style="${INP}"/>
               </div>
               <div>
-                <label style="font-size:12px;font-weight:700;color:var(--ink-soft);display:block;margin-bottom:5px;">Valor (R$)</label>
+                <label style="${LBL}">Valor (R$)</label>
                 <input id="finLancValor_${e.id}" type="number" step="0.01" placeholder="0,00"
-                  value="${escapeAttr(String(finReg?.valor||''))}"
-                  style="width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;font-size:14px;background:var(--paper);color:var(--ink);font-family:inherit;outline:none;box-sizing:border-box;"/>
+                  value="${escapeAttr(String(finReg?.valor||''))}" style="${INP}"/>
               </div>
             </div>
-            <div style="margin-bottom:10px;">
-              <label style="font-size:12px;font-weight:700;color:var(--ink-soft);display:block;margin-bottom:5px;">Data do pagamento (deixe em branco se ainda não pagou)</label>
+            <div style="margin-bottom:12px;">
+              <label style="${LBL}">Data do pagamento</label>
+              <div style="font-size:11px;color:var(--ink-soft);margin-bottom:6px;">Deixe em branco se ainda não pagou</div>
               <input id="finLancData_${e.id}" type="date"
-                value="${refPadrao+'-'+String(hoje.getDate()).padStart(2,'0')}"
-                style="width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;font-size:14px;background:var(--paper);color:var(--ink);font-family:inherit;outline:none;box-sizing:border-box;"/>
+                value="${refPadrao+'-'+String(hoje.getDate()).padStart(2,'0')}" style="${INP}"/>
             </div>
             <button onclick="masterLancarMensalidadeFin('${e.id}')"
-              style="width:100%;padding:11px;background:#16a34a;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">
+              style="width:100%;padding:12px;background:#16a34a;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">
               Registrar pagamento
             </button>
           </div>
 
-          <div class="m-section">
-            <div class="m-section-title">Histórico de pagamentos</div>
+          <div style="${SEC}">Histórico de pagamentos</div>
+          <div style="background:#fff;border:1px solid var(--line);border-radius:14px;overflow:hidden;">
             ${histRows}
           </div>
         `);
