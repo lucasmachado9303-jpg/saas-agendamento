@@ -278,7 +278,7 @@ async function loadData(){
       horariosPorMes:       {},
       bloqueios:            [],
       botoes:               [],
-      cancelamentoHoras:    e.cancelamento_horas || 0,
+      cancelamentoHoras:    e.cancelamento_horas ?? 2,
       tipo:                 e.tipo || 'agendamento'
     }));
   }catch(e){ console.error('Erro ao carregar empresas:', e); empresas = []; }
@@ -469,7 +469,7 @@ function defaultEmpresa(){
   return {
     slug:"", nome:"", fotoUrl:"", whatsapp:"", bloqueada:false, msgInativo:"",
     descricao:"", logo:"", corPrincipal:"#3d1f3a", textoDestaque:"",
-    servicos:[], horariosPorMes:{}, bloqueios:[], botoes:[], cancelamentoHoras:0,
+    servicos:[], horariosPorMes:{}, bloqueios:[], botoes:[], cancelamentoHoras:2,
     tipo:"agendamento"
   };
 }

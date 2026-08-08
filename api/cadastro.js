@@ -70,7 +70,8 @@ module.exports = async function handler(req, res) {
       slug, nome: nome_empresa.trim(), whatsapp: whatsapp || null, bloqueada: false,
       status: 'trial',
       foto_url: null, descricao: null, logo: null, cor_principal: '#3d1f3a', texto_destaque: null,
-      trial_expira_em: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+      trial_expira_em: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+      cancelamento_horas: 2
     })
   });
   if (!empInsert.ok) {
