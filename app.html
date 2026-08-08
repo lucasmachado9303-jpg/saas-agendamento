@@ -4804,6 +4804,8 @@ function renderMasterPanel(){
     const MESES_PT = ['Janeiro','Fevereiro','Marco','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
     const periodoLabel = `${MESES_PT[_finPeriodo.mes]} ${_finPeriodo.ano}`;
     const refAtual = `${_finPeriodo.ano}-${String(_finPeriodo.mes+1).padStart(2,'0')}`;
+    const hoje = new Date();
+    const refPadrao = `${hoje.getFullYear()}-${String(hoje.getMonth()+1).padStart(2,'0')}`;
 
     // Mensalidades do periodo
     const mensPeriodo = mensalidades.filter(m=>m.referencia===refAtual);
@@ -4964,7 +4966,13 @@ function renderMasterPanel(){
   }
 
   window.drawMaster = draw;
-  window.masterIrAba = (aba) => { masterAba = aba; _masterDetalheSlug = null; draw(); };
+  window.masterIrAba = async (aba) => {
+    masterAba = aba; _masterDetalheSlug = null;
+    if(aba === 'financeiro'){
+      await Promise.all([carregarFinanceiro(), carregarMensalidades()]);
+    }
+    draw();
+  };
 
   window.masterAbrirDetalhe = async (slug) => {
     _masterDetalheSlug = slug; draw();
