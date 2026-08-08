@@ -4122,6 +4122,9 @@ window.tentarCadastro = async ()=>{
 
   const session = loginData.session;
   const hash = `access_token=${session.access_token}&refresh_token=${session.refresh_token}&token_type=bearer&type=bearer`;
+  // Dispara eventos de conversao antes de redirecionar
+  try{ if(typeof fbq==='function') fbq('track','Lead'); }catch(e){}
+  try{ if(typeof gtag==='function') gtag('event','sign_up',{method:'email'}); }catch(e){}
   location.replace(`https://${result.slug}.agenplus.com.br/gestao#${hash}`);
 };
 
