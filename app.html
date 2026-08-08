@@ -3097,6 +3097,7 @@ function renderGestao(empInicial){
 
   window.abrirFinalizarModal = (agId)=>{ _finalizarAgId=agId; _finalizarAcao=null; draw(); };
   window.fecharFinalizarModal = ()=>{ _finalizarAgId=null; _finalizarAcao=null; draw(); };
+  window.setFinalizarAcao = (v)=>{ _finalizarAcao=v; draw(); };
 
   window.finalizarAtendido = async (agId)=>{
     const valEl = document.getElementById('fin-val');
@@ -3198,9 +3199,9 @@ function renderGestao(empInicial){
         <div style="font-weight:600;font-size:14px;color:#1a1a1a;margin-bottom:12px;">Informe o valor recebido</div>
         <div class="field" style="margin:0 0 14px;"><label>Valor (R$)</label><input id="fin-val" type="number" min="0" step="0.01" value="${escapeHtml(precoSugerido)}" placeholder="0,00"></div>
         <button onclick="finalizarAtendido('${ag.id}')" style="${CS2}border:none;background:#16a34a;color:#fff;">Confirmar como atendido</button>
-        <button onclick="_finalizarAcao=null;draw()" style="${CS2}border:1.5px solid #e5e7eb;background:#fff;color:#555;margin-bottom:0;">Voltar</button>`
+        <button onclick="setFinalizarAcao(null)" style="${CS2}border:1.5px solid #e5e7eb;background:#fff;color:#555;margin-bottom:0;">Voltar</button>`
       : `
-        <button onclick="_finalizarAcao='atendido';draw()" style="${CS2}border:none;background:#16a34a;color:#fff;">Atendido</button>
+        <button onclick="setFinalizarAcao('atendido')" style="${CS2}border:none;background:#16a34a;color:#fff;">Atendido</button>
         <button onclick="finalizarCancelado('${ag.id}')" style="${CS2}border:1.5px solid #fed7aa;background:#fff;color:#c2410c;">Cancelado</button>
         <button onclick="finalizarExcluir('${ag.id}')" style="${CS2}border:1.5px solid #fca5a5;background:#fff;color:#dc2626;">Excluir</button>
         <button onclick="fecharFinalizarModal()" style="${CS2}border:1.5px solid #e5e7eb;background:#fff;color:#555;margin-bottom:0;">Voltar</button>`;
