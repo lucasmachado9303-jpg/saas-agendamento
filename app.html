@@ -1419,7 +1419,8 @@ function renderGestao(empInicial){
   let _gFinFiltro = 'todos'; // 'todos' | 'entradas' | 'saidas'
   let _gFinCarregando = false;
   let _gFinAgLancados = new Set(); // IDs de agendamentos já lançados — nunca removido ao excluir lançamento
-  let _finalizarAgId = null; // ID do agendamento com modal "Finalizar" aberto
+  let _finalizarAgId  = null; // ID do agendamento com modal "Finalizar" aberto
+  let _finalizarAcao = null; // null = etapa 1 (escolha) | 'atendido' = etapa 2 (valor)
 
   // Estado de relatórios
   let _relAba = null; // null = menu | 'financeiro' | 'agendamentos' | 'clientes' | 'servicos'
@@ -1493,9 +1494,7 @@ function renderGestao(empInicial){
             ? 'opacity:0.3;filter:grayscale(1);background:#f7f7f7;'
             : jaAtendido
               ? 'opacity:0.45;background:#f7f7f7;'
-              : !passadoHora
-                ? 'box-shadow:0 2px 12px rgba(0,0,0,0.15);'
-                : '';
+              : 'box-shadow:0 2px 12px rgba(0,0,0,0.15);';
           const statusCor = ag.status==='confirmado' ? '#16a34a' : ag.status==='cancelado' ? '#dc2626' : '#6b7280';
           const statusLabel = ag.status==='confirmado' ? 'Confirmado' : ag.status==='cancelado' ? 'Cancelado' : 'Não confirmado';
           const nomeStyle = ag.status==='cancelado' ? 'text-decoration:line-through;' : '';
@@ -1516,7 +1515,9 @@ function renderGestao(empInicial){
                 </div>` : ''}
               </div>
             </div>`;
-          const botoes = ag.status==='cancelado' ? '' : pendenteFin ? botoesPendente : jaAtendido ? '' : botoesAtivo;
+          const BTN_EXC = 'font-family:inherit;height:28px;padding:0 12px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;border:0.5px solid #fca5a5;background:#fff;color:#dc2626;';
+          const botoesAtendido = `<div style="display:flex;justify-content:flex-end;"><button style="${BTN_EXC}" onclick="excluirAgendamento('${ag.id}')">Excluir</button></div>`;
+          const botoes = ag.status==='cancelado' ? '' : pendenteFin ? botoesPendente : jaAtendido ? botoesAtendido : botoesAtivo;
           const showBadge = !passadoHora || ag.status==='cancelado' || jaAtendido;
           const badgeCor = jaAtendido ? '#16a34a' : statusCor;
           const badgeLabel = jaAtendido ? 'Atendido' : statusLabel;
@@ -1724,9 +1725,9 @@ function renderGestao(empInicial){
       const histRows = hist.length
         ? hist.map(a=>{
           const cancelado = a.status==='cancelado';
-          const confirmado = a.status==='confirmado';
-          const statusCor = cancelado ? '#dc2626' : confirmado ? '#16a34a' : '#8e8e93';
-          const statusLabel = cancelado ? 'Cancelado' : confirmado ? 'Confirmado' : 'Nao confirmado';
+          const atendido  = !cancelado && _gFinAgLancados.has(a.id);
+          const statusCor = cancelado ? '#dc2626' : atendido ? '#16a34a' : '#8e8e93';
+          const statusLabel = cancelado ? 'Cancelado' : atendido ? 'Atendido' : 'Agendado';
           return `
           <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:0.5px solid #f2f2f7;${cancelado?'opacity:0.6;':''}">
             <div style="flex:1;min-width:0;">
@@ -3094,8 +3095,8 @@ function renderGestao(empInicial){
     await gFinCarregar();
   };
 
-  window.abrirFinalizarModal = (agId)=>{ _finalizarAgId=agId; draw(); };
-  window.fecharFinalizarModal = ()=>{ _finalizarAgId=null; draw(); };
+  window.abrirFinalizarModal = (agId)=>{ _finalizarAgId=agId; _finalizarAcao=null; draw(); };
+  window.fecharFinalizarModal = ()=>{ _finalizarAgId=null; _finalizarAcao=null; draw(); };
 
   window.finalizarAtendido = async (agId)=>{
     const valEl = document.getElementById('fin-val');
@@ -3189,18 +3190,23 @@ function renderGestao(empInicial){
     const svc = emp.servicos.find(s=>s.id===ag.servicoId);
     const precoSugerido = svc?.preco ? String(svc.preco) : '';
     const CS2 = 'font-family:Nunito,sans-serif;cursor:pointer;width:100%;height:44px;border-radius:12px;font-size:14px;font-weight:600;margin-bottom:8px;';
-    return `<div style="position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9000;display:flex;align-items:flex-end;justify-content:center;" onclick="if(event.target===this)fecharFinalizarModal()">
-      <div style="background:#fff;border-radius:18px 18px 0 0;padding:28px 24px 40px;width:100%;max-width:520px;">
-        <div style="font-weight:700;font-size:18px;color:#1a1a1a;margin:0 0 4px;">Finalizar atendimento</div>
-        <div style="font-size:14px;color:#888;margin:0 0 20px;">${escapeHtml(ag.nome)}${ag.servicoNome?' · '+escapeHtml(ag.servicoNome):''}</div>
-        <div style="border:1.5px solid #e5e7eb;border-radius:12px;padding:14px;margin-bottom:10px;">
-          <div style="font-weight:600;font-size:14px;color:#1a1a1a;margin-bottom:10px;">Atendido</div>
-          <div class="field" style="margin:0 0 10px;"><label>Valor (R$)</label><input id="fin-val" type="number" min="0" step="0.01" value="${escapeHtml(precoSugerido)}" placeholder="0,00"></div>
-          <button onclick="finalizarAtendido('${ag.id}')" style="font-family:Nunito,sans-serif;cursor:pointer;width:100%;height:40px;border-radius:10px;border:none;background:#16a34a;color:#fff;font-size:14px;font-weight:600;">Confirmar como atendido</button>
-        </div>
+    const cabecalho = `
+      <div style="font-weight:700;font-size:18px;color:#1a1a1a;margin:0 0 4px;">Finalizar atendimento</div>
+      <div style="font-size:14px;color:#888;margin:0 0 20px;">${escapeHtml(ag.nome)}${ag.servicoNome?' · '+escapeHtml(ag.servicoNome):''}</div>`;
+    const corpo = _finalizarAcao==='atendido'
+      ? `
+        <div style="font-weight:600;font-size:14px;color:#1a1a1a;margin-bottom:12px;">Informe o valor recebido</div>
+        <div class="field" style="margin:0 0 14px;"><label>Valor (R$)</label><input id="fin-val" type="number" min="0" step="0.01" value="${escapeHtml(precoSugerido)}" placeholder="0,00"></div>
+        <button onclick="finalizarAtendido('${ag.id}')" style="${CS2}border:none;background:#16a34a;color:#fff;">Confirmar como atendido</button>
+        <button onclick="_finalizarAcao=null;draw()" style="${CS2}border:1.5px solid #e5e7eb;background:#fff;color:#555;margin-bottom:0;">Voltar</button>`
+      : `
+        <button onclick="_finalizarAcao='atendido';draw()" style="${CS2}border:none;background:#16a34a;color:#fff;">Atendido</button>
         <button onclick="finalizarCancelado('${ag.id}')" style="${CS2}border:1.5px solid #fed7aa;background:#fff;color:#c2410c;">Cancelado</button>
         <button onclick="finalizarExcluir('${ag.id}')" style="${CS2}border:1.5px solid #fca5a5;background:#fff;color:#dc2626;">Excluir</button>
-        <button onclick="fecharFinalizarModal()" style="${CS2}border:1.5px solid #e5e7eb;background:#fff;color:#555;margin-bottom:0;">Voltar</button>
+        <button onclick="fecharFinalizarModal()" style="${CS2}border:1.5px solid #e5e7eb;background:#fff;color:#555;margin-bottom:0;">Voltar</button>`;
+    return `<div style="position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9000;display:flex;align-items:flex-end;justify-content:center;" onclick="if(event.target===this)fecharFinalizarModal()">
+      <div style="background:#fff;border-radius:18px 18px 0 0;padding:28px 24px 40px;width:100%;max-width:520px;">
+        ${cabecalho}${corpo}
       </div>
     </div>`;
   }
@@ -3255,7 +3261,7 @@ function renderGestao(empInicial){
   window.setCorner = (c)=>{
     // Reset de estado comum
     corner=c; editandoId=null; novoAgState=null; configurarSub=null;
-    _removendoServicoIdx=null; _waMenuId=null; _gFinModal=null; _notaModal=null; _finalizarAgId=null;
+    _removendoServicoIdx=null; _waMenuId=null; _gFinModal=null; _notaModal=null; _finalizarAgId=null; _finalizarAcao=null;
     _novoAgClienteId=null; _novoAgClienteBusca=''; _novoAgClienteResultados=[];
     _clientePerfilId=null; _clientePerfilEditando=false; _clienteModalNovo=false;
     // Executa ação específica da aba sem recarregar todos os dados
