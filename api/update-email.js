@@ -59,5 +59,16 @@ module.exports = async function handler(req, res) {
     return res.status(500).json({ error: err.message || 'Erro ao atualizar e-mail no Supabase.' });
   }
 
+  // Atualiza tambem a tabela profiles
+  await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${user_id}`, {
+    method: 'PATCH',
+    headers: {
+      'Authorization': `Bearer ${SERVICE_KEY}`,
+      'apikey': SERVICE_KEY,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ email })
+  });
+
   return res.status(200).json({ success: true });
 };
