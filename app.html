@@ -861,9 +861,11 @@ function renderAgendar(emp){
           const bloq    = (emp.bloqueios||[]).some(b=>b.data===iso && b.hora===h);
           const [hh,mm] = h.split(':').map(Number);
           const passado = iso===hojeIso && (hh*60+mm < agora.getHours()*60+agora.getMinutes());
+          if(iso===hojeIso) console.log('[CAL DEBUG]',h,'taken:',taken,'bloq:',bloq,'passado:',passado,'livre:',!taken&&!bloq&&!passado);
           return !taken && !bloq && !passado;
         });
       }
+      if(iso===hojeIso) console.log('[CAL DEBUG] hoje livre:',livre,'past:',past,'temH:',temH,'diasOk:',diasTrabalho.includes(dt.getDay()),'slots:',slots,'diasTrabalho:',diasTrabalho);
       cells.push({d, iso, past, livre});
     }
     return cells;
