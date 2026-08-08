@@ -851,13 +851,16 @@ function renderAgendar(emp){
       const iso = isoData(dt);
       const past= iso < hojeIso;
       let livre = false;
-      if(temH && !past){
+      const diasTrabalho = (emp.horariosPorMes && emp.horariosPorMes['_dias_'])
+        ? emp.horariosPorMes['_dias_'].map(Number)
+        : [0,1,2,3,4,5,6];
+      if(temH && !past && diasTrabalho.includes(dt.getDay())){
         const agora = new Date();
         livre = slots.some(h=>{
           const taken   = agendamentos.some(a=>a.slug===emp.slug && a.data===iso && a.hora===h && a.status!=='cancelado');
           const bloq    = (emp.bloqueios||[]).some(b=>b.data===iso && b.hora===h);
           const [hh,mm] = h.split(':').map(Number);
-          const passado = iso===hojeIso && (hh*60+mm <= agora.getHours()*60+agora.getMinutes());
+          const passado = iso===hojeIso && (hh*60+mm < agora.getHours()*60+agora.getMinutes());
           return !taken && !bloq && !passado;
         });
       }
@@ -869,11 +872,16 @@ function renderAgendar(emp){
   function slotsParaDia(iso){
     const agora   = new Date();
     const hojeIso = isoData(agora);
+    const diasTrabalho = (emp.horariosPorMes && emp.horariosPorMes['_dias_'])
+      ? emp.horariosPorMes['_dias_'].map(Number)
+      : [0,1,2,3,4,5,6];
+    const diaDaSemana = new Date(iso+'T00:00:00').getDay();
+    if(!diasTrabalho.includes(diaDaSemana)) return [];
     return horariosDoMes(emp, iso.slice(0,7)).map(h=>{
       const taken   = agendamentos.some(a=>a.slug===emp.slug && a.data===iso && a.hora===h && a.status!=='cancelado');
       const bloq    = (emp.bloqueios||[]).some(b=>b.data===iso && b.hora===h);
       const [hh,mm] = h.split(':').map(Number);
-      const passado = iso===hojeIso && (hh*60+mm <= agora.getHours()*60+agora.getMinutes());
+      const passado = iso===hojeIso && (hh*60+mm < agora.getHours()*60+agora.getMinutes());
       return {h, livre: !taken && !bloq && !passado};
     });
   }
