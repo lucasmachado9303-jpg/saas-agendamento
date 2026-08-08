@@ -1421,6 +1421,7 @@ function renderGestao(empInicial){
   let _gFinAgLancados = new Set(); // IDs de agendamentos já lançados — nunca removido ao excluir lançamento
   let _finalizarAgId  = null; // ID do agendamento com modal "Finalizar" aberto
   let _finalizarAcao = null; // null = etapa 1 (escolha) | 'atendido' = etapa 2 (valor)
+  let _novoAgModalOpen = false; // modal de novo agendamento aberto
 
   // Estado de relatórios
   let _relAba = null; // null = menu | 'financeiro' | 'agendamentos' | 'clientes' | 'servicos'
@@ -1542,42 +1543,6 @@ function renderGestao(empInicial){
             <button style="font-family:inherit;height:24px;border-radius:5px;border:0.5px solid #ccc;background:#fff;color:#555;font-size:10px;font-weight:600;cursor:pointer;" onclick="desbloquearHorario('${diaSelecionado}','${h}')">Desbloquear</button>
           </div>`);
           continue;
-        }
-        if(novoAgState && novoAgState.data===diaSelecionado && novoAgState.hora===h){
-          const servicoOpts = emp.servicos.map(s=>`<option value="${s.id}">${escapeHtml(s.nome)}</option>`).join("");
-          const horariosOpts = horarios.map(hh=>`<option value="${hh}" ${hh===h?'selected':''}>${hh}</option>`).join("");
-          const _cliSel = _novoAgClienteId ? _clientes.find(x=>x.id===_novoAgClienteId) : null;
-          const _nomePreench = _novoAgClienteBusca.toUpperCase();
-          parts.push(`<div class="list-item" style="flex-direction:column;align-items:stretch;">
-            <div style="font-weight:700;font-size:14px;margin-bottom:8px;">${h} — Novo agendamento</div>
-            <div class="field" style="position:relative;">
-              <label>Cliente</label>
-              ${_novoAgCriarCliente
-                ? `<div style="background:#f8faff;border:1.5px solid #c8c8c8;border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:8px;">
-                    <div style="font-size:13px;font-weight:700;color:#1a1a1a;margin-bottom:2px;">Novo cliente</div>
-                    <div class="field" style="margin:0;"><label>Nome</label><input id="novoAgCliNome" type="text" value="${escapeAttr(_nomePreench)}" placeholder="NOME COMPLETO" style="text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()"/></div>
-                    <div class="field" style="margin:0;"><label>Telefone</label><input id="novoAgCliTel" type="tel" inputmode="numeric" maxlength="16" placeholder="(xx) xxxxx-xxxx" oninput="maskTel(this)"/></div>
-                    <div style="display:flex;gap:8px;">
-                      <button class="btn ghost" style="flex:1;height:34px;font-size:13px;" onclick="cancelarCriarClienteRapido()">Cancelar</button>
-                      <button class="btn" style="flex:1;height:34px;font-size:13px;" onclick="salvarClienteRapido()">Salvar</button>
-                    </div>
-                  </div>`
-                : _cliSel
-                  ? `<div style="display:flex;align-items:center;gap:8px;padding:10px 12px;border:1.5px solid #22c55e;border-radius:10px;background:#f0fdf4;"><div style="flex:1;font-size:14px;font-weight:600;color:#1a1a1a;">${escapeHtml(_cliSel.nome)}</div><button onclick="limparClienteAg()" style="background:none;border:none;color:#8e8e93;cursor:pointer;font-size:18px;line-height:1;padding:0;min-height:0;">&times;</button></div>`
-                  : `<input id="novoAgBusca" type="text" value="${escapeAttr(_novoAgClienteBusca)}" placeholder="Buscar cliente por nome..." oninput="buscarClienteAg(this.value)" autocomplete="off" style="width:100%;border:1.5px solid #e5e7eb;border-radius:10px;padding:10px 12px;font-size:14px;font-family:inherit;color:#1a1a1a;box-sizing:border-box;"/>
-                    <div id="novoAgDrop" style="position:absolute;left:0;right:0;top:calc(100% - 2px);background:#fff;border:0.5px solid #d1d5db;border-radius:0 0 10px 10px;overflow:hidden;z-index:50;box-shadow:0 4px 12px rgba(0,0,0,.10);display:none;"></div>
-                    <div id="novoAgNoResult" style="display:${_novoAgClienteBusca && !_novoAgClienteResultados.length && !_novoAgClienteId ? 'flex' : 'none'};align-items:center;justify-content:space-between;margin-top:6px;"><span style="font-size:12px;color:#8e8e93;">Nenhum cliente encontrado.</span><button onclick="criarClienteRapido()" style="font-family:inherit;font-size:12px;font-weight:700;color:#1a1a1a;background:#f4f4f5;border:none;border-radius:7px;padding:4px 10px;cursor:pointer;">+ Criar cliente</button></div>`
-              }
-            </div>
-            <div class="row">
-              <div class="field"><label>Serviço</label><select id="novoServico">${servicoOpts}</select></div>
-              <div class="field"><label>Horário</label><div style="padding:10px 12px;border:1.5px solid #e5e7eb;border-radius:10px;font-size:14px;font-weight:600;color:#1a1a1a;background:#f9f9f9;">${novoAgState.hora}</div></div>
-            </div>
-            <div class="row">
-              <button class="btn ghost" onclick="cancelarNovoAg()">Cancelar</button>
-              <button class="btn" onclick="salvarNovoAg('${diaSelecionado}')">Agendar</button>
-            </div>
-          </div>`); continue;
         }
         // Slot livre
         parts.push(`<div style="padding:10px 12px;margin-bottom:6px;border-radius:9px;border:0.5px solid #e0e0e0;display:flex;align-items:center;justify-content:space-between;${passadoHora?'opacity:0.3;filter:grayscale(1);background:#f7f7f7;':'background:var(--card);box-shadow:0 2px 12px rgba(0,0,0,0.15);'}">
@@ -3184,6 +3149,50 @@ function renderGestao(empInicial){
     const _cor  = document.getElementById('pCor')?.value;           if(_cor)          emp.corPrincipal = _cor;
   }
 
+  function novoAgModalHtml(){
+    if(!novoAgState || !_novoAgModalOpen) return '';
+    const {data, hora} = novoAgState;
+    const servicoOpts = emp.servicos.map(s=>`<option value="${s.id}">${escapeHtml(s.nome)}</option>`).join('');
+    const _cliSel = _novoAgClienteId ? _clientes.find(x=>x.id===_novoAgClienteId) : null;
+    const _nomePreench = _novoAgClienteBusca.toUpperCase();
+    const dataFmt = new Date(data+'T00:00:00').toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'});
+    const clienteHtml = _novoAgCriarCliente
+      ? `<div style="background:#f8faff;border:1.5px solid #c8c8c8;border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:8px;">
+          <div style="font-size:13px;font-weight:700;color:#1a1a1a;margin-bottom:2px;">Novo cliente</div>
+          <div class="field" style="margin:0;"><label>Nome</label><input id="novoAgCliNome" type="text" value="${escapeAttr(_nomePreench)}" placeholder="NOME COMPLETO" style="text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()"/></div>
+          <div class="field" style="margin:0;"><label>Telefone</label><input id="novoAgCliTel" type="tel" inputmode="numeric" maxlength="16" placeholder="(xx) xxxxx-xxxx" oninput="maskTel(this)"/></div>
+          <div style="display:flex;gap:8px;">
+            <button class="btn ghost" style="flex:1;height:34px;font-size:13px;" onclick="cancelarCriarClienteRapido()">Cancelar</button>
+            <button class="btn" style="flex:1;height:34px;font-size:13px;" onclick="salvarClienteRapido()">Salvar</button>
+          </div>
+        </div>`
+      : _cliSel
+        ? `<div style="display:flex;align-items:center;gap:8px;padding:10px 12px;border:1.5px solid #22c55e;border-radius:10px;background:#f0fdf4;"><div style="flex:1;font-size:14px;font-weight:600;color:#1a1a1a;">${escapeHtml(_cliSel.nome)}</div><button onclick="limparClienteAg()" style="background:none;border:none;color:#8e8e93;cursor:pointer;font-size:18px;line-height:1;padding:0;min-height:0;">&times;</button></div>`
+        : `<div style="position:relative;">
+            <input id="novoAgBusca" type="text" value="${escapeAttr(_novoAgClienteBusca)}" placeholder="Buscar cliente por nome..." oninput="buscarClienteAg(this.value)" autocomplete="off" style="width:100%;border:1.5px solid #e5e7eb;border-radius:10px;padding:10px 12px;font-size:14px;font-family:inherit;color:#1a1a1a;box-sizing:border-box;"/>
+            <div id="novoAgDrop" style="position:absolute;left:0;right:0;top:calc(100% - 2px);background:#fff;border:0.5px solid #d1d5db;border-radius:0 0 10px 10px;overflow:hidden;z-index:50;box-shadow:0 4px 12px rgba(0,0,0,.10);display:none;"></div>
+            <div id="novoAgNoResult" style="display:${_novoAgClienteBusca && !_novoAgClienteResultados.length && !_novoAgClienteId ? 'flex' : 'none'};align-items:center;justify-content:space-between;margin-top:6px;"><span style="font-size:12px;color:#8e8e93;">Nenhum cliente encontrado.</span><button onclick="criarClienteRapido()" style="font-family:inherit;font-size:12px;font-weight:700;color:#1a1a1a;background:#f4f4f5;border:none;border-radius:7px;padding:4px 10px;cursor:pointer;">+ Criar cliente</button></div>
+          </div>`;
+    return `<div style="position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9000;display:flex;align-items:flex-end;justify-content:center;" onclick="if(event.target===this)cancelarNovoAg()">
+      <div style="background:#fff;border-radius:18px 18px 0 0;padding:24px 24px 40px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;">
+        <div style="font-weight:700;font-size:18px;color:#1a1a1a;margin:0 0 4px;">Novo agendamento</div>
+        <div style="font-size:14px;color:#888;margin:0 0 20px;">${dataFmt} · ${hora}</div>
+        <div class="field" style="position:relative;">
+          <label>Cliente</label>
+          ${clienteHtml}
+        </div>
+        <div class="field">
+          <label>Serviço</label>
+          <select id="novoServico">${servicoOpts}</select>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px;">
+          <button class="btn ghost" onclick="cancelarNovoAg()">Cancelar</button>
+          <button class="btn" onclick="salvarNovoAg('${data}')">Agendar</button>
+        </div>
+      </div>
+    </div>`;
+  }
+
   function finalizarModalHtml(){
     if(!_finalizarAgId) return '';
     const ag = agendamentos.find(a=>a.id===_finalizarAgId);
@@ -3243,6 +3252,7 @@ function renderGestao(empInicial){
     render(`
       ${GESTAO_CSS}
       ${finalizarModalHtml()}
+      ${novoAgModalHtml()}
       <div style="position:sticky;top:0;z-index:300;">
         ${barraVoltarMaster()}
       </div>
@@ -3262,7 +3272,7 @@ function renderGestao(empInicial){
   window.setCorner = (c)=>{
     // Reset de estado comum
     corner=c; editandoId=null; novoAgState=null; configurarSub=null;
-    _removendoServicoIdx=null; _waMenuId=null; _gFinModal=null; _notaModal=null; _finalizarAgId=null; _finalizarAcao=null;
+    _removendoServicoIdx=null; _waMenuId=null; _gFinModal=null; _notaModal=null; _finalizarAgId=null; _finalizarAcao=null; _novoAgModalOpen=false;
     _novoAgClienteId=null; _novoAgClienteBusca=''; _novoAgClienteResultados=[];
     _clientePerfilId=null; _clientePerfilEditando=false; _clienteModalNovo=false;
     // Executa ação específica da aba sem recarregar todos os dados
@@ -3323,8 +3333,8 @@ function renderGestao(empInicial){
     draw();
   };
 
-  window.novoAgendamento = (data, hora)=>{ novoAgState={data,hora}; editandoId=null; draw(); };
-  window.cancelarNovoAg = ()=>{ novoAgState=null; _novoAgClienteId=null; _novoAgClienteBusca=''; _novoAgClienteResultados=[]; draw(); };
+  window.novoAgendamento = (data, hora)=>{ novoAgState={data,hora}; editandoId=null; _novoAgModalOpen=true; draw(); };
+  window.cancelarNovoAg = ()=>{ novoAgState=null; _novoAgClienteId=null; _novoAgClienteBusca=''; _novoAgClienteResultados=[]; _novoAgModalOpen=false; _novoAgCriarCliente=false; draw(); };
   window.salvarNovoAg = async (data)=>{
     const servicoId = document.getElementById('novoServico')?.value;
     const hora = novoAgState?.hora;
@@ -3355,7 +3365,7 @@ function renderGestao(empInicial){
       confirmacaoEnviada: false, lembreteEnviado: false,
       tokenCurto: row.token_curto || null
     });
-    novoAgState=null; _novoAgClienteId=null; _novoAgClienteBusca=''; _novoAgClienteResultados=[]; draw();
+    novoAgState=null; _novoAgClienteId=null; _novoAgClienteBusca=''; _novoAgClienteResultados=[]; _novoAgModalOpen=false; _novoAgCriarCliente=false; draw();
   };
   window.editarAgendamento = (id)=>{ editandoId=id; novoAgState=null; draw(); };
   window.cancelarEdicaoAgendamento = ()=>{ editandoId=null; draw(); };
