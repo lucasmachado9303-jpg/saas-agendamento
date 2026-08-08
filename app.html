@@ -4855,6 +4855,11 @@ function renderMasterPanel(){
                 <div style="font-size:12px;color:var(--ink-soft);margin-top:1px;">${ok ? 'Pago em ' + dataStr : 'Não pago'}</div>
               </div>
               <div style="font-size:14px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums;">${valStr}</div>
+              <button onclick="event.stopPropagation();finExcluirLancamento('${m.id}')"
+                style="width:28px;height:28px;border:1px solid #fca5a5;border-radius:8px;background:#fff;color:#dc2626;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;"
+                title="Excluir lançamento">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+              </button>
             </div>`;
         }).join('') : `<div style="padding:20px 0;font-size:14px;color:var(--ink-soft);text-align:center;">Nenhum lançamento ainda.</div>`;
 
@@ -5042,6 +5047,14 @@ function renderMasterPanel(){
     await carregarMensalidades(); draw();
   };
   window.masterVoltarEmpresas = () => { _masterDetalheSlug = null; masterDrawerMode = null; editingSlug = null; draw(); };
+
+  window.finExcluirLancamento = async (id) => {
+    if(!confirm('Excluir este lançamento?')) return;
+    const { error } = await supabaseClient.from('mensalidades').delete().eq('id', id);
+    if(error){ toast('Erro ao excluir.','err'); return; }
+    toast('Lançamento excluído.','ok');
+    await carregarMensalidades(); draw();
+  };
 
   window.masterLancarMensalidadeFin = async (empresaId) => {
     const ref   = document.getElementById('finLancRef_'+empresaId)?.value||'';
