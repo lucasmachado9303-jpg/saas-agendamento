@@ -4717,7 +4717,7 @@ function renderMasterPanel(){
             <span class="m-pag-data">${ok?'Pago em '+dataFmt:'Nao pago'}</span>
             <span class="m-pag-valor">${ok?valFmt:'—'}</span>
           </div>`;
-        }).join('') : `<div style="padding:18px 16px;font-size:14px;color:var(--ink-soft);">Nenhum lancamento ainda.</div>`;
+        }).join('') : `<div style="padding:18px 16px;font-size:14px;color:var(--ink-soft);">Nenhum lançamento ainda.</div>`;
 
         const vencInfo = st==='trial'
           ? `<div class="m-det-right"><div class="m-det-venc-lbl">Trial expira em</div><div class="m-det-venc-val">${_diasTrialRestantes(e)} dias</div></div>`
@@ -4837,7 +4837,8 @@ function renderMasterPanel(){
 
         const histRows = empMens.length ? empMens.map(m => {
           const [yy,mm] = m.referencia.split('-');
-          const mesLbl = new Date(+yy,+mm-1,1).toLocaleString('pt-BR',{month:'long',year:'numeric'});
+          const _d = new Date(+yy,+mm-1,1);
+          const mesLbl = _d.toLocaleString('pt-BR',{month:'long'}).replace(/^\w/,c=>c.toUpperCase()) + ' de ' + _d.getFullYear();
           const ok = !!m.pago_em;
           const dataStr = ok ? new Date(m.pago_em+'T00:00:00').toLocaleDateString('pt-BR') : null;
           const valStr = fmtR(m.valor||0);
@@ -4851,11 +4852,11 @@ function renderMasterPanel(){
               </div>
               <div style="flex:1;min-width:0;">
                 <div style="font-size:14px;font-weight:700;color:var(--ink);text-transform:capitalize;">${mesLbl}</div>
-                <div style="font-size:12px;color:var(--ink-soft);margin-top:1px;">${ok ? 'Pago em ' + dataStr : 'Nao pago'}</div>
+                <div style="font-size:12px;color:var(--ink-soft);margin-top:1px;">${ok ? 'Pago em ' + dataStr : 'Não pago'}</div>
               </div>
               <div style="font-size:14px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums;">${valStr}</div>
             </div>`;
-        }).join('') : `<div style="padding:20px 0;font-size:14px;color:var(--ink-soft);text-align:center;">Nenhum lancamento ainda.</div>`;
+        }).join('') : `<div style="padding:20px 0;font-size:14px;color:var(--ink-soft);text-align:center;">Nenhum lançamento ainda.</div>`;
 
         drawMasterShell(`
           <button class="m-back" onclick="finVoltarLista()">${ICO_BACK} Financeiro</button>
@@ -4865,7 +4866,7 @@ function renderMasterPanel(){
           </div>
 
           <div class="m-section">
-            <div class="m-section-title">Cobranca mensal</div>
+            <div class="m-section-title">Cobrança mensal</div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
               <div>
                 <label style="font-size:12px;font-weight:700;color:var(--ink-soft);display:block;margin-bottom:5px;">Valor mensal (R$)</label>
@@ -4882,7 +4883,7 @@ function renderMasterPanel(){
             </div>
             <button onclick="masterSalvarFinConfig('${e.id}')"
               style="width:100%;padding:11px;background:#111;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">
-              Salvar configuracao
+              Salvar configuração
             </button>
           </div>
 
@@ -4890,7 +4891,7 @@ function renderMasterPanel(){
             <div class="m-section-title">Registrar pagamento</div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
               <div>
-                <label style="font-size:12px;font-weight:700;color:var(--ink-soft);display:block;margin-bottom:5px;">Referencia</label>
+                <label style="font-size:12px;font-weight:700;color:var(--ink-soft);display:block;margin-bottom:5px;">Referência</label>
                 <input id="finLancRef_${e.id}" type="month" value="${refPadrao}"
                   style="width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;font-size:14px;background:var(--paper);color:var(--ink);font-family:inherit;outline:none;box-sizing:border-box;"/>
               </div>
@@ -4902,7 +4903,7 @@ function renderMasterPanel(){
               </div>
             </div>
             <div style="margin-bottom:10px;">
-              <label style="font-size:12px;font-weight:700;color:var(--ink-soft);display:block;margin-bottom:5px;">Data do pagamento (deixe em branco se ainda nao pagou)</label>
+              <label style="font-size:12px;font-weight:700;color:var(--ink-soft);display:block;margin-bottom:5px;">Data do pagamento (deixe em branco se ainda não pagou)</label>
               <input id="finLancData_${e.id}" type="date"
                 value="${refPadrao+'-'+String(hoje.getDate()).padStart(2,'0')}"
                 style="width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;font-size:14px;background:var(--paper);color:var(--ink);font-family:inherit;outline:none;box-sizing:border-box;"/>
@@ -4914,7 +4915,7 @@ function renderMasterPanel(){
           </div>
 
           <div class="m-section">
-            <div class="m-section-title">Historico de pagamentos</div>
+            <div class="m-section-title">Histórico de pagamentos</div>
             ${histRows}
           </div>
         `);
