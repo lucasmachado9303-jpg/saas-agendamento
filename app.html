@@ -844,29 +844,11 @@ function renderAgendar(emp){
     const hojeIso   = isoData(new Date());
     const cells     = [];
     for(let i=0;i<primeiro.getDay();i++) cells.push(null);
-    const slots = horariosDoMes(emp, bookingState._calMes);
-    const temH  = slots.length > 0;
     for(let d=1;d<=ultimo.getDate();d++){
       const dt  = new Date(ano,mes-1,d);
       const iso = isoData(dt);
       const past= iso < hojeIso;
-      let livre = false;
-      const diasTrabalho = (emp.horariosPorMes && emp.horariosPorMes['_dias_'])
-        ? emp.horariosPorMes['_dias_'].map(Number)
-        : [0,1,2,3,4,5,6];
-      if(temH && !past && diasTrabalho.includes(dt.getDay())){
-        const agora = new Date();
-        livre = slots.some(h=>{
-          const taken   = agendamentos.some(a=>a.slug===emp.slug && a.data===iso && a.hora===h && a.status!=='cancelado');
-          const bloq    = (emp.bloqueios||[]).some(b=>b.data===iso && b.hora===h);
-          const [hh,mm] = h.split(':').map(Number);
-          const passado = iso===hojeIso && (hh*60+mm < agora.getHours()*60+agora.getMinutes());
-          if(iso===hojeIso) console.log('[CAL DEBUG]',h,'taken:',taken,'bloq:',bloq,'passado:',passado,'livre:',!taken&&!bloq&&!passado);
-          return !taken && !bloq && !passado;
-        });
-      }
-      if(iso===hojeIso) console.log('[CAL DEBUG] hoje livre:',livre,'past:',past,'temH:',temH,'diasOk:',diasTrabalho.includes(dt.getDay()),'slots:',slots,'diasTrabalho:',diasTrabalho);
-      cells.push({d, iso, past, livre});
+      cells.push({d, iso, past, livre: !past});
     }
     return cells;
   }
@@ -976,14 +958,22 @@ function renderAgendar(emp){
     if(bookingState.data){
       const dt = new Date(bookingState.data+"T00:00:00");
       diaLabel = dt.toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'});
-      const sl = slotsParaDia(bookingState.data);
-      slotsHtml = sl.length
-        ? sl.map(({h,livre})=>{
-            const sel = bookingState.hora===h;
-            if(!livre) return `<div style="border:1px solid #f3f4f6;border-radius:10px;padding:9px 4px;font-size:14px;font-weight:600;color:#d1d5db;text-align:center;background:#fafafa;">${h}</div>`;
-            return `<div onclick="wizSelHora('${h}')" style="border:1px solid ${sel?acc:'#e5e7eb'};border-radius:10px;padding:9px 4px;font-size:14px;font-weight:600;color:${sel?'#fff':'#374151'};text-align:center;background:${sel?acc:'#fff'};cursor:pointer;">${h}</div>`;
-          }).join('')
-        : `<p style="color:#888;font-size:15px;">Nenhum horário disponível.</p>`;
+      const _diasTrab = (emp.horariosPorMes && emp.horariosPorMes['_dias_'])
+        ? emp.horariosPorMes['_dias_'].map(Number)
+        : [0,1,2,3,4,5,6];
+      const _naoAtende = !_diasTrab.includes(new Date(bookingState.data+'T00:00:00').getDay());
+      if(_naoAtende){
+        slotsHtml = `<p style="color:#888;font-size:15px;text-align:center;padding:8px 0;">Não há atendimento neste dia.</p>`;
+      } else {
+        const sl = slotsParaDia(bookingState.data);
+        slotsHtml = sl.length
+          ? sl.map(({h,livre})=>{
+              const sel = bookingState.hora===h;
+              if(!livre) return `<div style="border:1px solid #f3f4f6;border-radius:10px;padding:9px 4px;font-size:14px;font-weight:600;color:#d1d5db;text-align:center;background:#fafafa;">${h}</div>`;
+              return `<div onclick="wizSelHora('${h}')" style="border:1px solid ${sel?acc:'#e5e7eb'};border-radius:10px;padding:9px 4px;font-size:14px;font-weight:600;color:${sel?'#fff':'#374151'};text-align:center;background:${sel?acc:'#fff'};cursor:pointer;">${h}</div>`;
+            }).join('')
+          : `<p style="color:#888;font-size:15px;">Nenhum horário disponível.</p>`;
+      }
     }
     const canNext  = !!(bookingState.data && bookingState.hora);
     const resumoLn = canNext ? `<div style="font-size:13px;color:#888;margin-bottom:10px;text-transform:capitalize;">${new Date(bookingState.data+"T00:00:00").toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'2-digit'})} · ${bookingState.hora}</div>` : '';
