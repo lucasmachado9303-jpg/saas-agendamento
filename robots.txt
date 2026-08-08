@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /login
+Disallow: /cadastro
+
+Sitemap: https://agenplus.com.br/sitemap.xml
