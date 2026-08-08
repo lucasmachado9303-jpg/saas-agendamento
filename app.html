@@ -1419,6 +1419,7 @@ function renderGestao(empInicial){
   let _gFinFiltro = 'todos'; // 'todos' | 'entradas' | 'saidas'
   let _gFinCarregando = false;
   let _gFinAgLancados = new Set(); // IDs de agendamentos já lançados — nunca removido ao excluir lançamento
+  let _finalizarAgId = null; // ID do agendamento com modal "Finalizar" aberto
 
   // Estado de relatórios
   let _relAba = null; // null = menu | 'financeiro' | 'agendamentos' | 'clientes' | 'servicos'
@@ -1486,16 +1487,21 @@ function renderGestao(empInicial){
         const bloqueado = (emp.bloqueios||[]).some(b=>b.data===diaSelecionado && b.hora===h);
         const passadoHora = diaPassado || (diaSelecionado === hojeStr && h < horaAgora);
         const cardAgendamento = (ag)=>{
-          const cardStyle2 = ag.status==='cancelado' ? 'opacity:0.3;filter:grayscale(1);background:#f7f7f7;' : passadoHora ? 'opacity:0.3;filter:grayscale(1);background:#f7f7f7;' : 'box-shadow:0 2px 12px rgba(0,0,0,0.15);';
+          const pendenteFin = passadoHora && ag.status!=='cancelado' && !_gFinAgLancados.has(ag.id);
+          const jaAtendido  = passadoHora && ag.status!=='cancelado' && _gFinAgLancados.has(ag.id);
+          const cardStyle2 = ag.status==='cancelado'
+            ? 'opacity:0.3;filter:grayscale(1);background:#f7f7f7;'
+            : jaAtendido
+              ? 'opacity:0.45;background:#f7f7f7;'
+              : !passadoHora
+                ? 'box-shadow:0 2px 12px rgba(0,0,0,0.15);'
+                : '';
           const statusCor = ag.status==='confirmado' ? '#16a34a' : ag.status==='cancelado' ? '#dc2626' : '#6b7280';
           const statusLabel = ag.status==='confirmado' ? 'Confirmado' : ag.status==='cancelado' ? 'Cancelado' : 'Não confirmado';
           const nomeStyle = ag.status==='cancelado' ? 'text-decoration:line-through;' : '';
           const BTN = 'font-family:inherit;height:28px;width:72px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;border:0.5px solid #ccc;background:#fff;color:#555;';
-          const botoesPassado = `
-            <div style="display:flex;gap:5px;justify-content:flex-end;">
-              <button style="${BTN}" onclick="editarAgendamento('${ag.id}')">Editar</button>
-              <button style="${BTN}border-color:#fca5a5;color:#dc2626;" onclick="excluirAgendamento('${ag.id}')">Excluir</button>
-            </div>`;
+          const BTN_FIN = 'font-family:inherit;height:28px;padding:0 12px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;border:1.5px solid #d97706;background:#fff;color:#d97706;';
+          const botoesPendente = `<div style="display:flex;justify-content:flex-end;"><button style="${BTN_FIN}" onclick="abrirFinalizarModal('${ag.id}')">Finalizar</button></div>`;
           const botoesAtivo = `
             <div style="display:flex;gap:5px;justify-content:flex-end;">
               <button style="${BTN}" onclick="editarAgendamento('${ag.id}')">Editar</button>
@@ -1510,15 +1516,19 @@ function renderGestao(empInicial){
                 </div>` : ''}
               </div>
             </div>`;
+          const botoes = ag.status==='cancelado' ? '' : pendenteFin ? botoesPendente : jaAtendido ? '' : botoesAtivo;
+          const showBadge = !passadoHora || ag.status==='cancelado' || jaAtendido;
+          const badgeCor = jaAtendido ? '#16a34a' : statusCor;
+          const badgeLabel = jaAtendido ? 'Atendido' : statusLabel;
           return `<div style="padding:10px 12px;margin-bottom:6px;border-radius:9px;border:0.5px solid #e4e4e7;background:var(--card);display:flex;flex-direction:column;gap:8px;${cardStyle2}">
             <div>
               <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
                 <div style="font-weight:700;font-size:15px;${nomeStyle}">${h} — ${escapeHtml(ag.nome)}</div>
-                ${(!passadoHora || ag.status==='cancelado') ? `<div style="font-size:11px;font-weight:600;white-space:nowrap;color:${statusCor};">${statusLabel}</div>` : ''}
+                ${showBadge ? `<div style="font-size:11px;font-weight:600;white-space:nowrap;color:${badgeCor};">${badgeLabel}</div>` : ''}
               </div>
               <div class="muted" style="font-size:13px;margin-top:2px;">${escapeHtml(ag.servicoNome)}</div>
             </div>
-            ${passadoHora || ag.status==='cancelado' ? botoesPassado : botoesAtivo}
+            ${botoes}
           </div>`;
         };
         if(ag){
@@ -2768,7 +2778,7 @@ function renderGestao(empInicial){
             <div style="font-size:13px;font-weight:600;color:#1a1a1a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(a.nome||'')}</div>
             <div style="font-size:11px;color:#aaa;margin-top:2px;">${escapeHtml(svcNome)}${horario?' · '+dataFmt+' '+horario:''}</div>
           </div>
-          <button onclick="gFinAbrirModalPendente('${a.id}')" style="${CS}background:#fff;color:#FFA500;border:1px solid #FFA500;border-radius:7px;padding:7px 12px;font-size:11px;font-weight:700;flex-shrink:0;">Lançar</button>
+          <button onclick="abrirFinalizarModal('${a.id}')" style="${CS}background:#fff;color:#FFA500;border:1px solid #FFA500;border-radius:7px;padding:7px 12px;font-size:11px;font-weight:700;flex-shrink:0;">Finalizar</button>
         </div>`;
       }).join('')}`;
 
@@ -3084,6 +3094,47 @@ function renderGestao(empInicial){
     await gFinCarregar();
   };
 
+  window.abrirFinalizarModal = (agId)=>{ _finalizarAgId=agId; draw(); };
+  window.fecharFinalizarModal = ()=>{ _finalizarAgId=null; draw(); };
+
+  window.finalizarAtendido = async (agId)=>{
+    const valEl = document.getElementById('fin-val');
+    const val = parseFloat(valEl?.value);
+    if(isNaN(val)||val<=0){ toast('Informe um valor válido.','err'); return; }
+    const ag = agendamentos.find(a=>a.id===agId);
+    if(!ag) return;
+    _finalizarAgId = null;
+    const dataLanc = ag.data || isoData(new Date());
+    const payload = { empresa_id:emp.id, tipo:'receita', descricao:ag.nome||'', valor:val, data:dataLanc, agendamento_id:agId };
+    const { error } = await supabaseClient.from('lancamentos_financeiros').insert(payload);
+    if(error){ toast('Erro ao salvar: '+error.message,'err'); _finalizarAgId=agId; draw(); return; }
+    _gFinAgLancados.add(agId);
+    toast('Lançamento salvo!','ok');
+    await gFinCarregar();
+    draw();
+  };
+
+  window.finalizarCancelado = async (agId)=>{
+    if(!confirm('Marcar como cancelado? O horário será liberado para novos agendamentos.')) return;
+    _finalizarAgId = null;
+    const { error } = await supabaseClient.from('agendamentos').update({ status:'cancelado' }).eq('id', agId);
+    if(error){ toast(friendlyError(error,'Erro ao cancelar.'),'err'); _finalizarAgId=agId; draw(); return; }
+    const ag = agendamentos.find(a=>a.id===agId);
+    if(ag) ag.status = 'cancelado';
+    toast('Agendamento cancelado.','ok');
+    draw();
+  };
+
+  window.finalizarExcluir = async (agId)=>{
+    if(!confirm('Excluir este agendamento? Essa ação não pode ser desfeita.')) return;
+    _finalizarAgId = null;
+    const { error } = await supabaseClient.from('agendamentos').delete().eq('id', agId);
+    if(error){ toast(friendlyError(error,'Erro ao excluir.'),'err'); _finalizarAgId=agId; draw(); return; }
+    agendamentos = agendamentos.filter(a=>a.id!==agId);
+    toast('Agendamento excluído.','ok');
+    draw();
+  };
+
   window.gFinAbrirModalPendente = (agId)=>{
     const ag = agendamentos.find(a=>a.id===agId);
     if(!ag) return;
@@ -3131,6 +3182,29 @@ function renderGestao(empInicial){
     const _cor  = document.getElementById('pCor')?.value;           if(_cor)          emp.corPrincipal = _cor;
   }
 
+  function finalizarModalHtml(){
+    if(!_finalizarAgId) return '';
+    const ag = agendamentos.find(a=>a.id===_finalizarAgId);
+    if(!ag) return '';
+    const svc = emp.servicos.find(s=>s.id===ag.servicoId);
+    const precoSugerido = svc?.preco ? String(svc.preco) : '';
+    const CS2 = 'font-family:Nunito,sans-serif;cursor:pointer;width:100%;height:44px;border-radius:12px;font-size:14px;font-weight:600;margin-bottom:8px;';
+    return `<div style="position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9000;display:flex;align-items:flex-end;justify-content:center;" onclick="if(event.target===this)fecharFinalizarModal()">
+      <div style="background:#fff;border-radius:18px 18px 0 0;padding:28px 24px 40px;width:100%;max-width:520px;">
+        <div style="font-weight:700;font-size:18px;color:#1a1a1a;margin:0 0 4px;">Finalizar atendimento</div>
+        <div style="font-size:14px;color:#888;margin:0 0 20px;">${escapeHtml(ag.nome)}${ag.servicoNome?' · '+escapeHtml(ag.servicoNome):''}</div>
+        <div style="border:1.5px solid #e5e7eb;border-radius:12px;padding:14px;margin-bottom:10px;">
+          <div style="font-weight:600;font-size:14px;color:#1a1a1a;margin-bottom:10px;">Atendido</div>
+          <div class="field" style="margin:0 0 10px;"><label>Valor (R$)</label><input id="fin-val" type="number" min="0" step="0.01" value="${escapeHtml(precoSugerido)}" placeholder="0,00"></div>
+          <button onclick="finalizarAtendido('${ag.id}')" style="font-family:Nunito,sans-serif;cursor:pointer;width:100%;height:40px;border-radius:10px;border:none;background:#16a34a;color:#fff;font-size:14px;font-weight:600;">Confirmar como atendido</button>
+        </div>
+        <button onclick="finalizarCancelado('${ag.id}')" style="${CS2}border:1.5px solid #fed7aa;background:#fff;color:#c2410c;">Cancelado</button>
+        <button onclick="finalizarExcluir('${ag.id}')" style="${CS2}border:1.5px solid #fca5a5;background:#fff;color:#dc2626;">Excluir</button>
+        <button onclick="fecharFinalizarModal()" style="${CS2}border:1.5px solid #e5e7eb;background:#fff;color:#555;margin-bottom:0;">Voltar</button>
+      </div>
+    </div>`;
+  }
+
   function draw(){
     preservarCamposPersonalizar();
     const isMaster = currentProfile?.role === 'master';
@@ -3161,6 +3235,7 @@ function renderGestao(empInicial){
 
     render(`
       ${GESTAO_CSS}
+      ${finalizarModalHtml()}
       <div style="position:sticky;top:0;z-index:300;">
         ${barraVoltarMaster()}
       </div>
@@ -3180,7 +3255,7 @@ function renderGestao(empInicial){
   window.setCorner = (c)=>{
     // Reset de estado comum
     corner=c; editandoId=null; novoAgState=null; configurarSub=null;
-    _removendoServicoIdx=null; _waMenuId=null; _gFinModal=null; _notaModal=null;
+    _removendoServicoIdx=null; _waMenuId=null; _gFinModal=null; _notaModal=null; _finalizarAgId=null;
     _novoAgClienteId=null; _novoAgClienteBusca=''; _novoAgClienteResultados=[];
     _clientePerfilId=null; _clientePerfilEditando=false; _clienteModalNovo=false;
     // Executa ação específica da aba sem recarregar todos os dados
