@@ -4843,7 +4843,7 @@ function renderMasterPanel(){
           const dataStr = ok ? new Date(m.pago_em+'T00:00:00').toLocaleDateString('pt-BR') : null;
           const valStr = fmtR(m.valor||0);
           return `
-            <div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line);">
+            <div style="display:flex;align-items:center;gap:12px;padding:16px;border-bottom:1px solid var(--line);">
               <div style="width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:${ok?'#dcfce7':'#fee2e2'};">
                 ${ok
                   ? `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`
@@ -4875,7 +4875,7 @@ function renderMasterPanel(){
               <div>
                 <label style="${LBL}">Valor mensal (R$)</label>
                 <input id="finValor_${e.id}" type="number" step="0.01" placeholder="0,00"
-                  value="${escapeAttr(String(finReg?.valor||''))}" style="${INP}"/>
+                  value="${escapeAttr(finReg?.valor ? parseFloat(finReg.valor).toFixed(2) : '')}" style="${INP}"/>
               </div>
               <div>
                 <label style="${LBL}">Dia de vencimento</label>
@@ -4899,7 +4899,7 @@ function renderMasterPanel(){
               <div>
                 <label style="${LBL}">Valor (R$)</label>
                 <input id="finLancValor_${e.id}" type="number" step="0.01" placeholder="0,00"
-                  value="${escapeAttr(String(finReg?.valor||''))}" style="${INP}"/>
+                  value="${escapeAttr(finReg?.valor ? parseFloat(finReg.valor).toFixed(2) : '')}" style="${INP}"/>
               </div>
             </div>
             <div style="margin-bottom:12px;">
