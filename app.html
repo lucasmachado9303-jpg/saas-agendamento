@@ -598,7 +598,8 @@ async function init(){
     }
     currentUser = session?.user || null;
     if (currentUser) {
-      const { data } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
+      const { data, error: profErr } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
+      if(profErr && profErr.code !== 'PGRST116') console.error('Erro ao carregar perfil:', profErr);
       currentProfile = data || null;
     } else {
       currentProfile = null;
@@ -626,7 +627,8 @@ async function init(){
   const { data: { session } } = await supabaseClient.auth.getSession();
   currentUser = session?.user || null;
   if (currentUser) {
-    const { data } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
+    const { data, error: profErr2 } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
+    if(profErr2 && profErr2.code !== 'PGRST116') console.error('Erro ao carregar perfil:', profErr2);
     currentProfile = data || null;
   }
 
