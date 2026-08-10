@@ -8,7 +8,6 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://byrcbihwqgostesuoztd.supabase.co">
 <link rel="preconnect" href="https://byrcbihwqgostesuoztd.supabase.co" crossorigin>
-<link rel="preconnect" href="https://cdn.jsdelivr.net">
 <link rel="preload" href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"></noscript>
 <link rel="manifest" href="/manifest.json">
@@ -216,7 +215,7 @@
 </style>
 </head>
 <body>
-<div id="root"></div>
+<main id="root"></main>
 
 <!-- Modal de recorte de imagem (fora do #root para não ser destruído na navegação) -->
 <div id="cropModal" style="position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.88);display:none;flex-direction:column;align-items:center;justify-content:center;padding:20px;">
@@ -4159,23 +4158,23 @@ function renderLoginUnificado(){
           </button>
           <div style="display:flex;align-items:center;gap:10px;margin:20px 0 4px;">
             <div style="flex:1;height:1px;background:#e5e5ea;"></div>
-            <span style="font-size:11px;color:#c7c7cc;white-space:nowrap;">ou use email e senha</span>
+            <span style="font-size:11px;color:#6b7280;white-space:nowrap;">ou use email e senha</span>
             <div style="flex:1;height:1px;background:#e5e5ea;"></div>
           </div>
           <div class="field" style="margin-top:12px;">
-            <label style="color:#c7c7cc;">E-mail</label>
-            <input type="email" id="loginEmail" placeholder="seu@email.com" style="border-color:#e5e5ea;color:#8e8e93;"
+            <label style="color:#374151;">E-mail</label>
+            <input type="email" id="loginEmail" placeholder="seu@email.com" style="border-color:#e5e5ea;color:#1a1a1a;"
               onkeyup="if(event.key==='Enter') document.getElementById('loginSenha').focus()"/>
           </div>
           <div class="field">
-            <label style="color:#c7c7cc;">Senha</label>
-            <input type="password" id="loginSenha" placeholder="Sua senha" style="border-color:#e5e5ea;color:#8e8e93;"
+            <label style="color:#374151;">Senha</label>
+            <input type="password" id="loginSenha" placeholder="Sua senha" style="border-color:#e5e5ea;color:#1a1a1a;"
               onkeyup="checkCapsLock(event,'cLU'); if(event.key==='Enter') tentarLoginUnificado()"/>
             <div id="cLU" style="display:none;align-items:center;gap:5px;color:var(--danger);font-size:12px;margin-top:6px;"><strong>!</strong> Caps Lock ativado</div>
           </div>
-          <button class="btn ghost" style="width:100%;color:#8e8e93;border-color:#e5e5ea;" onclick="tentarLoginUnificado()">Entrar com email</button>
+          <button class="btn ghost" style="width:100%;color:#374151;border-color:#e5e5ea;" onclick="tentarLoginUnificado()">Entrar com email</button>
           <div style="text-align:center;margin-top:12px;">
-            <button class="icon-btn" style="color:#c7c7cc;font-size:12px;" onclick="recuperarSenha(null)">Esqueci minha senha</button>
+            <button class="icon-btn" style="color:#6b7280;font-size:12px;" onclick="recuperarSenha(null)">Esqueci minha senha</button>
           </div>
         </div>
       </div>
