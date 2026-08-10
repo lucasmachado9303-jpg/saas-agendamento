@@ -224,7 +224,7 @@
 <div id="cropModal" style="position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.88);display:none;flex-direction:column;align-items:center;justify-content:center;padding:20px;">
   <div style="background:#fff;border-radius:16px;overflow:hidden;max-width:480px;width:100%;display:flex;flex-direction:column;max-height:90vh;">
     <div style="padding:14px 20px;border-bottom:1px solid #e6e1ea;font-weight:700;font-size:16px;flex-shrink:0;">Ajuste a imagem</div>
-    <div style="background:#111;overflow:hidden;flex:1;min-height:260px;"><img id="cropImg" src="" style="display:block;max-width:100%;"/></div>
+    <div style="background:#111;overflow:hidden;flex:1;min-height:260px;"><img id="cropImg" src="" alt="" style="display:block;max-width:100%;"/></div>
     <div style="padding:14px 16px;display:flex;gap:12px;flex-shrink:0;">
       <button onclick="cancelarCrop()" style="flex:1;background:transparent;color:#1a1a1a;border:1.5px solid #e0e0e0;padding:12px;border-radius:999px;font-size:15px;font-weight:600;cursor:pointer;">Cancelar</button>
       <button id="btnConfirmarCrop" onclick="confirmarCrop()" style="flex:1;background:#1a1a1a;color:#fff;border:none;padding:12px;border-radius:999px;font-size:15px;font-weight:600;cursor:pointer;">Confirmar recorte</button>
@@ -521,6 +521,12 @@ function friendlyError(err, fallback='Algo deu errado. Tente novamente.'){
   if(err.message && err.message.toLowerCase().includes('network')) return 'Sem conexão. Verifique sua internet.';
   return fallback;
 }
+function mensagemErroRede(e){
+  if(!navigator.onLine) return 'Sem conexão com a internet. Verifique sua rede e tente novamente.';
+  if(e && (e.name==='TypeError' || e.message?.includes('Failed to fetch'))) return 'Não foi possível conectar ao servidor. Tente novamente em instantes.';
+  return 'Ocorreu um erro inesperado. Tente novamente.';
+}
+
 function fmtTelStr(val){
   if(!val) return '';
   let d = String(val).replace(/\D/g,'');
@@ -725,7 +731,7 @@ function route(){
 function barraVoltarMaster(){
   if(currentProfile?.role !== 'master') return "";
   return `<div style="background:#f0f0f0;color:#1a1a1a;padding:10px 20px;text-align:center;font-size:13px;font-weight:700;">
-    Modo visualização (via painel master) — <span style="text-decoration:underline;cursor:pointer;" onclick="goto({master:1})">Voltar ao painel master</span>
+    Modo visualização (via painel master) — <span role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();goto({master:1})}" style="text-decoration:underline;cursor:pointer;" onclick="goto({master:1})">Voltar ao painel master</span>
   </div>`;
 }
 
@@ -876,7 +882,7 @@ function renderAgendar(emp){
       const taken   = agendamentos.some(a=>a.slug===emp.slug && a.data===iso && a.hora===h && a.status!=='cancelado');
       const bloq    = (emp.bloqueios||[]).some(b=>b.data===iso && b.hora===h);
       const [hh,mm] = h.split(':').map(Number);
-      const passado = iso===hojeIso && (hh*60+mm < agora.getHours()*60+agora.getMinutes());
+      const passado = iso===hojeIso && (hh*60+mm < agora.getHours()*60+agora.getMinutes()+60);
       return {h, livre: !taken && !bloq && !passado};
     });
   }
@@ -925,7 +931,7 @@ function renderAgendar(emp){
           const check = sel
             ? `<svg width="12" height="12" viewBox="0 0 10 10" fill="none"><path d="M2 5l2.5 2.5L8 2.5" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`
             : '';
-          return `<div onclick="wizToggleSrv('${s.id}')" style="border:1.5px solid ${sel?acc:'#e5e7eb'};border-radius:14px;padding:15px 16px;margin-bottom:10px;display:flex;align-items:center;gap:14px;cursor:pointer;background:${sel?acc+'15':'#fff'};">
+          return `<div role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();wizToggleSrv('${s.id}')}" onclick="wizToggleSrv('${s.id}')" style="border:1.5px solid ${sel?acc:'#e5e7eb'};border-radius:14px;padding:15px 16px;margin-bottom:10px;display:flex;align-items:center;gap:14px;cursor:pointer;background:${sel?acc+'15':'#fff'};">
             <div style="width:24px;height:24px;border-radius:50%;border:1.5px solid ${sel?acc:'#d1d5db'};flex-shrink:0;display:flex;align-items:center;justify-content:center;background:${sel?acc:'transparent'};">${check}</div>
             <div style="font-size:16px;font-weight:600;color:#111;">${escapeHtml(s.nome)}</div>
           </div>`;
@@ -958,7 +964,7 @@ function renderAgendar(emp){
       const sel  = bookingState.data===c.iso;
       const hoje = hojeIso===c.iso;
       if(!c.livre) return `<div style="aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:13px;font-weight:${hoje?'700':'500'};color:#d1d5db;">${c.d}${hoje?'<span style="font-size:8px;line-height:1;margin-top:1px;">hoje</span>':''}</div>`;
-      return `<div onclick="wizSelDia('${c.iso}')" style="aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:${sel?'#fff':hoje?acc:'#374151'};background:${sel?acc:'transparent'};border-radius:50%;cursor:pointer;">${c.d}${hoje?`<span style="font-size:8px;line-height:1;margin-top:1px;color:${sel?'#fff':acc};">hoje</span>`:''}</div>`;
+      return `<div role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();wizSelDia('${c.iso}')}" onclick="wizSelDia('${c.iso}')" style="aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:${sel?'#fff':hoje?acc:'#374151'};background:${sel?acc:'transparent'};border-radius:50%;cursor:pointer;">${c.d}${hoje?`<span style="font-size:8px;line-height:1;margin-top:1px;color:${sel?'#fff':acc};">hoje</span>`:''}</div>`;
     }).join('');
     const prevDate = new Date(ano,mes-2,1);
     const nextDate = new Date(ano,mes,1);
@@ -981,7 +987,7 @@ function renderAgendar(emp){
           ? sl.map(({h,livre})=>{
               const sel = bookingState.hora===h;
               if(!livre) return `<div style="border:1px solid #f3f4f6;border-radius:10px;padding:9px 4px;font-size:14px;font-weight:600;color:#d1d5db;text-align:center;background:#fafafa;">${h}</div>`;
-              return `<div onclick="wizSelHora('${h}')" style="border:1px solid ${sel?acc:'#e5e7eb'};border-radius:10px;padding:9px 4px;font-size:14px;font-weight:600;color:${sel?'#fff':'#374151'};text-align:center;background:${sel?acc:'#fff'};cursor:pointer;">${h}</div>`;
+              return `<div role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();wizSelHora('${h}')}" onclick="wizSelHora('${h}')" style="border:1px solid ${sel?acc:'#e5e7eb'};border-radius:10px;padding:9px 4px;font-size:14px;font-weight:600;color:${sel?'#fff':'#374151'};text-align:center;background:${sel?acc:'#fff'};cursor:pointer;">${h}</div>`;
             }).join('')
           : `<p style="color:#888;font-size:15px;">Nenhum horário disponível.</p>`;
       }
@@ -1029,7 +1035,7 @@ function renderAgendar(emp){
         <div style="font-size:15px;color:#888;margin-bottom:18px;">Para confirmar o agendamento</div>
         <div style="margin-bottom:14px;">
           <label style="font-size:13px;font-weight:600;color:#555;display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em;">Nome completo</label>
-          <input id="inpNome" type="text" value="${escapeAttr(bookingState.nome)}"
+          <input id="inpNome" type="text" maxlength="100" value="${escapeAttr(bookingState.nome)}"
             oninput="bookingState.nome=this.value.toUpperCase();this.value=this.value.toUpperCase();wizAtualizaBtn()"
             placeholder="SEU NOME"
             style="text-transform:uppercase;width:100%;border:1.5px solid #e5e7eb;border-radius:12px;padding:13px 14px;font-size:16px;color:#111;font-family:inherit;outline:none;"
@@ -1122,17 +1128,11 @@ function renderAgendar(emp){
     btn.style.cursor     = ok ? 'pointer' : 'not-allowed';
   };
   window.wizFormatTel = (input)=>{
-    let d = input.value.replace(/\D/g,'');
-    if(d.startsWith('55') && d.length>11) d=d.slice(2);
-    if(d.startsWith('0')) d=d.slice(1);
-    d = d.slice(0,11);
-    let display = d;
-    if(d.length>7) display=`(${d.slice(0,2)}) ${d.slice(2,7)}-${d.slice(7)}`;
-    else if(d.length>2) display=`(${d.slice(0,2)}) ${d.slice(2)}`;
-    input.value = display;
+    input.value = fmtTelStr(input.value);
+    const d = input.value.replace(/\D/g,'').replace(/^0/,'');
     const norm = d.length>0 ? '0'+d : '';
     bookingState.telefone        = norm;
-    bookingState.telefoneDisplay = display;
+    bookingState.telefoneDisplay = input.value;
     const valido = norm.length===12 && norm[0]==='0' && norm[3]==='9';
     const erro   = d.length>0 && !valido;
     bookingState._telErr = erro;
@@ -1362,7 +1362,7 @@ window.agConfirmar = async (agId, acao, empSlug) => {
   } catch(e) {
     if(area) area.style.opacity = '1';
     if(btnConfirmar) btnConfirmar.disabled = false;
-    alert('Erro ao processar. Tente novamente.');
+    toast(mensagemErroRede(e),'err');
   }
 };
 
@@ -1434,7 +1434,7 @@ function renderGestao(empInicial){
   let _gFinModal = null; // { tipo, agId?, descricao, valor, editId? }
   let _gFinFiltro = 'todos'; // 'todos' | 'entradas' | 'saidas'
   let _gFinCarregando = false;
-  let _gFinAgLancados = new Set(); // IDs de agendamentos já lançados — nunca removido ao excluir lançamento
+  let _gFinAgLancados = new Set(); // IDs de agendamentos já lançados — reconstruído do banco em cada chamada de gFinCarregar()
   let _finalizarAgId  = null; // ID do agendamento com modal "Finalizar" aberto
   let _finalizarAcao = null; // null = etapa 1 (escolha) | 'atendido' = etapa 2 (valor)
   let _novoAgModalOpen = false; // modal de novo agendamento aberto
@@ -1586,7 +1586,7 @@ function renderGestao(empInicial){
       return `<div style="position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9000;display:flex;align-items:flex-end;justify-content:center;" onclick="if(event.target===this)cancelarEdicaoAgendamento()">
         <div style="background:#fff;border-radius:18px 18px 0 0;padding:28px 24px 40px;width:100%;max-width:520px;">
           <h3 style="font-family:Nunito,sans-serif;font-weight:700;font-size:18px;margin:0 0 20px;">Editar agendamento</h3>
-          <div class="field"><label>Nome</label><input id="editNome" value="${escapeAttr(agEd.nome)}"/></div>
+          <div class="field"><label>Nome</label><input id="editNome" maxlength="100" value="${escapeAttr(agEd.nome)}"/></div>
           <div class="field"><label>Telefone</label><input id="editTel" type="tel" inputmode="numeric" maxlength="16" value="${escapeAttr(fmtTelStr(agEd.telefone))}" oninput="maskTel(this)"/></div>
           <div class="row">
             <div class="field"><label>Serviço</label><select id="editServico">${servicoOpts}</select></div>
@@ -1647,11 +1647,6 @@ function renderGestao(empInicial){
     const ICO_BACK = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>`;
     const ICO_WA = `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.123 1.532 5.853L.057 23.5l5.83-1.53A11.945 11.945 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.96 0-3.786-.516-5.363-1.416l-.384-.227-3.98 1.047 1.064-3.878-.25-.399C2.014 15.54 1.5 13.837 1.5 12 1.5 6.201 6.201 1.5 12 1.5S22.5 6.201 22.5 12 17.799 22.5 12 22.5z"/></svg>`;
 
-    const telFmt = t => {
-      const d = (t||'').replace(/\D/g,'').replace(/^0/,'');
-      if(d.length===11) return `(${d.slice(0,2)}) ${d.slice(2,7)}-${d.slice(7)}`;
-      return t||'';
-    };
     const telWaLink = t => {
       const d = (t||'').replace(/\D/g,'').replace(/^0/,'');
       return `https://wa.me/55${d}`;
@@ -1723,8 +1718,8 @@ function renderGestao(empInicial){
             <div style="font-size:18px;font-weight:700;color:#1a1a1a;">Editar cliente</div>
           </div>
           <div style="background:#fff;border-radius:16px;padding:18px;box-shadow:0 2px 12px rgba(0,0,0,0.06);margin-bottom:16px;">
-            <div class="field"><label>Nome completo</label><input id="cliNome" type="text" value="${escapeAttr(c.nome)}" placeholder="Nome do cliente" style="text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()"/></div>
-            <div class="field"><label>Telefone (WhatsApp)</label><input id="cliTel" type="tel" inputmode="numeric" maxlength="16" value="${escapeAttr(telFmt(c.telefone))}" placeholder="(xx) xxxxx-xxxx" oninput="maskTel(this)"/></div>
+            <div class="field"><label>Nome completo</label><input id="cliNome" type="text" maxlength="100" value="${escapeAttr(c.nome)}" placeholder="Nome do cliente" style="text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()"/></div>
+            <div class="field"><label>Telefone (WhatsApp)</label><input id="cliTel" type="tel" inputmode="numeric" maxlength="16" value="${escapeAttr(fmtTelStr(c.telefone))}" placeholder="(xx) xxxxx-xxxx" oninput="maskTel(this)"/></div>
             <div style="display:flex;gap:10px;margin-top:4px;">
               <button class="btn ghost" style="flex:1;" onclick="toggleEditarPerfil()">Cancelar</button>
               <button class="btn" style="flex:1;" onclick="salvarPerfilCliente('${c.id}')">Salvar</button>
@@ -1740,7 +1735,7 @@ function renderGestao(empInicial){
         </div>
         <div style="background:linear-gradient(160deg,#3a3a3a 0%,#5a3560 100%);border-radius:18px;padding:24px 20px 20px;margin-bottom:16px;">
           <div style="font-size:22px;font-weight:700;color:#fff;margin-bottom:4px;">${escapeHtml(c.nome)}</div>
-          <div style="font-size:14px;color:rgba(255,255,255,0.6);margin-bottom:18px;">${telFmt(c.telefone)}</div>
+          <div style="font-size:14px;color:rgba(255,255,255,0.6);margin-bottom:18px;">${fmtTelStr(c.telefone)}</div>
           <div style="display:flex;gap:10px;">
             <a href="${telWaLink(c.telefone)}" target="_blank" style="flex:1;display:flex;align-items:center;justify-content:center;gap:7px;background:#25d366;color:#fff;border-radius:12px;padding:10px 0;font-size:14px;font-weight:600;text-decoration:none;">${ICO_WA} WhatsApp</a>
             <button onclick="toggleEditarPerfil()" style="flex:1;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.15);color:#fff;border:none;border-radius:12px;padding:10px 0;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;">Editar</button>
@@ -1757,7 +1752,7 @@ function renderGestao(empInicial){
           <div style="font-size:18px;font-weight:700;color:#1a1a1a;">Novo cliente</div>
         </div>
         <div style="background:#fff;border-radius:16px;padding:18px;box-shadow:0 2px 12px rgba(0,0,0,0.06);">
-          <div class="field"><label>Nome completo</label><input id="cliNome" type="text" placeholder="Nome do cliente" style="text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()"/></div>
+          <div class="field"><label>Nome completo</label><input id="cliNome" type="text" maxlength="100" placeholder="Nome do cliente" style="text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()"/></div>
           <div class="field"><label>Telefone (WhatsApp)</label><input id="cliTel" type="tel" inputmode="numeric" maxlength="16" placeholder="(xx) xxxxx-xxxx" oninput="maskTel(this)"/></div>
           <div style="display:flex;gap:10px;margin-top:4px;">
             <button class="btn ghost" style="flex:1;" onclick="fecharModalCliente()">Cancelar</button>
@@ -1801,9 +1796,9 @@ function renderGestao(empInicial){
             const dias=_diasSemVoltar(c);
             return `
               <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:0.5px solid #f2f2f7;" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background=''">
-                <div onclick="abrirPerfilCliente('${c.id}')" style="flex:1;min-width:0;cursor:pointer;">
+                <div role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();abrirPerfilCliente('${c.id}')}" onclick="abrirPerfilCliente('${c.id}')" style="flex:1;min-width:0;cursor:pointer;">
                   <div style="font-size:15px;font-weight:600;color:#1a1a1a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(c.nome)}</div>
-                  <div style="font-size:13px;color:#8e8e93;margin-top:2px;">${telFmt(c.telefone)}</div>
+                  <div style="font-size:13px;color:#8e8e93;margin-top:2px;">${fmtTelStr(c.telefone)}</div>
                 </div>
                 <div style="text-align:center;min-width:42px;">
                   <div style="font-size:18px;font-weight:700;color:${diaColor(dias)};">${dias}</div>
@@ -1841,10 +1836,10 @@ function renderGestao(empInicial){
     });
 
     const rows = listados.map(c => `
-      <div onclick="abrirPerfilCliente('${c.id}')" style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:0.5px solid #f2f2f7;cursor:pointer;" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background=''">
+      <div role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();abrirPerfilCliente('${c.id}')}" onclick="abrirPerfilCliente('${c.id}')" style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:0.5px solid #f2f2f7;cursor:pointer;" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background=''">
         <div style="flex:1;min-width:0;">
           <div style="font-size:15px;font-weight:600;color:#1a1a1a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(c.nome)}</div>
-          <div style="font-size:13px;color:#8e8e93;margin-top:2px;">${telFmt(c.telefone)}</div>
+          <div style="font-size:13px;color:#8e8e93;margin-top:2px;">${fmtTelStr(c.telefone)}</div>
         </div>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#c7c7cc" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
       </div>`).join('');
@@ -2068,7 +2063,7 @@ function renderGestao(empInicial){
             const ativo = diasTrabalho.includes(i);
             return `<div style="display:flex;flex-direction:column;align-items:center;gap:5px;">
               <div style="font-size:11px;color:#888;font-weight:600;">${d}</div>
-              <div onclick="toggleDiaSemana(${i})" style="width:34px;height:34px;border-radius:50%;border:1.5px solid #e0e0e0;background:${ativo?'#1c1917':'var(--card)'};display:flex;align-items:center;justify-content:center;cursor:pointer;">
+              <div role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleDiaSemana(${i})}" onclick="toggleDiaSemana(${i})" style="width:34px;height:34px;border-radius:50%;border:1.5px solid #e0e0e0;background:${ativo?'#1c1917':'var(--card)'};display:flex;align-items:center;justify-content:center;cursor:pointer;">
                 <span style="color:${ativo?'#fff':'#bbb'};font-size:14px;">${ativo?'✓':'—'}</span>
               </div>
             </div>`;
@@ -2206,7 +2201,7 @@ function renderGestao(empInicial){
     const satGrad  = 'linear-gradient(to right,hsl('+corH+',0%,50%),hsl('+corH+',100%,45%))';
     const lightGrad = 'linear-gradient(to right,hsl('+corH+','+corS+'%,5%),hsl('+corH+','+corS+'%,50%),hsl('+corH+','+corS+'%,95%))';
     const corSliderHtml = '<div style="background:#fff;border:0.5px solid #e4e4e7;border-radius:14px;padding:16px;box-shadow:0 1px 6px rgba(0,0,0,0.07);">'
-      + '<div style="display:flex;align-items:center;gap:12px;cursor:pointer;" onclick="toggleCorPicker()">'
+      + '<div role="button" tabindex="0" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();toggleCorPicker()}" style="display:flex;align-items:center;gap:12px;cursor:pointer;" onclick="toggleCorPicker()">'
       + '<div id="pCorPreview" style="width:44px;height:44px;border-radius:12px;background:'+cor+';flex-shrink:0;border:0.5px solid rgba(0,0,0,0.1);"></div>'
       + '<div style="flex:1;"><div style="font-size:15px;font-weight:600;color:#1a1a1a;" id="pCorHex">'+cor+'</div>'
       + '<div style="font-size:12px;color:#8e8e93;margin-top:2px;">Toque para alterar a cor</div></div>'
@@ -2238,17 +2233,17 @@ function renderGestao(empInicial){
     return `
       <div class="field"><label>Nome da empresa</label><input id="pNome" value="${escapeAttr(emp.nome)}" oninput="marcarPersonalizarDirty()"/></div>
       ${slugHtml}
-      <div class="field"><label>Descrição curta</label><textarea id="pDescricao" rows="2" style="resize:vertical;min-height:80px;" oninput="marcarPersonalizarDirty()">${escapeHtml(emp.descricao||'')}</textarea></div>
+      <div class="field"><label>Descrição curta</label><textarea id="pDescricao" maxlength="300" rows="2" style="resize:vertical;min-height:80px;" oninput="marcarPersonalizarDirty()">${escapeHtml(emp.descricao||'')}</textarea></div>
       <div class="field"><label>Texto de destaque</label><input id="pTextoDestaque" value="${escapeAttr(emp.textoDestaque||'')}" placeholder="Ex: Agende seu horário" oninput="marcarPersonalizarDirty()"/></div>
       ${emp.tipo !== 'pagina' ? `<div class="field"><label>Texto do botao de agendamento</label><input id="pTextoAgendar" value="${escapeAttr(emp.textoAgendar||'')}" placeholder="Agendar horário" oninput="marcarPersonalizarDirty()"/></div>` : '<input type="hidden" id="pTextoAgendar" value=""/>'}
       <div class="field">
         <label>Logo</label>
-        ${emp.logo ? `<img src="${escapeAttr(emp.logo)}" style="width:90px;height:90px;object-fit:cover;border-radius:50%;display:block;margin-bottom:10px;border:2px solid var(--line);"/>` : `<div style="width:90px;height:90px;border-radius:50%;background:#f0f0f0;display:flex;align-items:center;justify-content:center;margin-bottom:10px;color:#999999;font-size:13px;text-align:center;">Sem logo</div>`}
+        ${emp.logo ? `<img src="${escapeAttr(emp.logo)}" alt="Logo de ${escapeAttr(emp.nome)}" style="width:90px;height:90px;object-fit:cover;border-radius:50%;display:block;margin-bottom:10px;border:2px solid var(--line);"/>` : `<div style="width:90px;height:90px;border-radius:50%;background:#f0f0f0;display:flex;align-items:center;justify-content:center;margin-bottom:10px;color:#999999;font-size:13px;text-align:center;">Sem logo</div>`}
         <button class="btn ghost" style="width:100%;" onclick="selecionarImagem('logo')">Enviar logo</button>
       </div>
       <div class="field">
         <label>Imagem de fundo</label>
-        ${emp.fotoUrl ? `<img src="${escapeAttr(emp.fotoUrl)}" style="width:100%;height:110px;object-fit:cover;border-radius:10px;display:block;margin-bottom:10px;border:1.5px solid var(--line);"/>` : `<div style="width:100%;height:110px;border-radius:10px;background:#f0f0f0;display:flex;align-items:center;justify-content:center;margin-bottom:10px;color:#999999;font-size:13px;">Sem imagem de fundo</div>`}
+        ${emp.fotoUrl ? `<img src="${escapeAttr(emp.fotoUrl)}" alt="Imagem de fundo" style="width:100%;height:110px;object-fit:cover;border-radius:10px;display:block;margin-bottom:10px;border:1.5px solid var(--line);"/>` : `<div style="width:100%;height:110px;border-radius:10px;background:#f0f0f0;display:flex;align-items:center;justify-content:center;margin-bottom:10px;color:#999999;font-size:13px;">Sem imagem de fundo</div>`}
         <button class="btn ghost" style="width:100%;" onclick="selecionarImagem('background')">Enviar imagem de fundo</button>
       </div>
       <div class="field">
@@ -2503,14 +2498,14 @@ function renderGestao(empInicial){
       if(!_notaModal) return '';
       const m = _notaModal;
       const swatches = Object.entries(NOTA_CORES).map(([k,hex])=>`
-        <div onclick="setNotaCor('${k}')" style="width:30px;height:30px;border-radius:8px;background:${hex};cursor:pointer;border:2px solid ${m.cor===k?'#1a1a1a':'transparent'};"></div>`).join('');
+        <div role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();setNotaCor('${k}')}" onclick="setNotaCor('${k}')" style="width:30px;height:30px;border-radius:8px;background:${hex};cursor:pointer;border:2px solid ${m.cor===k?'#1a1a1a':'transparent'};"></div>`).join('');
       return `
         <div style="position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px;" onclick="if(event.target===this) fecharNota()">
           <div style="background:#fff;border-radius:16px;padding:20px;width:100%;max-width:400px;box-shadow:0 8px 32px rgba(0,0,0,0.18);">
             <div style="font-weight:700;font-size:16px;margin-bottom:14px;">${m.editId?'Editar anotação':'Nova anotação'}</div>
             <div class="field">
               <label>Anotação</label>
-              <textarea id="notaTexto" rows="4" style="resize:vertical;min-height:90px;" placeholder="Escreva sua anotação">${escapeHtml(m.texto||'')}</textarea>
+              <textarea id="notaTexto" maxlength="500" rows="4" style="resize:vertical;min-height:90px;" placeholder="Escreva sua anotação">${escapeHtml(m.texto||'')}</textarea>
             </div>
             <div class="field">
               <label>Cor</label>
@@ -2718,7 +2713,7 @@ function renderGestao(empInicial){
       return `<div style="position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9000;display:flex;align-items:flex-end;justify-content:center;" onclick="if(event.target===this)gFinFecharModal()">
         <div style="background:#fff;border-radius:18px 18px 0 0;padding:28px 24px 40px;width:100%;max-width:520px;">
           <h3 style="${CS}font-weight:700;font-size:18px;margin:0 0 20px;">${titulo}</h3>
-          <div class="field"><label>Descrição</label><input id="gfin-desc" type="text" value="${escapeHtml(m.descricao||'')}" placeholder="${m.tipo==='receita'?'Ex: Dinheiro em aberto':'Ex: Conta de energia'}"></div>
+          <div class="field"><label>Descrição</label><input id="gfin-desc" type="text" maxlength="200" value="${escapeHtml(m.descricao||'')}" placeholder="${m.tipo==='receita'?'Ex: Dinheiro em aberto':'Ex: Conta de energia'}"></div>
           ${svcHtml}
           <div class="field"><label>Valor (R$)</label><input id="gfin-val" type="number" min="0" step="0.01" value="${escapeHtml(m.valor||'')}" placeholder="0,00"></div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px;">
@@ -2773,7 +2768,7 @@ function renderGestao(empInicial){
 
     const filtroLabel = {todos:'Todos',entradas:'Entradas',saidas:'Saídas'};
     const filtros = ['todos','entradas','saidas'].map(f=>`
-      <div onclick="gFinSetFiltro('${f}')" style="${CS}padding:5px 14px;border-radius:999px;font-size:12px;font-weight:600;
+      <div role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();gFinSetFiltro('${f}')}" onclick="gFinSetFiltro('${f}')" style="${CS}padding:5px 14px;border-radius:999px;font-size:12px;font-weight:600;
         color:${_gFinFiltro===f?'#1a1a1a':'#888'};
         background:${_gFinFiltro===f?'#fff':'transparent'};
         box-shadow:${_gFinFiltro===f?'0 1px 4px rgba(0,0,0,0.10)':'none'};">
@@ -3588,12 +3583,11 @@ function renderGestao(empInicial){
       if(!v) return true;
       return c.nome.toLowerCase().includes(q) || (digits && (c.telefone||'').includes(digits));
     });
-    const _fmtTel = t => { const d=(t||'').replace(/\D/g,'').replace(/^0/,''); return d.length===11?`(${d.slice(0,2)}) ${d.slice(2,7)}-${d.slice(7)}`:t||''; };
     const rows = listados.map(c=>`
-      <div onclick="abrirPerfilCliente('${c.id}')" style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:0.5px solid #f2f2f7;cursor:pointer;" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background=''">
+      <div role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();abrirPerfilCliente('${c.id}')}" onclick="abrirPerfilCliente('${c.id}')" style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:0.5px solid #f2f2f7;cursor:pointer;" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background=''">
         <div style="flex:1;min-width:0;">
           <div style="font-size:15px;font-weight:600;color:#1a1a1a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(c.nome)}</div>
-          <div style="font-size:13px;color:#8e8e93;margin-top:2px;">${_fmtTel(c.telefone)}</div>
+          <div style="font-size:13px;color:#8e8e93;margin-top:2px;">${fmtTelStr(c.telefone)}</div>
         </div>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#c7c7cc" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
       </div>`).join('');
@@ -3670,7 +3664,7 @@ function renderGestao(empInicial){
       if(_novoAgClienteResultados.length && !_novoAgClienteId){
         drop.style.display='block';
         drop.innerHTML = _novoAgClienteResultados.map(c=>`
-          <div onclick="selecionarClienteAg('${c.id}')" style="padding:10px 12px;cursor:pointer;font-size:14px;font-weight:600;border-bottom:0.5px solid #f2f2f7;" onmouseover="this.style.background='#f9f9f9'" onmouseout="this.style.background=''">
+          <div role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();selecionarClienteAg('${c.id}')}" onclick="selecionarClienteAg('${c.id}')" style="padding:10px 12px;cursor:pointer;font-size:14px;font-weight:600;border-bottom:0.5px solid #f2f2f7;" onmouseover="this.style.background='#f9f9f9'" onmouseout="this.style.background=''">
             ${escapeHtml(c.nome)}<span style="font-weight:400;color:#8e8e93;margin-left:8px;">${(c.telefone||'').replace(/^0(\d{2})(\d{5})(\d{4})$/,'($1) $2-$3')}</span>
           </div>`).join('');
       } else {
@@ -4538,6 +4532,13 @@ function renderMasterPanel(){
     </style>
   `;
 
+  window.masterSearchInput = (v, ss) => {
+    masterSearch = v;
+    drawMaster();
+    const inp = document.querySelector('.m-search');
+    if(inp){ inp.focus(); try{ inp.setSelectionRange(ss, ss); }catch(_){} }
+  };
+
   function drawMasterShell(conteudo){
     const navItems = MASTER_NAV.map(n=>`
       <button class="m-nb ${masterAba===n.id?'on':''}" onclick="masterIrAba('${n.id}')">
@@ -4639,11 +4640,11 @@ function renderMasterPanel(){
         <div class="field">
           <label>Tipo de conta</label>
           <div class="m-tipo-grid">
-            <div class="m-tipo-opt sel" id="tipoAgendamento" onclick="masterSelTipo('agendamento')">
+            <div class="m-tipo-opt sel" id="tipoAgendamento" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();masterSelTipo('agendamento')}" onclick="masterSelTipo('agendamento')">
               <div class="m-tipo-opt-title">Agendamento</div>
               <div class="m-tipo-opt-sub">Agenda, clientes, relatorios e financeiro</div>
             </div>
-            <div class="m-tipo-opt" id="tipoPagina" onclick="masterSelTipo('pagina')">
+            <div class="m-tipo-opt" id="tipoPagina" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();masterSelTipo('pagina')}" onclick="masterSelTipo('pagina')">
               <div class="m-tipo-opt-title">Pagina</div>
               <div class="m-tipo-opt-sub">Apenas links e presenca online</div>
             </div>
@@ -4686,7 +4687,7 @@ function renderMasterPanel(){
           <div class="m-section-title">Dados</div>
           <div class="m-field-row">
             <div class="m-field-lbl">Nome</div>
-            <input class="m-field-inp" id="editNome" value="${escapeAttr(editing.nome)}"/>
+            <input class="m-field-inp" id="editNome" maxlength="100" value="${escapeAttr(editing.nome)}"/>
           </div>
           <div class="m-field-row">
             <div class="m-field-lbl">WhatsApp</div>
@@ -4709,11 +4710,11 @@ function renderMasterPanel(){
         <div class="m-section">
           <div class="m-section-title">Tipo de conta</div>
           <div class="m-tipo-grid" style="padding:12px 16px;">
-            <div class="m-tipo-opt${(editing.tipo||'agendamento')==='agendamento'?' sel':''}" id="editTipoAgendamento" onclick="masterSelTipoEdit('agendamento')">
+            <div class="m-tipo-opt${(editing.tipo||'agendamento')==='agendamento'?' sel':''}" id="editTipoAgendamento" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();masterSelTipoEdit('agendamento')}" onclick="masterSelTipoEdit('agendamento')">
               <div class="m-tipo-opt-title">Agendamento</div>
               <div class="m-tipo-opt-sub">Agenda, clientes e financeiro</div>
             </div>
-            <div class="m-tipo-opt${(editing.tipo||'agendamento')==='pagina'?' sel':''}" id="editTipoPagina" onclick="masterSelTipoEdit('pagina')">
+            <div class="m-tipo-opt${(editing.tipo||'agendamento')==='pagina'?' sel':''}" id="editTipoPagina" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();masterSelTipoEdit('pagina')}" onclick="masterSelTipoEdit('pagina')">
               <div class="m-tipo-opt-title">Pagina</div>
               <div class="m-tipo-opt-sub">Apenas links e presenca</div>
             </div>
@@ -4724,7 +4725,7 @@ function renderMasterPanel(){
           <div class="m-section-title">Status da conta</div>
           <div class="m-status-grid">
             ${['trial','ativa','bloqueada'].map(s=>`
-              <div class="m-status-opt${stAtual===s?' s-'+s:''}" onclick="masterSelStatus(this,'${s}')">
+              <div class="m-status-opt${stAtual===s?' s-'+s:''}" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();masterSelStatus(this,'${s}')}" onclick="masterSelStatus(this,'${s}')">
                 <div class="m-status-dot"></div>
                 <div class="m-status-lbl">${s.charAt(0).toUpperCase()+s.slice(1)}</div>
                 <div class="m-status-sub">${statusSub[s]}</div>
@@ -4755,7 +4756,7 @@ function renderMasterPanel(){
 
     const empRow = e => {
       const cor = empAvCor(e.slug);
-      return `<div class="m-ec" onclick="masterAbrirDetalhe('${e.slug}')">
+      return `<div class="m-ec" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();masterAbrirDetalhe('${e.slug}')}" onclick="masterAbrirDetalhe('${e.slug}')">
         <div class="m-ec-body">
           <div class="m-ec-name">${escapeHtml(e.nome)}</div>
           <div class="m-ec-link" style="display:flex;align-items:center;gap:6px;">${e.slug}.agenplus.com.br ${_tipoBadge(e)}</div>
@@ -4866,7 +4867,7 @@ function renderMasterPanel(){
         </button>
       </div>
       <div class="m-tabs">${filtroTabs}</div>
-      <input class="m-search" placeholder="Buscar empresa..." value="${escapeAttr(masterSearch)}" oninput="masterSearch=this.value; drawMaster()"/>
+      <input class="m-search" placeholder="Buscar empresa..." value="${escapeAttr(masterSearch)}" oninput="masterSearchInput(this.value,this.selectionStart)"/>
       ${lista}
     `);
   }
@@ -5025,7 +5026,7 @@ function renderMasterPanel(){
         ? `Vence dia ${s.finReg.dia_vencimento}`
         : 'Configure o vencimento';
       return `
-        <div onclick="finAbrirDetalhe('${e.id}')"
+        <div role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();finAbrirDetalhe('${e.id}')}" onclick="finAbrirDetalhe('${e.id}')"
           style="display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid var(--line);cursor:pointer;transition:background .1s;"
           onmouseover="this.style.background='#faf9fc'" onmouseout="this.style.background=''">
           <div style="flex:1;min-width:0;">
