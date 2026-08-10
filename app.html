@@ -2403,7 +2403,16 @@ function renderGestao(empInicial){
     }
   </style>`;
 
+  if(!document.getElementById('gestao-css')){ const _gs=document.createElement('div'); _gs.innerHTML=GESTAO_CSS; const _el=_gs.firstElementChild; _el.id='gestao-css'; document.head.appendChild(_el); }
+
   const NOTA_CORES = { amarelo:'#fef9c3', azul:'#dbeafe', rosa:'#fce7f3', verde:'#dcfce7' };
+
+  function diasSemVoltarDash(c) {
+    const cAgs = agendamentos.filter(a => a.slug===emp.slug && a.nome===c.nome && a.telefone===c.telefone);
+    if(!cAgs.length) return null;
+    const ultima = cAgs.map(a=>a.data).sort().pop();
+    return Math.floor((new Date() - new Date(ultima+'T00:00:00')) / 86400000);
+  }
 
   function dashboardBody(){
     const agora    = new Date();
@@ -2433,12 +2442,6 @@ function renderGestao(empInicial){
     }
 
     // Clientes inativos — usa a tabela de clientes cadastrados, igual à aba Clientes
-    function diasSemVoltarDash(c) {
-      const cAgs = agendamentos.filter(a => a.slug===emp.slug && a.nome===c.nome && a.telefone===c.telefone);
-      if(!cAgs.length) return null;
-      const ultima = cAgs.map(a=>a.data).sort().pop();
-      return Math.floor((new Date() - new Date(ultima+'T00:00:00')) / 86400000);
-    }
     const inativosAtual = _clientes.filter(c => { const d=diasSemVoltarDash(c); return d!==null && d>=_clientesInativosFiltro; }).length;
 
     // Faturamento de hoje
@@ -3064,9 +3067,10 @@ function renderGestao(empInicial){
     if(!ag) return;
     _finalizarAgId = null;
     const dataLanc = ag.data || isoData(new Date());
-    const payload = { empresa_id:emp.id, tipo:'receita', descricao:ag.nome||'', valor:val, data:dataLanc, agendamento_id:agId };
+    const descLanc = [ag.servicoNome, ag.nome].filter(Boolean).join(' — ') || '';
+    const payload = { empresa_id:emp.id, tipo:'receita', descricao:descLanc, valor:val, data:dataLanc, agendamento_id:agId };
     const { error } = await supabaseClient.from('lancamentos_financeiros').insert(payload);
-    if(error){ toast('Erro ao salvar: '+error.message,'err'); _finalizarAgId=agId; draw(); return; }
+    if(error){ toast(friendlyError(error,'Erro ao salvar.'),'err'); _finalizarAgId=agId; draw(); return; }
     _gFinAgLancados.add(agId);
     toast('Lançamento salvo!','ok');
     await gFinCarregar();
@@ -3118,7 +3122,7 @@ function renderGestao(empInicial){
         _gFinAgLancados.add(m.agId);
       }
     }
-    if(error){ toast('Erro ao salvar: '+error.message,'err'); _gFinModal=m; draw(); return; }
+    if(error){ toast(friendlyError(error,'Erro ao salvar.'),'err'); _gFinModal=m; draw(); return; }
     toast('Lançamento salvo!','ok');
     await gFinCarregar();
   };
@@ -3228,7 +3232,6 @@ function renderGestao(empInicial){
 
 
     render(`
-      ${GESTAO_CSS}
       ${finalizarModalHtml()}
       ${novoAgModalHtml()}
       <div style="position:sticky;top:0;z-index:300;">
@@ -3262,7 +3265,7 @@ function renderGestao(empInicial){
       if(!_gFinLancamentos.length) gFinCarregar();
       carregarNotas();
     } else if(c==='relatorios'){
-      _relAba=null; _relMes = isoData(new Date()).slice(0,7);
+      _relAba=null;
       draw();
       if(!_gFinLancamentos.length) gFinCarregar();
     } else if(c==='clientes'){
@@ -3462,17 +3465,18 @@ function renderGestao(empInicial){
     const [ano, mes] = _relMes.split('-').map(Number);
     const mesLabel = MESES_PT[mes-1]+'_'+ano;
     const fmtData = d => { const [y,m,dd]=d.split('-'); return `${dd}/${m}/${y}`; };
+    const csvField = v => { const s=(v||'').replace(/;/g,''); return /^[=+\-@\t\r]/.test(s) ? `'${s}` : s; };
     let csv, nome;
     if(tipo==='financeiro'){
       const lancs = _gFinLancamentos.filter(l=>l.data.startsWith(_relMes)).sort((a,b)=>a.data.localeCompare(b.data));
       csv = 'Data;Descricao;Tipo;Valor\n';
-      csv += lancs.map(l=>`${fmtData(l.data)};${(l.descricao||'').replace(/;/g,'')};${l.tipo==='receita'?'Receita':'Despesa'};${parseFloat(l.valor||0).toFixed(2).replace('.',',')}`).join('\n');
+      csv += lancs.map(l=>`${fmtData(l.data)};${csvField(l.descricao)};${l.tipo==='receita'?'Receita':'Despesa'};${parseFloat(l.valor||0).toFixed(2).replace('.',',')}`).join('\n');
       nome = `financeiro_${mesLabel}.csv`;
     } else {
       const ags = agendamentos.filter(a=>a.slug===emp.slug && a.data.startsWith(_relMes)).sort((a,b)=>a.data.localeCompare(b.data)||a.hora.localeCompare(b.hora));
       const stLabel = s => s==='confirmado' ? 'Confirmado' : s==='cancelado' ? 'Cancelado' : 'Nao confirmado';
       csv = 'Data;Hora;Cliente;Servico;Status\n';
-      csv += ags.map(a=>`${fmtData(a.data)};${a.hora};${(a.nome||'').replace(/;/g,'')};${(a.servicoNome||'').replace(/;/g,'')};${stLabel(a.status)}`).join('\n');
+      csv += ags.map(a=>`${fmtData(a.data)};${a.hora};${csvField(a.nome)};${csvField(a.servicoNome)};${stLabel(a.status)}`).join('\n');
       nome = `agendamentos_${mesLabel}.csv`;
     }
     const blob = new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8;'});
@@ -3505,7 +3509,7 @@ function renderGestao(empInicial){
     }
     if(tipo === 'inativo'){
       const agora = new Date().toISOString();
-      const cf = _clientes.find(x=>x.id===clienteId); if(cf) cf.ausenteEnviadoEm = agora;
+      if(c) c.ausenteEnviadoEm = agora;
       agMarkFetch({ cliente_id: clienteId, campo: 'ausente_enviado_em' });
     }
     _inativoWaMenuId = null;
@@ -3666,7 +3670,7 @@ function renderGestao(empInicial){
         drop.style.display='block';
         drop.innerHTML = _novoAgClienteResultados.map(c=>`
           <div role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();selecionarClienteAg('${c.id}')}" onclick="selecionarClienteAg('${c.id}')" style="padding:10px 12px;cursor:pointer;font-size:14px;font-weight:600;border-bottom:0.5px solid #f2f2f7;" onmouseover="this.style.background='#f9f9f9'" onmouseout="this.style.background=''">
-            ${escapeHtml(c.nome)}<span style="font-weight:400;color:#8e8e93;margin-left:8px;">${(c.telefone||'').replace(/^0(\d{2})(\d{5})(\d{4})$/,'($1) $2-$3')}</span>
+            ${escapeHtml(c.nome)}<span style="font-weight:400;color:#8e8e93;margin-left:8px;">${escapeHtml(fmtTelStr(c.telefone))}</span>
           </div>`).join('');
       } else {
         drop.style.display='none';
@@ -3760,6 +3764,8 @@ function renderGestao(empInicial){
     const novoSlug = (document.getElementById('pSlug')?.value || '').trim();
     if(!novoSlug){ toast('Preencha o link.','err'); return; }
     if(novoSlug === emp.slug){ toast('Link não alterado.','ok'); return; }
+    const _slugsReservados = ['api','admin','master','app','www','mail','suporte','ajuda','login','auth','static','assets','cdn','blog','help'];
+    if(_slugsReservados.includes(novoSlug)){ toast('Este link não pode ser usado. Escolha outro.','err'); return; }
     if(!confirm('Alterar o link para "'+novoSlug+'.agenplus.com.br"? O endereço antigo vai parar de funcionar.')) return;
     const { error } = await supabaseClient.from('empresas').update({ slug: novoSlug }).eq('id', emp.id);
     if(error){ toast((error.message||'').includes('unique')||error.code==='23505' ? 'Este link já está em uso.' : 'Erro ao salvar. Tente novamente.','err'); return; }
@@ -4545,6 +4551,8 @@ function renderMasterPanel(){
     </style>
   `;
 
+  if(!document.getElementById('sidebar-css')){ const _ss=document.createElement('div'); _ss.innerHTML=SIDEBAR_CSS; const _el=_ss.firstElementChild; _el.id='sidebar-css'; document.head.appendChild(_el); }
+
   window.masterSearchInput = (v, ss) => {
     masterSearch = v;
     drawMaster();
@@ -4559,7 +4567,6 @@ function renderMasterPanel(){
       </button>`).join('');
 
     render(`
-      ${SIDEBAR_CSS}
       <div class="ml">
         <nav class="m-nav">
           ${navItems}
@@ -4684,7 +4691,7 @@ function renderMasterPanel(){
       const diasTrial = editing.trialExpiraEm ? _diasTrialRestantes(editing) : null;
       const statusSub = {
         ativa:     'acesso completo',
-        trial:     diasTrial !== null ? `${diasTrial}d restantes` : 'periodo de teste',
+        trial:     diasTrial !== null ? `${diasTrial}d restantes` : 'período de teste',
         bloqueada: 'sem acesso',
       };
       drawMasterShell(`
@@ -4707,13 +4714,13 @@ function renderMasterPanel(){
             <input class="m-field-inp" id="editWhats" type="tel" inputmode="numeric" maxlength="16" value="${escapeAttr(fmtTelStr(editing.whatsapp))}" onkeydown="if(event.key.length===1&&!/[0-9]/.test(event.key))event.preventDefault()" oninput="maskTel(this)"/>
           </div>
           <div class="m-field-row">
-            <div class="m-field-lbl">Link publico</div>
+            <div class="m-field-lbl">Link público</div>
             <div class="m-link-row">
               <span class="m-link-pfx">https://</span>
               <input class="m-link-inp" id="masterSlugInput" value="${escapeAttr(editing.slug)}" oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9-]/g,'')"/>
               <span class="m-link-pfx">.agenplus.com.br</span>
             </div>
-            <div class="m-field-hint">Alterar o link quebra o endereco antigo.</div>
+            <div class="m-field-hint">Alterar o link quebra o endereço antigo.</div>
           </div>
           <div class="m-field-row">
             <div class="m-field-lbl">E-mail do gestor</div>
@@ -4728,8 +4735,8 @@ function renderMasterPanel(){
               <div class="m-tipo-opt-sub">Agenda, clientes e financeiro</div>
             </div>
             <div class="m-tipo-opt${(editing.tipo||'agendamento')==='pagina'?' sel':''}" id="editTipoPagina" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();masterSelTipoEdit('pagina')}" onclick="masterSelTipoEdit('pagina')">
-              <div class="m-tipo-opt-title">Pagina</div>
-              <div class="m-tipo-opt-sub">Apenas links e presenca</div>
+              <div class="m-tipo-opt-title">Página</div>
+              <div class="m-tipo-opt-sub">Apenas links e presença</div>
             </div>
           </div>
           <input type="hidden" id="editTipoInput" value="${escapeAttr(editing.tipo||'agendamento')}"/>
@@ -4745,7 +4752,7 @@ function renderMasterPanel(){
               </div>`).join('')}
           </div>
         </div>
-        <button class="m-btn-save" onclick="masterSalvarEdicao()">Salvar alteracoes</button>
+        <button class="m-btn-save" onclick="masterSalvarEdicao()">Salvar alterações</button>
         <div class="m-acoes-sec">
           <button class="m-btn-sec" onclick="masterRedefinirSenha()">Redefinir senha</button>
           <button class="m-btn-del" onclick="masterExcluir('${editing.slug}')">Excluir empresa</button>
@@ -4825,7 +4832,7 @@ function renderMasterPanel(){
             ${vencInfo}
           </div>
           <div class="m-pag-sec">
-            <div class="m-pag-head"><span class="m-pag-title">Acoes</span></div>
+            <div class="m-pag-head"><span class="m-pag-title">Ações</span></div>
             <div class="m-acoes-grid">
               <button class="m-acao-btn" onclick="masterEditarEmpresa('${e.slug}')">
                 <div class="m-acao-icon" style="background:#f3eef5;">${ICO_PENCIL}</div>
@@ -4833,7 +4840,7 @@ function renderMasterPanel(){
               </button>
               <button class="m-acao-btn" onclick="goto({empresa:'${e.slug}',page:'gestao'})">
                 <div class="m-acao-icon" style="background:#dcfce7;">${ICO_EXTL}</div>
-                <div><div class="m-acao-label">Entrar na gestao</div><div class="m-acao-sub">Painel da empresa</div></div>
+                <div><div class="m-acao-label">Entrar na gestão</div><div class="m-acao-sub">Painel da empresa</div></div>
               </button>
               <button class="m-acao-btn" onclick="masterToggleEmpStatus('${e.slug}')">
                 <div class="m-acao-icon" style="background:#fef3c7;">${ICO_LOCK}</div>
@@ -4841,7 +4848,7 @@ function renderMasterPanel(){
               </button>
               <button class="m-acao-btn danger" onclick="masterExcluir('${e.slug}')">
                 <div class="m-acao-icon" style="background:#fee2e2;">${ICO_TRASH}</div>
-                <div><div class="m-acao-label">Excluir empresa</div><div class="m-acao-sub">Acao irreversivel</div></div>
+                <div><div class="m-acao-label">Excluir empresa</div><div class="m-acao-sub">Ação irreversível</div></div>
               </button>
             </div>
           </div>
@@ -5246,7 +5253,10 @@ function renderMasterPanel(){
     }
 
     // 2. Cria o usuário gestor via API segura
-    const { data: { session } } = await supabaseClient.auth.getSession();
+    let _sessionData;
+    try { ({ data: { session: _sessionData } } = await supabaseClient.auth.getSession()); }
+    catch(_){ toast('Sessão expirada. Faça login novamente.','err'); masterDrawerMode=null; draw(); return; }
+    const session = _sessionData;
     let apiOk = false;
     try {
       const resp = await fetch('/api/create-user', {
@@ -5349,7 +5359,7 @@ function renderMasterPanel(){
             if(bucket==='logos') e.logo = urlData.publicUrl;
             else e.fotoUrl = urlData.publicUrl;
           }
-        }catch(e){ console.error('Erro ao migrar imagem:', e); toast('Imagem não pôde ser migrada. Reenvie a logo manualmente.','err'); }
+        }catch(imgErr){ console.error('Erro ao migrar imagem:', imgErr); toast('Imagem não pôde ser migrada. Reenvie a logo manualmente.','err'); }
       }
       agendamentos = agendamentos.map(a=> a.slug===antigoSlug ? {...a, slug:novoSlug} : a);
       editingSlug = novoSlug;
@@ -5385,6 +5395,7 @@ function renderMasterPanel(){
   };
   window.masterExcluir = (slug)=>{
     const e = empresas.find(x=>x.slug===slug);
+    if(!e){ toast('Empresa não encontrada.','err'); return; }
     confirmarAcao(`Excluir <strong>${escapeHtml(e.nome)}</strong> definitivamente? Isso também apaga os agendamentos dela. Essa ação não pode ser desfeita.`, async ()=>{
       if(e.id){
         // Remove o auth user do gestor via API (service role)
@@ -5396,7 +5407,10 @@ function renderMasterPanel(){
             body: JSON.stringify({ empresa_id: e.id })
           });
         } catch(_){}
-        await supabaseClient.from('agendamentos').delete().eq('empresa_id', e.id);
+        const _tbRel = ['agendamentos','clientes','servicos','lancamentos_financeiros','bloqueios','horarios_disponiveis','botoes_empresa'];
+        for(const tb of _tbRel){
+          await supabaseClient.from(tb).delete().eq('empresa_id', e.id);
+        }
         const { error } = await supabaseClient.from('empresas').delete().eq('id', e.id);
         if(error){ toast(friendlyError(error,'Erro ao excluir empresa. Tente novamente.'),'err'); return; }
       }
@@ -5432,7 +5446,7 @@ window.gestaoLogout = async (slug)=>{
   await supabaseClient.auth.signOut();
   currentUser = null; currentProfile = null;
   _limparEstado();
-  await loadData();
+  try { await loadData(); } catch(_){}
   goto({empresa: slug});
 };
 window.masterRedefinirSenha = async ()=>{
