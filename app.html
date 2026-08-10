@@ -580,7 +580,8 @@ async function init(){
     const { data: { session: _s } } = await supabaseClient.auth.getSession();
     if(_s?.user){
       currentUser = _s.user;
-      const { data: _p } = await supabaseClient.from('profiles').select('*').eq('id', _s.user.id).single();
+      const { data: _p, error: _profErr3 } = await supabaseClient.from('profiles').select('*').eq('id', _s.user.id).single();
+      if(_profErr3 && _profErr3.code !== 'PGRST116') console.error('Erro ao carregar perfil (redirect):', _profErr3);
       currentProfile = _p || null;
       await loadData();
       if(currentProfile?.role === 'master'){
@@ -1605,7 +1606,7 @@ function renderGestao(empInicial){
       <div style="font-size:22px;font-weight:700;color:#1a1a1a;margin-bottom:16px;padding:0 4px;">Agenda</div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
         <button style="background:none;border:none;font-size:22px;font-weight:300;color:#888;cursor:pointer;padding:4px 12px;line-height:1;" onclick="selecionarDiaGestao('${isoAddDias(diaSelecionado,-1)}')">&#8249;</button>
-        <div style="position:relative;text-align:center;cursor:pointer;" onclick="document.getElementById('calGestao').showPicker ? document.getElementById('calGestao').showPicker() : document.getElementById('calGestao').click()">
+        <div role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();document.getElementById('calGestao').showPicker?document.getElementById('calGestao').showPicker():document.getElementById('calGestao').click()}" style="position:relative;text-align:center;cursor:pointer;" onclick="document.getElementById('calGestao').showPicker ? document.getElementById('calGestao').showPicker() : document.getElementById('calGestao').click()">
           <div style="font-family:'Nunito',sans-serif;font-size:18px;font-weight:700;">${dataFmt}</div>
           <div style="font-size:13px;color:var(--ink-soft);text-transform:capitalize;">${diaNome}${isHoje?' · Hoje':''}</div>
           <input type="date" id="calGestao" value="${diaSelecionado}" style="position:absolute;opacity:0;width:1px;height:1px;top:0;left:50%;" onchange="selecionarDiaGestao(this.value)"/>
@@ -3762,7 +3763,9 @@ function renderGestao(empInicial){
     if(!confirm('Alterar o link para "'+novoSlug+'.agenplus.com.br"? O endereço antigo vai parar de funcionar.')) return;
     const { error } = await supabaseClient.from('empresas').update({ slug: novoSlug }).eq('id', emp.id);
     if(error){ toast((error.message||'').includes('unique')||error.code==='23505' ? 'Este link já está em uso.' : 'Erro ao salvar. Tente novamente.','err'); return; }
+    const oldSlug = emp.slug;
     emp.slug = novoSlug;
+    agendamentos.forEach(a => { if(a.slug === oldSlug) a.slug = novoSlug; });
     toast('Link atualizado!','ok');
     draw();
   };
@@ -4091,7 +4094,7 @@ window.tentarCadastro = async ()=>{
     });
     result = await resp.json();
   } catch(e) {
-    toast('Erro de conexão. Tente novamente.','err',8000);
+    toast(mensagemErroRede(e),'err',8000);
     renderCadastro(); return;
   }
 
@@ -4181,7 +4184,7 @@ window.tentarLoginUnificado = async ()=>{
     await loadData();
   } catch(e) {
     if(btn){ btn.disabled = false; btn.textContent = 'Entrar com email'; }
-    toast('Erro ao carregar dados. Tente novamente.','err');
+    toast(mensagemErroRede(e),'err');
     return;
   }
 
@@ -5451,7 +5454,7 @@ function validarArquivo(file){
 }
 
 function _carregarCropper(){
-  return new Promise((resolve)=>{
+  return new Promise((resolve, reject)=>{
     if(window.Cropper) return resolve();
     const css = document.createElement('link');
     css.rel = 'stylesheet';
@@ -5460,6 +5463,7 @@ function _carregarCropper(){
     const js = document.createElement('script');
     js.src = 'https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js';
     js.onload = resolve;
+    js.onerror = () => reject(new Error('Falha ao carregar editor de imagem.'));
     document.head.appendChild(js);
   });
 }
@@ -5470,7 +5474,7 @@ function abrirCrop(tipo, slug, callback){
   input.onchange = async (ev)=>{
     const file = ev.target.files[0]; if(!file) return;
     const err = validarArquivo(file); if(err){ toast(err,'err'); return; }
-    await _carregarCropper();
+    try{ await _carregarCropper(); }catch(_){ toast('Não foi possível carregar o editor de imagem. Verifique sua conexão e tente novamente.','err'); return; }
     const reader = new FileReader();
     reader.onload = (e)=>{
       const modal = document.getElementById('cropModal');
@@ -5504,7 +5508,12 @@ async function confirmarCrop(){
     const col = isLogo ? 'logo' : 'foto_url';
     const emp = empresas.find(x=>x.slug===_cropSlug);
     if(emp && emp.id){
-      await supabaseClient.from('empresas').update({ [col]: url }).eq('id', emp.id);
+      const { error: updErr } = await supabaseClient.from('empresas').update({ [col]: url }).eq('id', emp.id);
+      if(updErr){
+        toast('Imagem enviada, mas não foi possível salvar no cadastro. Tente novamente.','err');
+        btn.disabled=false; btn.textContent='Confirmar recorte';
+        return;
+      }
     }
     const cb = _cropCallback;
     fecharCrop();
