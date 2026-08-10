@@ -883,7 +883,7 @@ function renderAgendar(emp){
       const taken   = agendamentos.some(a=>a.slug===emp.slug && a.data===iso && a.hora===h && a.status!=='cancelado');
       const bloq    = (emp.bloqueios||[]).some(b=>b.data===iso && b.hora===h);
       const [hh,mm] = h.split(':').map(Number);
-      const passado = iso===hojeIso && (hh*60+mm < agora.getHours()*60+agora.getMinutes()+60);
+      const passado = iso===hojeIso && (hh*60+mm < agora.getHours()*60+agora.getMinutes()+15);
       return {h, livre: !taken && !bloq && !passado};
     });
   }
