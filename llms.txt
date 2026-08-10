@@ -1,0 +1,17 @@
+# Agen+
+
+Agen+ e um sistema de agendamentos online para pequenos negocios como saloes de beleza, barbearias, clinicas e studios.
+
+## O que e a Agen+
+
+Permite que profissionais criem uma pagina de agendamento personalizada e compartilhem o link com seus clientes. Os clientes agendam sozinhos, sem precisar de app ou cadastro.
+
+## Paginas principais
+
+- [Pagina inicial](https://agenplus.com.br/)
+- [Criar conta](https://agenplus.com.br/cadastro)
+- [Entrar](https://agenplus.com.br/login)
+
+## Uso de IA
+
+Nao autorizo o uso do conteudo deste site para treinamento de modelos de linguagem.
