@@ -9,6 +9,16 @@
       "destination": "/api/subdomain-page"
     },
     {
+      "source": "/robots.txt",
+      "has": [{ "type": "host", "value": "(?<slug>(?!www)[^.]+)\\.agenplus\\.com\\.br" }],
+      "destination": "/robots.txt"
+    },
+    {
+      "source": "/sitemap.xml",
+      "has": [{ "type": "host", "value": "(?<slug>(?!www)[^.]+)\\.agenplus\\.com\\.br" }],
+      "destination": "/sitemap.xml"
+    },
+    {
       "source": "/:path*",
       "has": [{ "type": "host", "value": "(?<slug>(?!www)[^.]+)\\.agenplus\\.com\\.br" }],
       "destination": "/app.html"
