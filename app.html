@@ -834,6 +834,10 @@ function renderHome(emp){
 // ---------- AGENDAMENTO (WIZARD) ----------
 let bookingState = {};
 function renderAgendar(emp){
+  if(emp.bloqueada){
+    render(`${barraVoltarMaster()}<div class="container"><div class="empty"><h2 class="display">Agendamentos temporariamente indisponíveis</h2><p>Entre em contato diretamente com ${escapeHtml(emp.nome)}.</p></div></div>`);
+    return;
+  }
   applyAccent(emp.corPrincipal);
   if(bookingState._slug !== emp.slug) bookingState = {
     _slug:emp.slug, _step:1, _done:false,
@@ -1153,6 +1157,11 @@ function renderAgendar(emp){
       if(btn){ btn.disabled=false; btn.innerHTML='Confirmar'; } return;
     }
     const emp2 = empresas.find(e=>e.slug===slug);
+    if(emp2?.bloqueada){
+      toast('Esta empresa não está aceitando agendamentos no momento.','err');
+      if(btn){ btn.disabled=false; btn.innerHTML='Confirmar'; }
+      return;
+    }
     const jaOcupado = agendamentos.some(a=>a.slug===slug && a.data===bookingState.data && a.hora===bookingState.hora && a.status!=='cancelado')
       || (emp2?.bloqueios||[]).some(b=>b.data===bookingState.data && b.hora===bookingState.hora);
     if(jaOcupado){
@@ -1566,25 +1575,6 @@ function renderGestao(empInicial){
     const diaNome = dataObj.toLocaleDateString('pt-BR',{weekday:'long'});
     const hoje = isoData(new Date());
     const isHoje = diaSelecionado === hoje;
-    // Mini visão semanal: 7 dias centrados no dia selecionado
-    const semanaBase = new Date(diaSelecionado+"T00:00:00");
-    semanaBase.setDate(semanaBase.getDate() - 3);
-    const semanaHtml = Array.from({length:7},(_,i)=>{
-      const d = new Date(semanaBase); d.setDate(semanaBase.getDate()+i);
-      const iso = isoData(d);
-      const isSelected = iso === diaSelecionado;
-      const isToday = iso === hoje;
-      const temAg = agendamentos.some(a=>a.slug===emp.slug && a.data===iso);
-      const diaSem = d.toLocaleDateString('pt-BR',{weekday:'narrow'});
-      const diaNum = d.getDate();
-      return `<div onclick="selecionarDiaGestao('${iso}')" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;flex:1;">
-        <div style="font-size:10px;color:${isSelected?'#fff':isToday?'var(--accent)':'var(--ink-soft)'};font-weight:600;">${diaSem}</div>
-        <div style="width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;
-          background:${isSelected?'#1c1917':'transparent'};color:${isSelected?'#fff':isToday?'var(--accent)':'var(--ink)'};
-          border:${isToday&&!isSelected?'1.5px solid var(--accent)':'1.5px solid transparent'};">${diaNum}</div>
-        <div style="width:5px;height:5px;border-radius:50%;background:${temAg?'var(--ok)':'transparent'};"></div>
-      </div>`;
-    }).join('');
     const editModalHtml = (()=>{
       if(!editandoId) return '';
       const agEd = agendamentos.find(a=>a.id===editandoId);
@@ -2707,8 +2697,7 @@ function renderGestao(empInicial){
       return true;
     });
 
-    const ICO_UP   = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>`;
-    const ICO_DOWN = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>`;
+    const ICO_DOWN =`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>`;
     const ICO_LEFT = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;"><polyline points="15 18 9 12 15 6"/></svg>`;
     const ICO_RIGHT= `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;"><polyline points="9 18 15 12 9 6"/></svg>`;
     const ICO_EDIT = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
@@ -3107,14 +3096,6 @@ function renderGestao(empInicial){
     draw();
   };
 
-  window.gFinAbrirModalPendente = (agId)=>{
-    const ag = agendamentos.find(a=>a.id===agId);
-    if(!ag) return;
-    const svc = emp.servicos.find(s=>s.id===ag.servicoId);
-    _gFinModal = { tipo:'receita', agId, descricao: ag.nome||'', valor: svc?.preco ? String(svc.preco) : '' };
-    draw();
-  };
-
   window.gFinFecharModal = ()=>{ _gFinModal=null; draw(); };
 
   window.gFinSalvar = async ()=>{
@@ -3229,12 +3210,6 @@ function renderGestao(empInicial){
   function draw(){
     preservarCamposPersonalizar();
     const isMaster = currentProfile?.role === 'master';
-    const exitAction = isMaster
-      ? `goto({empresa:'${emp.slug}'})`
-      : `gestaoLogout('${emp.slug}')`;
-    const exitLabel = isMaster ? 'Voltar' : 'Sair';
-    const exitIco   = isMaster ? G_ICO.voltar : G_ICO.sair;
-
     const navFiltrado = emp.tipo === 'pagina'
       ? GESTAO_NAV.filter(n => n.id === 'configurar')
       : GESTAO_NAV;
@@ -4764,17 +4739,10 @@ function renderMasterPanel(){
     }
 
     // Lista normal
-    const ICO_EXT  = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>`;
-    const ICO_COPY = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
-    const ICO_GEST = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>`;
-    const ICO_EDIT = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
-
     const ICO_CHV = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>`;
     const ICO_OK  = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
     const ICO_X   = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
 
-    // Iniciais do nome da empresa
-    function empIniciais(nome){ return nome.split(' ').slice(0,2).map(w=>w[0]||'').join('').toUpperCase()||'?'; }
     // Cor de fundo do avatar baseada no slug
     const AV_CORES = ['#3d1f3a','#15803d','#1d4ed8','#be185d','#c2410c','#0f766e','#7e22ce','#b45309'];
     function empAvCor(slug){ let h=0; for(let i=0;i<slug.length;i++) h=(h*31+slug.charCodeAt(i))&0x7fffffff; return AV_CORES[h%AV_CORES.length]; }
@@ -5195,27 +5163,6 @@ function renderMasterPanel(){
     await carregarFinanceiro(); draw();
   };
 
-  window.masterLancarMensalidade = async (empresaId) => {
-    const ref   = document.getElementById('lancRef')?.value||'';
-    const valor = parseFloat(document.getElementById('lancValor')?.value)||0;
-    const pago  = document.getElementById('lancData')?.value||'';
-    if(!ref){ toast('Informe a referencia.','err'); return; }
-    if(!valor){ toast('Informe o valor.','err'); return; }
-    // Verifica se ja existe registro para esse mes/empresa
-    const existe = mensalidades.find(m=>m.empresa_id===empresaId && m.referencia===ref);
-    let erro;
-    if(existe){
-      const { error } = await supabaseClient.from('mensalidades').update({ valor, pago_em: pago||null }).eq('id', existe.id);
-      erro = error;
-    } else {
-      const { error } = await supabaseClient.from('mensalidades').insert({ empresa_id: empresaId, referencia: ref, valor, pago_em: pago||null });
-      erro = error;
-    }
-    if(erro){ toast('Erro ao salvar lancamento.','err'); return; }
-    toast('Lancamento salvo!','ok');
-    await carregarMensalidades(); draw();
-  };
-
   window.finMudarPeriodo = (d) => {
     let m = _finPeriodo.mes + d, a = _finPeriodo.ano;
     if(m>11){m=0;a++;} if(m<0){m=11;a--;}
@@ -5386,7 +5333,7 @@ function renderMasterPanel(){
             if(bucket==='logos') e.logo = urlData.publicUrl;
             else e.fotoUrl = urlData.publicUrl;
           }
-        }catch(_){}
+        }catch(e){ console.error('Erro ao migrar imagem:', e); toast('Imagem não pôde ser migrada. Reenvie a logo manualmente.','err'); }
       }
       agendamentos = agendamentos.map(a=> a.slug===antigoSlug ? {...a, slug:novoSlug} : a);
       editingSlug = novoSlug;
@@ -5433,6 +5380,7 @@ function renderMasterPanel(){
             body: JSON.stringify({ empresa_id: e.id })
           });
         } catch(_){}
+        await supabaseClient.from('agendamentos').delete().eq('empresa_id', e.id);
         const { error } = await supabaseClient.from('empresas').delete().eq('id', e.id);
         if(error){ toast(friendlyError(error,'Erro ao excluir empresa. Tente novamente.'),'err'); return; }
       }
