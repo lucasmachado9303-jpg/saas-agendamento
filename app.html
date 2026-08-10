@@ -3803,23 +3803,33 @@ function renderGestao(empInicial){
   window.toggleDiaSemana = async (dia)=>{
     emp.horariosPorMes = emp.horariosPorMes || {};
     const atual = (emp.horariosPorMes['_dias_'] || []).map(Number);
-    const jaExiste = atual.length > 0;
     let novos;
-    if(!jaExiste){
+    if(atual.length === 0){
       // primeira vez: começa com todos os dias e remove o clicado
       novos = [0,1,2,3,4,5,6].filter(d=>d!==dia);
     } else {
       novos = atual.includes(dia) ? atual.filter(d=>d!==dia) : [...atual, dia].sort();
     }
-    // remove entradas antigas de _dias_ e insere as novas
-    const { error: delErr } = await supabaseClient.from('horarios_disponiveis')
-      .delete().eq('empresa_id', emp.id).eq('mes', '_dias_');
-    if(delErr){ toast(friendlyError(delErr,'Erro ao salvar dias. Tente novamente.'),'err'); return; }
-    if(novos.length){
-      const rows = novos.map(d=>({ empresa_id: emp.id, mes: '_dias_', hora: String(d) }));
-      const { error } = await supabaseClient.from('horarios_disponiveis').insert(rows);
-      if(error){ toast(friendlyError(error,'Erro ao salvar dias. Tente novamente.'),'err'); return; }
+
+    // Abordagem diff: nunca apaga tudo de uma vez
+    // 1. Insere apenas os dias que entraram (não estavam em atual)
+    const paraInserir = novos.filter(d => !atual.includes(d));
+    if(paraInserir.length){
+      const rows = paraInserir.map(d => ({ empresa_id: emp.id, mes: '_dias_', hora: String(d) }));
+      const { error: insErr } = await supabaseClient.from('horarios_disponiveis').insert(rows);
+      if(insErr){ toast(friendlyError(insErr,'Erro ao salvar dias. Tente novamente.'),'err'); return; }
     }
+
+    // 2. Remove apenas os dias que saíram (não apaga o restante)
+    // Se este passo falhar, os dias novos já foram inseridos e o banco fica consistente
+    const paraRemover = atual.filter(d => !novos.includes(d));
+    if(paraRemover.length){
+      const { error: delErr } = await supabaseClient.from('horarios_disponiveis')
+        .delete().eq('empresa_id', emp.id).eq('mes', '_dias_')
+        .in('hora', paraRemover.map(String));
+      if(delErr){ toast(friendlyError(delErr,'Erro ao salvar dias. Tente novamente.'),'err'); return; }
+    }
+
     emp.horariosPorMes['_dias_'] = novos.map(String);
     draw();
   };
