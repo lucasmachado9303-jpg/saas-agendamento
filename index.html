@@ -169,7 +169,7 @@ nav{
 /* HERO IMAGE */
 .phone-wrap{
   display:flex;justify-content:center;align-items:center;
-  animation:heroUp 0.9s cubic-bezier(0.22,1,0.36,1) 0.15s both;
+  animation:blurImg 0.9s cubic-bezier(0.22,1,0.36,1) 0.3s both;
 }
 .hero-img{
   width:100%;
@@ -444,7 +444,18 @@ footer{
   from{opacity:0;transform:translateY(18px);}
   to{opacity:1;transform:translateY(0);}
 }
-.hero-headline{animation:heroUp 0.85s cubic-bezier(0.22,1,0.36,1) both;}
+@keyframes blurImg{
+  0%{opacity:0;filter:blur(12px);transform:translateY(24px);}
+  60%{opacity:0.8;filter:blur(4px);transform:translateY(-4px);}
+  100%{opacity:1;filter:blur(0);transform:translateY(0);}
+}
+@keyframes blurWord{
+  0%{opacity:0;filter:blur(10px);transform:translateY(-20px);}
+  60%{opacity:0.7;filter:blur(3px);transform:translateY(3px);}
+  100%{opacity:1;filter:blur(0);transform:translateY(0);}
+}
+.blur-word{display:inline-block;opacity:0;will-change:transform,filter,opacity;}
+.blur-word.animate{animation:blurWord 0.6s cubic-bezier(0.22,1,0.36,1) both;}
 .hero-sub{animation:heroUp 0.85s cubic-bezier(0.22,1,0.36,1) 0.1s both;}
 .hero-cta-row{animation:heroUp 0.85s cubic-bezier(0.22,1,0.36,1) 0.2s both;}
 
@@ -685,6 +696,37 @@ footer{
     revealEls.forEach(function(el){el.classList.add('in');});
   }
 
+})();
+
+// BlurText — titulo hero
+(function(){
+  function startAnim(){
+    var el=document.querySelector('.hero-headline');
+    if(!el)return;
+    var html=el.innerHTML;
+    var parts=html.split(/(<br\s*\/?>)/i);
+    var out='';
+    parts.forEach(function(part){
+      if(/^<br/i.test(part)){out+=part;}
+      else{
+        part.split(' ').forEach(function(word,i,arr){
+          if(word==='')return;
+          out+='<span class="blur-word">'+word+'</span>';
+          if(i<arr.length-1)out+=' ';
+        });
+      }
+    });
+    el.innerHTML=out;
+    var words=el.querySelectorAll('.blur-word');
+    words.forEach(function(w,i){
+      setTimeout(function(){w.classList.add('animate');},i*80);
+    });
+  }
+  if(document.fonts&&document.fonts.ready){
+    document.fonts.ready.then(startAnim);
+  } else {
+    startAnim();
+  }
 })();
 </script>
 </body>
