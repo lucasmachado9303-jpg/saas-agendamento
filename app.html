@@ -693,7 +693,23 @@ async function init(){
   } else if(path === 'master'){
     currentRoute.master = 1;
   } else if(path === 'login'){
-    renderLoginUnificado(); return;
+    if(currentUser && currentProfile){
+      // ja logado: redireciona para o destino correto
+      if(currentProfile.role === 'master'){
+        history.replaceState(null,'','/master');
+        currentRoute = { master: 1 };
+      } else {
+        const _empLogin = empresas.find(e => e.id === currentProfile.empresa_id);
+        if(_empLogin){
+          history.replaceState(null,'','/gestao');
+          currentRoute = { empresa: _empLogin.slug, page: 'gestao' };
+        } else {
+          renderLoginUnificado(); return;
+        }
+      }
+    } else {
+      renderLoginUnificado(); return;
+    }
   } else {
     const qp = new URLSearchParams(location.search);
     const qEmpresa = qp.get('empresa');
