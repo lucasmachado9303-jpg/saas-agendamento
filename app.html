@@ -1173,8 +1173,19 @@ function renderAgendar(emp){
       bookingState._step=2; draw(); return;
     }
     const primeiroServico = emp2.servicos.find(s=>s.id===bookingState.servicos[0]);
+    // Registra/unifica cliente por telefone antes de inserir o agendamento
+    let clienteIdBooking = null;
+    try {
+      const ucRes = await fetch('/api/upsert-cliente', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ empresa_id: emp2.id, nome: bookingState.nome.trim(), telefone: bookingState.telefone.trim() })
+      });
+      if(ucRes.ok){ const ucData = await ucRes.json(); clienteIdBooking = ucData.cliente_id || null; }
+    } catch(e){}
     const { error } = await supabaseClient.from('agendamentos').insert({
       empresa_id:    emp2.id,
+      cliente_id:    clienteIdBooking,
       servico_id:    primeiroServico ? primeiroServico.id   : null,
       servico_nome:  primeiroServico ? primeiroServico.nome : '',
       servicos_json: JSON.stringify(bookingState.servicos),
@@ -1190,12 +1201,6 @@ function renderAgendar(emp){
       if(error.code==='23505') draw();
       return;
     }
-    // Registra/atualiza cliente em background (sem bloquear o fluxo)
-    fetch('/api/upsert-cliente', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ empresa_id: emp2.id, nome: bookingState.nome.trim(), telefone: bookingState.telefone.trim() })
-    }).catch(()=>{});
     const srvNomes = bookingState.servicos.map(id=>{ const s=emp2.servicos.find(x=>x.id===id); return s?s.nome:''; }).filter(Boolean);
     const novo = {
       slug,
@@ -1677,7 +1682,7 @@ function renderGestao(empInicial){
       if(!c){ _clientePerfilId=null; return clientesBody(); }
 
       const hist = agendamentos
-        .filter(a => a.slug===emp.slug && a.nome===c.nome && a.telefone===c.telefone)
+        .filter(a => a.slug===emp.slug && a.telefone===c.telefone)
         .sort((a,b)=>b.data.localeCompare(a.data)||b.hora.localeCompare(a.hora));
 
       const histRows = hist.length
@@ -2489,7 +2494,7 @@ function renderGestao(empInicial){
   const NOTA_CORES = { amarelo:'#fef9c3', azul:'#dbeafe', rosa:'#fce7f3', verde:'#dcfce7' };
 
   function diasSemVoltarDash(c) {
-    const cAgs = agendamentos.filter(a => a.slug===emp.slug && a.nome===c.nome && a.telefone===c.telefone);
+    const cAgs = agendamentos.filter(a => a.slug===emp.slug && a.telefone===c.telefone);
     if(!cAgs.length) return null;
     const ultima = cAgs.map(a=>a.data).sort().pop();
     return Math.floor((new Date() - new Date(ultima+'T00:00:00')) / 86400000);
@@ -3727,7 +3732,7 @@ function renderGestao(empInicial){
   window.confirmarExcluirCliente = async (id, excluirAgs)=>{
     _excluirClienteModal = null;
     if(excluirAgs){
-      const idsAg = agendamentos.filter(a=>a.slug===emp.slug && _clientes.find(c=>c.id===id && c.nome===a.nome && c.telefone===a.telefone)).map(a=>a.id);
+      const idsAg = agendamentos.filter(a=>a.slug===emp.slug && _clientes.find(c=>c.id===id && c.telefone===a.telefone)).map(a=>a.id);
       if(idsAg.length){
         const { error: eAg } = await supabaseClient.from('agendamentos').delete().in('id', idsAg);
         if(eAg){ toast('Erro ao excluir agendamentos.','err'); return; }
