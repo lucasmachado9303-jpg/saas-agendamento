@@ -344,11 +344,18 @@ async function loadData(){
     if(podeVerDadosPessoais){
       agendamentos = (rAg.data || []).map(a => {
         const emp = empresas.find(e => e.id === a.empresa_id);
+        let servicosNomes = [];
+        try {
+          const ids = JSON.parse(a.servicos_json || '[]');
+          servicosNomes = ids.map(id => { const s = emp?.servicos?.find(x=>x.id===id); return s?.nome||''; }).filter(Boolean);
+        } catch(e){}
         return {
           id:                  a.id,
           slug:                emp ? emp.slug : '',
+          clienteId:           a.cliente_id || null,
           servicoId:           a.servico_id,
-          servicoNome:         a.servico_nome,
+          servicoNome:         servicosNomes.length > 1 ? servicosNomes.join(', ') : a.servico_nome,
+          servicosNomes:       servicosNomes,
           data:                a.data,
           hora:                a.hora,
           nome:                a.nome_cliente,
@@ -3257,7 +3264,17 @@ function renderGestao(empInicial){
         </div>
         <div class="field">
           <label>Serviço</label>
-          <select id="novoServico">${servicoOpts}</select>
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            ${emp.servicos.map(s=>{
+              const sel = _novoAgServicos.includes(s.id);
+              return `<label style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;border:1.5px solid ${sel?'#1a1a1a':'#e5e7eb'};background:${sel?'#f4f4f5':'#fff'};cursor:pointer;font-size:14px;color:#1a1a1a;font-weight:${sel?'600':'400'};" onclick="toggleNovoAgServico('${s.id}')">
+                <div style="width:18px;height:18px;border-radius:5px;border:2px solid ${sel?'#1a1a1a':'#d1d5db'};background:${sel?'#1a1a1a':'#fff'};flex-shrink:0;display:flex;align-items:center;justify-content:center;">
+                  ${sel?'<svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>':''}
+                </div>
+                ${escapeHtml(s.nome)}
+              </label>`;
+            }).join('')}
+          </div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px;">
           <button class="btn ghost" onclick="cancelarNovoAg()">Cancelar</button>
@@ -3401,19 +3418,23 @@ function renderGestao(empInicial){
   };
 
   window.novoAgendamento = (data, hora)=>{ novoAgState={data,hora}; editandoId=null; _novoAgModalOpen=true; draw(); };
-  window.cancelarNovoAg = ()=>{ novoAgState=null; _novoAgClienteId=null; _novoAgClienteBusca=''; _novoAgClienteResultados=[]; _novoAgModalOpen=false; _novoAgCriarCliente=false; draw(); };
+  window.cancelarNovoAg = ()=>{ novoAgState=null; _novoAgClienteId=null; _novoAgClienteBusca=''; _novoAgClienteResultados=[]; _novoAgModalOpen=false; _novoAgCriarCliente=false; _novoAgServicos=[]; draw(); };
   window.salvarNovoAg = async (data)=>{
-    const servicoId = document.getElementById('novoServico')?.value;
     const hora = novoAgState?.hora;
     if(!_novoAgClienteId){ toast('Selecione um cliente.','err'); return; }
-    if(!servicoId||!hora){ toast('Preencha todos os campos.','err'); return; }
+    if(!_novoAgServicos.length||!hora){ toast('Selecione ao menos um serviço.','err'); return; }
     const cliente = _clientes.find(c=>c.id===_novoAgClienteId);
     if(!cliente){ toast('Cliente não encontrado.','err'); return; }
+    const servicoId = _novoAgServicos[0];
     const servico = emp.servicos.find(s=>s.id===servicoId);
+    const servicosNomes = _novoAgServicos.map(id=>{ const s=emp.servicos.find(x=>x.id===id); return s?.nome||''; }).filter(Boolean);
+    const servicoNomeDisplay = servicosNomes.join(', ');
     const {data:row, error} = await supabaseClient.from('agendamentos').insert({
       empresa_id: emp.id,
       cliente_id: cliente.id,
-      nome_cliente: cliente.nome, telefone: cliente.telefone, servico_id: servicoId, servico_nome: servico?.nome||'',
+      nome_cliente: cliente.nome, telefone: cliente.telefone,
+      servico_id: servicoId, servico_nome: servico?.nome||'',
+      servicos_json: JSON.stringify(_novoAgServicos),
       data, hora, token_curto: gerarTokenCurto()
     }).select().single();
     if(error){ toast(friendlyError(error,'Erro ao agendar.'),'err'); return; }
@@ -3424,15 +3445,16 @@ function renderGestao(empInicial){
       agMarkFetch({ cliente_id: cliente.id, campo: 'ausente_enviado_em', reset: true });
     }
     agendamentos.push({
-      id:row.id, slug:emp.slug,
+      id:row.id, slug:emp.slug, clienteId:cliente.id,
       nome:row.nome_cliente, telefone:row.telefone,
-      servicoId:row.servico_id, servicoNome:row.servico_nome,
+      servicoId:row.servico_id, servicoNome:servicoNomeDisplay,
+      servicosNomes,
       data:row.data, hora:row.hora,
       status: row.status || 'nao_confirmado',
       confirmacaoEnviada: false, lembreteEnviado: false,
       tokenCurto: row.token_curto || null
     });
-    novoAgState=null; _novoAgClienteId=null; _novoAgClienteBusca=''; _novoAgClienteResultados=[]; _novoAgModalOpen=false; _novoAgCriarCliente=false; draw();
+    novoAgState=null; _novoAgClienteId=null; _novoAgClienteBusca=''; _novoAgClienteResultados=[]; _novoAgModalOpen=false; _novoAgCriarCliente=false; _novoAgServicos=[]; draw();
   };
   window.editarAgendamento = (id)=>{ editandoId=id; novoAgState=null; draw(); };
   window.cancelarEdicaoAgendamento = ()=>{ editandoId=null; draw(); };
@@ -3789,6 +3811,12 @@ function renderGestao(empInicial){
   window.limparClienteAg = ()=>{ _novoAgClienteId=null; _novoAgClienteBusca=''; _novoAgClienteResultados=[]; _novoAgCriarCliente=false; draw(); };
 
   let _novoAgCriarCliente = false;
+  let _novoAgServicos = []; // ids dos servicos selecionados no modal manual
+  window.toggleNovoAgServico = (id)=>{
+    const i = _novoAgServicos.indexOf(id);
+    if(i===-1) _novoAgServicos.push(id); else _novoAgServicos.splice(i,1);
+    draw();
+  };
   window.criarClienteRapido = ()=>{ _novoAgCriarCliente=true; draw(); };
   window.cancelarCriarClienteRapido = ()=>{ _novoAgCriarCliente=false; draw(); };
   window.salvarClienteRapido = async ()=>{
