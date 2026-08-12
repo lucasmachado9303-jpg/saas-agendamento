@@ -2,7 +2,11 @@
   "detector": {
     "ignoreRules": [],
     "ignoreFiles": [
-      "index.html"
+      "index.html",
+      "C:\\Users\\lucas\\AppData\\Local\\Temp\\claude\\C--PROJETOS-MEU-SAAS\\c212f286-886d-4b18-bdbf-3108505bbd16\\scratchpad\\horarios-mockup.html",
+      "C:\\Users\\lucas\\AppData\\Local\\Temp\\claude\\C--PROJETOS-MEU-SAAS\\c212f286-886d-4b18-bdbf-3108505bbd16\\scratchpad\\timeline-mockup.html",
+      "C:/Users/lucas/AppData/Local/Temp/claude/C--PROJETOS-MEU-SAAS/c212f286-886d-4b18-bdbf-3108505bbd16/scratchpad/horarios-mockup.html",
+      "C:/Users/lucas/AppData/Local/Temp/claude/C--PROJETOS-MEU-SAAS/c212f286-886d-4b18-bdbf-3108505bbd16/scratchpad/timeline-mockup.html"
     ],
     "ignoreValues": [
       {

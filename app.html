@@ -497,6 +497,14 @@ function horariosDoMes(emp, key){
   const mes  = (key && key !== '_uni_' && emp.horariosPorMes && emp.horariosPorMes[key]) || [];
   return [...new Set([...uni, ...mes])].sort();
 }
+// Retorna slots para um dia da semana especifico (0=Dom...6=Sab).
+// Usa _dN_ se existir; senao cai em _uni_ para compatibilidade.
+function horariosParaDia(emp, diaSemana){
+  const key = '_d' + diaSemana + '_';
+  const hpm = emp.horariosPorMes || {};
+  if(hpm[key]) return [...hpm[key]].sort();
+  return [...(hpm['_uni_'] || [])].sort();
+}
 function isoData(d){
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
@@ -886,7 +894,7 @@ function renderAgendar(emp){
       : [0,1,2,3,4,5,6];
     const diaDaSemana = new Date(iso+'T00:00:00').getDay();
     if(!diasTrabalho.includes(diaDaSemana)) return [];
-    return horariosDoMes(emp, iso.slice(0,7)).map(h=>{
+    return horariosParaDia(emp, diaDaSemana).map(h=>{
       const taken   = agendamentos.some(a=>a.slug===emp.slug && a.data===iso && a.hora===h && a.status!=='cancelado');
       const bloq    = (emp.bloqueios||[]).some(b=>b.data===iso && b.hora===h);
       const [hh,mm] = h.split(':').map(Number);
@@ -1431,6 +1439,7 @@ function renderGestao(empInicial){
   let novoAgState = null;
   let configurarSub = emp.tipo === 'pagina' ? 'personalizar' : null; // null | 'servicos' | 'horarios' | 'personalizar' | 'mensagens'
   let _waMenuId = null; // id do agendamento com dropdown WA aberto
+  let _horariosDiaSel = null; // dia selecionado na aba de config de horarios (0-6)
   let _inativoWaMenuId = null; // id do cliente inativo com dropdown WA aberto
 
   let personalizarDirty = false;
@@ -1492,7 +1501,8 @@ function renderGestao(empInicial){
       return isoData(d);
     }
 
-    const horariosConfig = horariosDoMes(emp, diaSelecionado.slice(0,7));
+    const _diaAgSemana = new Date(diaSelecionado+'T00:00:00').getDay();
+    const horariosConfig = horariosParaDia(emp, _diaAgSemana);
     const horariosAg = agendamentos
       .filter(a=>a.slug===emp.slug && a.data===diaSelecionado)
       .map(a=>a.hora);
@@ -2062,10 +2072,15 @@ function renderGestao(empInicial){
 
     if(configurarSub === 'horarios'){
       const DIAS = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+      const DIAS_LONG = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
       const diasTrabalho = (emp.horariosPorMes && emp.horariosPorMes['_dias_'])
         ? emp.horariosPorMes['_dias_'].map(Number)
         : [0,1,2,3,4,5,6];
-      const lista = horariosDoMes(emp, '_uni_');
+      // Dia selecionado na aba: usa o estado ou o primeiro dia ativo
+      const diaAba = (_horariosDiaSel !== null && diasTrabalho.includes(_horariosDiaSel))
+        ? _horariosDiaSel
+        : (diasTrabalho[0] ?? 1);
+      const listaAba = horariosParaDia(emp, diaAba);
       return `
         <div style="position:relative;display:flex;align-items:center;margin-bottom:16px;min-height:36px;">
           <button onclick="configurarIr(null)" style="background:none;border:none;font-size:14px;font-weight:600;color:#555;cursor:pointer;padding:0;font-family:inherit;display:flex;align-items:center;gap:4px;">&#8249; Voltar</button>
@@ -2080,24 +2095,38 @@ function renderGestao(empInicial){
             return `<div style="display:flex;flex-direction:column;align-items:center;gap:5px;">
               <div style="font-size:11px;color:#888;font-weight:600;">${d}</div>
               <div role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleDiaSemana(${i})}" onclick="toggleDiaSemana(${i})" style="width:34px;height:34px;border-radius:50%;border:1.5px solid #e0e0e0;background:${ativo?'#1c1917':'var(--card)'};display:flex;align-items:center;justify-content:center;cursor:pointer;">
-                <span style="color:${ativo?'#fff':'#bbb'};font-size:14px;">${ativo?'✓':'—'}</span>
+                <span style="color:${ativo?'#fff':'#bbb'};font-size:14px;">${ativo?'&#10003;':'&#8212;'}</span>
               </div>
             </div>`;
           }).join('')}
         </div>
-        <p class="muted" style="font-size:12px;margin-bottom:20px;">Dias desmarcados ficam automaticamente bloqueados para agendamento.</p>
+        <p class="muted" style="font-size:12px;margin-bottom:24px;">Dias desmarcados ficam automaticamente bloqueados para agendamento.</p>
 
-        <div class="eyebrow" style="margin-bottom:10px;color:#1a1a1a;">Horários disponíveis</div>
-        ${lista.length ? `<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;">${lista.map(h=>`
+        ${diasTrabalho.length === 0 ? `<p class="muted">Nenhum dia ativo. Marque ao menos um dia acima.</p>` : `
+        <div class="eyebrow" style="margin-bottom:10px;color:#1a1a1a;">Horários por dia</div>
+
+        <div style="display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;">
+          ${diasTrabalho.map(i=>{
+            const sel = i === diaAba;
+            return `<button onclick="selecionarHorarioDia(${i})" style="font-family:inherit;padding:6px 14px;border-radius:20px;border:1.5px solid ${sel?'#1c1917':'#e0e0e0'};background:${sel?'#1c1917':'var(--card)'};color:${sel?'#fff':'#555'};font-size:13px;font-weight:600;cursor:pointer;">${DIAS[i]}</button>`;
+          }).join('')}
+        </div>
+
+        <div style="margin-bottom:8px;font-size:14px;font-weight:600;color:#1a1a1a;">${DIAS_LONG[diaAba]}</div>
+        ${listaAba.length ? `<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;">${listaAba.map(h=>`
           <div style="display:inline-flex;align-items:center;gap:8px;background:#fff;border:1.5px solid #c8c8c8;border-radius:10px;padding:10px 14px;">
             <span style="font-size:15px;font-weight:600;color:#1a1a1a;">${h}</span>
-            <button onclick="removerHorario('${h}')" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:18px;line-height:1;padding:0;min-height:0;">×</button>
+            <button onclick="removerHorario('${h}',${diaAba})" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:18px;line-height:1;padding:0;min-height:0;">&#215;</button>
           </div>
-        `).join('')}</div>` : `<p class="muted" style="margin-bottom:14px;">Nenhum horário adicionado ainda.</p>`}
-        <div class="row" style="margin-top:4px;">
+        `).join('')}</div>` : `<p class="muted" style="margin-bottom:14px;">Nenhum horário para este dia.</p>`}
+
+        <div class="row" style="margin-top:4px;margin-bottom:12px;">
           <input type="time" id="novoHorarioInput"/>
-          <button class="btn ghost" style="flex:0 0 auto;" onclick="adicionarHorario()">+ Adicionar horário</button>
+          <button class="btn ghost" style="flex:0 0 auto;" onclick="adicionarHorario(${diaAba})">+ Adicionar</button>
         </div>
+
+        ${diasTrabalho.length > 1 ? `<button onclick="copiarHorarioParaTodos(${diaAba})" style="font-family:inherit;background:none;border:none;font-size:13px;color:#888;cursor:pointer;padding:0;text-decoration:underline;">Copiar horários de ${DIAS[diaAba]} para todos os dias ativos</button>` : ''}
+        `}
       `;
     }
 
@@ -3912,25 +3941,66 @@ function renderGestao(empInicial){
   };
   window.voltarDePersonalizar = ()=>{ personalizarDirty=false; configurarIr(null); };
   window.descartarPersonalizar = ()=>{ personalizarDirty=false; configurarIr(null); };
-  window.adicionarHorario = async ()=>{
+  window.selecionarHorarioDia = (dia)=>{
+    _horariosDiaSel = dia;
+    draw();
+  };
+  window.adicionarHorario = async (dia)=>{
     const val = document.getElementById('novoHorarioInput').value;
     if(!val){ toast('Selecione um horário.','err'); return; }
     emp.horariosPorMes = emp.horariosPorMes || {};
-    const lista = emp.horariosPorMes['_uni_'] || [];
+    const key = '_d' + dia + '_';
+    // Se ainda nao existe chave pro dia, herda _uni_ como base
+    if(!emp.horariosPorMes[key]){
+      emp.horariosPorMes[key] = [...(emp.horariosPorMes['_uni_'] || [])];
+    }
+    const lista = emp.horariosPorMes[key];
     if(lista.includes(val)){ return; }
     const { error } = await supabaseClient.from('horarios_disponiveis').insert({
-      empresa_id: emp.id, mes: '_uni_', hora: val
+      empresa_id: emp.id, mes: key, hora: val
     });
     if(error){ toast(friendlyError(error,'Erro ao adicionar horário. Tente novamente.'),'err'); return; }
     lista.push(val);
-    emp.horariosPorMes['_uni_'] = lista;
+    emp.horariosPorMes[key] = lista;
     draw();
   };
-  window.removerHorario = async (h)=>{
+  window.removerHorario = async (h, dia)=>{
+    emp.horariosPorMes = emp.horariosPorMes || {};
+    const key = '_d' + dia + '_';
+    // Se nao existe chave pro dia, cria com base em _uni_ antes de remover
+    if(!emp.horariosPorMes[key]){
+      const base = [...(emp.horariosPorMes['_uni_'] || [])];
+      for(const slot of base){
+        await supabaseClient.from('horarios_disponiveis').insert({ empresa_id: emp.id, mes: key, hora: slot });
+      }
+      emp.horariosPorMes[key] = base;
+    }
     const { error } = await supabaseClient.from('horarios_disponiveis')
-      .delete().eq('empresa_id', emp.id).eq('mes', '_uni_').eq('hora', h);
+      .delete().eq('empresa_id', emp.id).eq('mes', key).eq('hora', h);
     if(error){ toast(friendlyError(error,'Erro ao remover horário. Tente novamente.'),'err'); return; }
-    emp.horariosPorMes['_uni_'] = (emp.horariosPorMes['_uni_']||[]).filter(x=>x!==h);
+    emp.horariosPorMes[key] = (emp.horariosPorMes[key]||[]).filter(x=>x!==h);
+    draw();
+  };
+  window.copiarHorarioParaTodos = async (diaOrigem)=>{
+    emp.horariosPorMes = emp.horariosPorMes || {};
+    const keyOrigem = '_d' + diaOrigem + '_';
+    const slots = horariosParaDia(emp, diaOrigem);
+    const diasTrabalho = (emp.horariosPorMes['_dias_'] || []).map(Number);
+    const diasDestino = diasTrabalho.filter(d => d !== diaOrigem);
+    if(!diasDestino.length){ return; }
+    toast('Copiando...','info');
+    for(const d of diasDestino){
+      const key = '_d' + d + '_';
+      // Remove slots existentes do dia destino
+      await supabaseClient.from('horarios_disponiveis').delete().eq('empresa_id', emp.id).eq('mes', key);
+      emp.horariosPorMes[key] = [];
+      // Insere os slots do dia origem
+      for(const slot of slots){
+        await supabaseClient.from('horarios_disponiveis').insert({ empresa_id: emp.id, mes: key, hora: slot });
+        emp.horariosPorMes[key].push(slot);
+      }
+    }
+    toast('Horários copiados!');
     draw();
   };
   window.toggleDiaSemana = async (dia)=>{
