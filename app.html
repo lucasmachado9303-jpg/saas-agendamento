@@ -2071,62 +2071,51 @@ function renderGestao(empInicial){
     }
 
     if(configurarSub === 'horarios'){
-      const DIAS = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
       const DIAS_LONG = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
       const diasTrabalho = (emp.horariosPorMes && emp.horariosPorMes['_dias_'])
         ? emp.horariosPorMes['_dias_'].map(Number)
         : [0,1,2,3,4,5,6];
-      // Dia selecionado na aba: usa o estado ou o primeiro dia ativo
-      const diaAba = (_horariosDiaSel !== null && diasTrabalho.includes(_horariosDiaSel))
-        ? _horariosDiaSel
-        : (diasTrabalho[0] ?? 1);
-      const listaAba = horariosParaDia(emp, diaAba);
+      const toggleStyle = (on)=> on
+        ? 'position:relative;display:inline-block;width:44px;height:26px;flex-shrink:0;'
+        : 'position:relative;display:inline-block;width:44px;height:26px;flex-shrink:0;';
+      const cardDia = (i)=>{
+        const ativo = diasTrabalho.includes(i);
+        const slots = horariosParaDia(emp, i);
+        const trackBg = ativo ? '#1c1917' : '#d1d5db';
+        const knobLeft = ativo ? '20px' : '2px';
+        return `
+          <div style="background:var(--card);border:0.5px solid #e4e4e7;border-radius:14px;padding:16px;margin-bottom:10px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <span style="font-size:15px;font-weight:700;color:#1a1a1a;">${DIAS_LONG[i]}</span>
+              <div onclick="toggleDiaSemana(${i})" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleDiaSemana(${i})}" style="position:relative;width:44px;height:26px;border-radius:13px;background:${trackBg};cursor:pointer;flex-shrink:0;transition:background .2s;">
+                <div style="position:absolute;top:3px;left:${knobLeft};width:20px;height:20px;border-radius:50%;background:#fff;transition:left .2s;"></div>
+              </div>
+            </div>
+            ${ativo ? `
+              ${slots.length ? `
+                <div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:14px;">
+                  ${slots.map(h=>`
+                    <div style="display:inline-flex;align-items:center;gap:6px;background:#f7f7f7;border:0.5px solid #e4e4e7;border-radius:8px;padding:7px 11px;">
+                      <span style="font-size:14px;font-weight:600;color:#1a1a1a;">${h}</span>
+                      <button onclick="removerHorario('${h}',${i})" style="background:none;border:none;color:#9ca3af;cursor:pointer;font-size:16px;line-height:1;padding:0;min-height:0;">&#215;</button>
+                    </div>
+                  `).join('')}
+                </div>` : `<p class="muted" style="font-size:13px;margin-top:12px;">Nenhum horário. Adicione abaixo.</p>`}
+              <div style="display:flex;gap:8px;margin-top:12px;align-items:center;">
+                <input type="text" id="hi-${i}" inputmode="numeric" placeholder="08:00" maxlength="5" oninput="mascaraHorario(this)" style="width:86px;height:36px;border:0.5px solid #d1d5db;border-radius:8px;padding:0 10px;font-size:14px;font-family:inherit;background:#fff;color:#1a1a1a;"/>
+                <button onclick="adicionarHorario(${i})" style="font-family:inherit;height:36px;padding:0 14px;border-radius:8px;border:0.5px solid #d1d5db;background:#fff;color:#555;font-size:13px;font-weight:600;cursor:pointer;">+ Adicionar</button>
+                ${diasTrabalho.length > 1 ? `<button onclick="copiarHorarioParaTodos(${i})" title="Copiar para todos os dias ativos" style="font-family:inherit;height:36px;padding:0 10px;border-radius:8px;border:0.5px solid #d1d5db;background:#fff;color:#9ca3af;font-size:12px;cursor:pointer;">Copiar</button>` : ''}
+              </div>` : ''}
+          </div>`;
+      };
       return `
-        <div style="position:relative;display:flex;align-items:center;margin-bottom:16px;min-height:36px;">
+        <div style="position:relative;display:flex;align-items:center;margin-bottom:20px;min-height:36px;">
           <button onclick="configurarIr(null)" style="background:none;border:none;font-size:14px;font-weight:600;color:#555;cursor:pointer;padding:0;font-family:inherit;display:flex;align-items:center;gap:4px;">&#8249; Voltar</button>
           <div style="position:absolute;left:0;right:0;text-align:center;font-weight:700;font-size:16px;pointer-events:none;">Horários</div>
           <div></div>
         </div>
-
-        <div class="eyebrow" style="margin-bottom:10px;color:#1a1a1a;">Dias que atende</div>
-        <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:6px;">
-          ${DIAS.map((d,i)=>{
-            const ativo = diasTrabalho.includes(i);
-            return `<div style="display:flex;flex-direction:column;align-items:center;gap:5px;">
-              <div style="font-size:11px;color:#888;font-weight:600;">${d}</div>
-              <div role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleDiaSemana(${i})}" onclick="toggleDiaSemana(${i})" style="width:34px;height:34px;border-radius:50%;border:1.5px solid #e0e0e0;background:${ativo?'#1c1917':'var(--card)'};display:flex;align-items:center;justify-content:center;cursor:pointer;">
-                <span style="color:${ativo?'#fff':'#bbb'};font-size:14px;">${ativo?'&#10003;':'&#8212;'}</span>
-              </div>
-            </div>`;
-          }).join('')}
-        </div>
-        <p class="muted" style="font-size:12px;margin-bottom:24px;">Dias desmarcados ficam automaticamente bloqueados para agendamento.</p>
-
-        ${diasTrabalho.length === 0 ? `<p class="muted">Nenhum dia ativo. Marque ao menos um dia acima.</p>` : `
-        <div class="eyebrow" style="margin-bottom:10px;color:#1a1a1a;">Horários por dia</div>
-
-        <div style="display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;">
-          ${diasTrabalho.map(i=>{
-            const sel = i === diaAba;
-            return `<button onclick="selecionarHorarioDia(${i})" style="font-family:inherit;padding:6px 14px;border-radius:20px;border:1.5px solid ${sel?'#1c1917':'#e0e0e0'};background:${sel?'#1c1917':'var(--card)'};color:${sel?'#fff':'#555'};font-size:13px;font-weight:600;cursor:pointer;">${DIAS[i]}</button>`;
-          }).join('')}
-        </div>
-
-        <div style="margin-bottom:8px;font-size:14px;font-weight:600;color:#1a1a1a;">${DIAS_LONG[diaAba]}</div>
-        ${listaAba.length ? `<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;">${listaAba.map(h=>`
-          <div style="display:inline-flex;align-items:center;gap:8px;background:#fff;border:1.5px solid #c8c8c8;border-radius:10px;padding:10px 14px;">
-            <span style="font-size:15px;font-weight:600;color:#1a1a1a;">${h}</span>
-            <button onclick="removerHorario('${h}',${diaAba})" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:18px;line-height:1;padding:0;min-height:0;">&#215;</button>
-          </div>
-        `).join('')}</div>` : `<p class="muted" style="margin-bottom:14px;">Nenhum horário para este dia.</p>`}
-
-        <div class="row" style="margin-top:4px;margin-bottom:12px;">
-          <input type="time" id="novoHorarioInput"/>
-          <button class="btn ghost" style="flex:0 0 auto;" onclick="adicionarHorario(${diaAba})">+ Adicionar</button>
-        </div>
-
-        ${diasTrabalho.length > 1 ? `<button onclick="copiarHorarioParaTodos(${diaAba})" style="font-family:inherit;background:none;border:none;font-size:13px;color:#888;cursor:pointer;padding:0;text-decoration:underline;">Copiar horários de ${DIAS[diaAba]} para todos os dias ativos</button>` : ''}
-        `}
+        <p class="muted" style="font-size:12px;margin-bottom:16px;">Ative os dias e adicione os horários disponíveis para cada um.</p>
+        ${[0,1,2,3,4,5,6].map(cardDia).join('')}
       `;
     }
 
@@ -3941,13 +3930,22 @@ function renderGestao(empInicial){
   };
   window.voltarDePersonalizar = ()=>{ personalizarDirty=false; configurarIr(null); };
   window.descartarPersonalizar = ()=>{ personalizarDirty=false; configurarIr(null); };
+  window.mascaraHorario = (el)=>{
+    let v = el.value.replace(/\D/g,'');
+    if(v.length > 4) v = v.slice(0,4);
+    if(v.length >= 3) v = v.slice(0,2) + ':' + v.slice(2);
+    el.value = v;
+  };
   window.selecionarHorarioDia = (dia)=>{
     _horariosDiaSel = dia;
     draw();
   };
   window.adicionarHorario = async (dia)=>{
-    const val = document.getElementById('novoHorarioInput').value;
-    if(!val){ toast('Selecione um horário.','err'); return; }
+    const el = document.getElementById('hi-'+dia) || document.getElementById('novoHorarioInput');
+    const raw = el ? el.value.trim() : '';
+    const val = raw.length === 4 && !raw.includes(':') ? raw.slice(0,2)+':'+raw.slice(2) : raw;
+    const horaValida = /^([01]\d|2[0-3]):([0-5]\d)$/.test(val);
+    if(!horaValida){ toast('Horário inválido. Use o formato HH:MM.','err'); return; }
     emp.horariosPorMes = emp.horariosPorMes || {};
     const key = '_d' + dia + '_';
     // Se ainda nao existe chave pro dia, herda _uni_ como base
