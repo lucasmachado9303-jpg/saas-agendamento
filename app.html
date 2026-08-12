@@ -2092,23 +2092,19 @@ function renderGestao(empInicial){
               </div>
             </div>
             ${ativo ? `
-              ${slots.length ? `
-                <div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:14px;">
-                  ${slots.map(h=>`
-                    <div style="display:inline-flex;align-items:center;gap:6px;background:#f7f7f7;border:0.5px solid #e4e4e7;border-radius:8px;padding:7px 11px;">
-                      <span style="font-size:14px;font-weight:600;color:#1a1a1a;">${h}</span>
-                      <button onclick="removerHorario('${h}',${i})" style="background:none;border:none;color:#9ca3af;cursor:pointer;font-size:16px;line-height:1;padding:0;min-height:0;">&#215;</button>
-                    </div>
-                  `).join('')}
-                </div>` : `<p class="muted" style="font-size:13px;margin-top:12px;">Nenhum horário. Adicione abaixo.</p>`}
-              <div style="margin-top:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-                <button onclick="abrirInputHorario(${i})" id="btn-add-${i}" style="font-family:inherit;height:32px;padding:0 12px;border-radius:8px;border:0.5px solid #d1d5db;background:#fff;color:#555;font-size:13px;font-weight:600;cursor:pointer;">+ Adicionar</button>
-                ${diasTrabalho.length > 1 ? `<button onclick="copiarHorarioParaTodos(${i})" style="font-family:inherit;height:32px;padding:0 10px;border-radius:8px;border:0.5px solid #d1d5db;background:#fff;color:#9ca3af;font-size:12px;cursor:pointer;">Copiar tudo</button>` : ''}
-              </div>
-              <div id="hi-row-${i}" style="display:none;margin-top:10px;display:none;align-items:center;gap:8px;">
-                <input type="text" id="hi-${i}" inputmode="numeric" placeholder="08:00" maxlength="5" oninput="mascaraHorario(this)" onkeydown="if(event.key==='Enter'){adicionarHorario(${i});}" style="width:86px;height:36px;border:0.5px solid #d1d5db;border-radius:8px;padding:0 10px;font-size:14px;font-family:inherit;background:#fff;color:#1a1a1a;"/>
-                <button onclick="adicionarHorario(${i})" style="font-family:inherit;height:36px;padding:0 14px;border-radius:8px;border:0.5px solid #1c1917;background:#1c1917;color:#fff;font-size:13px;font-weight:600;cursor:pointer;">Salvar</button>
-                <button onclick="fecharInputHorario(${i})" style="font-family:inherit;height:36px;padding:0 10px;border-radius:8px;border:0.5px solid #d1d5db;background:#fff;color:#9ca3af;font-size:13px;cursor:pointer;">Cancelar</button>
+              <div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:14px;align-items:center;" id="slots-row-${i}">
+                ${slots.map(h=>`
+                  <div style="display:inline-flex;align-items:center;gap:6px;background:#f7f7f7;border:0.5px solid #e4e4e7;border-radius:8px;padding:7px 11px;">
+                    <span style="font-size:14px;font-weight:600;color:#1a1a1a;">${h}</span>
+                    <button onclick="removerHorario('${h}',${i})" style="background:none;border:none;color:#9ca3af;cursor:pointer;font-size:16px;line-height:1;padding:0;min-height:0;">&#215;</button>
+                  </div>
+                `).join('')}
+                <button onclick="abrirInputHorario(${i})" id="btn-add-${i}" style="font-family:inherit;display:inline-flex;align-items:center;height:36px;padding:0 13px;border-radius:8px;border:0.5px dashed #c0c0c0;background:#fafafa;color:#888;font-size:13px;font-weight:600;cursor:pointer;">+ Adicionar</button>
+                <div id="hi-row-${i}" style="display:none;align-items:center;gap:6px;">
+                  <input type="text" id="hi-${i}" inputmode="numeric" placeholder="08:00" maxlength="5" oninput="mascaraHorario(this)" onkeydown="if(event.key==='Enter'){adicionarHorario(${i});}" style="width:80px;height:36px;border:0.5px solid #1c1917;border-radius:8px;padding:0 10px;font-size:14px;font-family:inherit;background:#fff;color:#1a1a1a;"/>
+                  <button onclick="adicionarHorario(${i})" style="font-family:inherit;height:36px;padding:0 12px;border-radius:8px;border:0.5px solid #1c1917;background:#1c1917;color:#fff;font-size:13px;font-weight:600;cursor:pointer;">Salvar</button>
+                  <button onclick="fecharInputHorario(${i})" style="font-family:inherit;height:36px;padding:0 10px;border-radius:8px;border:0.5px solid #e4e4e7;background:#fff;color:#9ca3af;font-size:13px;cursor:pointer;">&#215;</button>
+                </div>
               </div>` : ''}
           </div>`;
       };
@@ -3415,7 +3411,8 @@ function renderGestao(empInicial){
   };
 
   window.bloquearDiaTodo = async ()=>{
-    const horarios = horariosDoMes(emp, diaSelecionado.slice(0,7));
+    const _diaS = new Date(diaSelecionado+'T00:00:00').getDay();
+    const horarios = horariosParaDia(emp, _diaS);
     if(!horarios.length){ toast('Nenhum horário configurado para este dia.','err'); return; }
     const naoBloquados = horarios.filter(h=>!((emp.bloqueios||[]).some(b=>b.data===diaSelecionado && b.hora===h)));
     const dataFmtConf = new Date(diaSelecionado+"T00:00:00").toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'});
