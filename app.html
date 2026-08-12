@@ -2101,10 +2101,14 @@ function renderGestao(empInicial){
                     </div>
                   `).join('')}
                 </div>` : `<p class="muted" style="font-size:13px;margin-top:12px;">Nenhum horário. Adicione abaixo.</p>`}
-              <div style="display:flex;gap:8px;margin-top:12px;align-items:center;">
-                <input type="text" id="hi-${i}" inputmode="numeric" placeholder="08:00" maxlength="5" oninput="mascaraHorario(this)" style="width:86px;height:36px;border:0.5px solid #d1d5db;border-radius:8px;padding:0 10px;font-size:14px;font-family:inherit;background:#fff;color:#1a1a1a;"/>
-                <button onclick="adicionarHorario(${i})" style="font-family:inherit;height:36px;padding:0 14px;border-radius:8px;border:0.5px solid #d1d5db;background:#fff;color:#555;font-size:13px;font-weight:600;cursor:pointer;">+ Adicionar</button>
-                ${diasTrabalho.length > 1 ? `<button onclick="copiarHorarioParaTodos(${i})" title="Copiar para todos os dias ativos" style="font-family:inherit;height:36px;padding:0 10px;border-radius:8px;border:0.5px solid #d1d5db;background:#fff;color:#9ca3af;font-size:12px;cursor:pointer;">Copiar</button>` : ''}
+              <div style="margin-top:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                <button onclick="abrirInputHorario(${i})" id="btn-add-${i}" style="font-family:inherit;height:32px;padding:0 12px;border-radius:8px;border:0.5px solid #d1d5db;background:#fff;color:#555;font-size:13px;font-weight:600;cursor:pointer;">+ Adicionar</button>
+                ${diasTrabalho.length > 1 ? `<button onclick="copiarHorarioParaTodos(${i})" style="font-family:inherit;height:32px;padding:0 10px;border-radius:8px;border:0.5px solid #d1d5db;background:#fff;color:#9ca3af;font-size:12px;cursor:pointer;">Copiar tudo</button>` : ''}
+              </div>
+              <div id="hi-row-${i}" style="display:none;margin-top:10px;display:none;align-items:center;gap:8px;">
+                <input type="text" id="hi-${i}" inputmode="numeric" placeholder="08:00" maxlength="5" oninput="mascaraHorario(this)" onkeydown="if(event.key==='Enter'){adicionarHorario(${i});}" style="width:86px;height:36px;border:0.5px solid #d1d5db;border-radius:8px;padding:0 10px;font-size:14px;font-family:inherit;background:#fff;color:#1a1a1a;"/>
+                <button onclick="adicionarHorario(${i})" style="font-family:inherit;height:36px;padding:0 14px;border-radius:8px;border:0.5px solid #1c1917;background:#1c1917;color:#fff;font-size:13px;font-weight:600;cursor:pointer;">Salvar</button>
+                <button onclick="fecharInputHorario(${i})" style="font-family:inherit;height:36px;padding:0 10px;border-radius:8px;border:0.5px solid #d1d5db;background:#fff;color:#9ca3af;font-size:13px;cursor:pointer;">Cancelar</button>
               </div>` : ''}
           </div>`;
       };
@@ -3930,6 +3934,21 @@ function renderGestao(empInicial){
   };
   window.voltarDePersonalizar = ()=>{ personalizarDirty=false; configurarIr(null); };
   window.descartarPersonalizar = ()=>{ personalizarDirty=false; configurarIr(null); };
+  window.abrirInputHorario = (dia)=>{
+    const row = document.getElementById('hi-row-'+dia);
+    const btn = document.getElementById('btn-add-'+dia);
+    if(!row) return;
+    row.style.display = 'flex';
+    if(btn) btn.style.display = 'none';
+    const inp = document.getElementById('hi-'+dia);
+    if(inp){ inp.value = ''; inp.focus(); }
+  };
+  window.fecharInputHorario = (dia)=>{
+    const row = document.getElementById('hi-row-'+dia);
+    const btn = document.getElementById('btn-add-'+dia);
+    if(row) row.style.display = 'none';
+    if(btn) btn.style.display = '';
+  };
   window.mascaraHorario = (el)=>{
     let v = el.value.replace(/\D/g,'');
     if(v.length > 4) v = v.slice(0,4);
@@ -3961,6 +3980,7 @@ function renderGestao(empInicial){
     lista.push(val);
     emp.horariosPorMes[key] = lista;
     draw();
+    // reabre o card no estado correto (sem input visivel)
   };
   window.removerHorario = async (h, dia)=>{
     emp.horariosPorMes = emp.horariosPorMes || {};
