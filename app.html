@@ -1418,7 +1418,7 @@ window.agConfirmar = async (agId, acao, empSlug) => {
 
 window.loginComGoogle = async (slug)=>{
   if(slug) localStorage.setItem('ob_goto', JSON.stringify({ empresa: slug, page: 'gestao' }));
-  const redirectTo = 'https://agenplus.com.br/app.html';
+  const redirectTo = 'https://agenplus.com.br/login';
   const { error } = await supabaseClient.auth.signInWithOAuth({
     provider: 'google',
     options: { redirectTo }
@@ -1434,7 +1434,7 @@ window.recuperarSenha = async (slug)=>{
     inputEl?.focus();
     return;
   }
-  const redirectTo = 'https://agenplus.com.br/app.html';
+  const redirectTo = 'https://agenplus.com.br/login';
   const { error } = await supabaseClient.auth.resetPasswordForEmail(email, { redirectTo });
   if(error){ toast('Erro ao enviar. Tente novamente.','err'); return; }
   toast('Se o e-mail estiver cadastrado, você receberá um link em breve.','ok',5000);
@@ -2543,7 +2543,9 @@ function renderGestao(empInicial){
   const NOTA_CORES = { amarelo:'#fef9c3', azul:'#dbeafe', rosa:'#fce7f3', verde:'#dcfce7' };
 
   function diasSemVoltarDash(c) {
-    const cAgs = agendamentos.filter(a => a.slug===emp.slug && a.telefone===c.telefone);
+    const cAgs = agendamentos.filter(a => a.slug===emp.slug
+      && (a.clienteId ? a.clienteId===c.id : a.telefone===c.telefone)
+      && a.status !== 'cancelado');
     if(!cAgs.length) return null;
     const ultima = cAgs.map(a=>a.data).sort().pop();
     return Math.floor((new Date() - new Date(ultima+'T00:00:00')) / 86400000);
@@ -3798,7 +3800,9 @@ function renderGestao(empInicial){
   window.confirmarExcluirCliente = async (id, excluirAgs)=>{
     _excluirClienteModal = null;
     if(excluirAgs){
-      const idsAg = agendamentos.filter(a=>a.slug===emp.slug && _clientes.find(c=>c.id===id && c.telefone===a.telefone)).map(a=>a.id);
+      const cli = _clientes.find(c=>c.id===id);
+      const idsAg = agendamentos.filter(a=>a.slug===emp.slug
+        && (a.clienteId ? a.clienteId===id : (cli && a.telefone===cli.telefone))).map(a=>a.id);
       if(idsAg.length){
         const { error: eAg } = await supabaseClient.from('agendamentos').delete().in('id', idsAg);
         if(eAg){ toast('Erro ao excluir agendamentos.','err'); return; }
