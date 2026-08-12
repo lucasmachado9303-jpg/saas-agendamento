@@ -3792,10 +3792,14 @@ function renderGestao(empInicial){
     if(!nome){ toast('Preencha o nome.','err'); return; }
     if(telRaw.length!==11||telRaw[2]!=='9'){ toast('Telefone inválido. Ex: (11) 98765-4321','err'); return; }
     const telefone = '0'+telRaw;
-    const jaExiste = _clientes.find(c=>c.telefone===telefone);
-    if(jaExiste){
-      _novoAgClienteId = jaExiste.id;
-      _novoAgClienteBusca = jaExiste.nome;
+    // Verifica no banco diretamente (evita falso negativo se _clientes ainda nao carregou)
+    const { data: existDB } = await supabaseClient.from('clientes').select('id,nome,telefone').eq('empresa_id', emp.id).eq('telefone', telefone).limit(1);
+    const jaExisteDB = existDB && existDB[0];
+    if(jaExisteDB){
+      // Garante que esta em _clientes para uso imediato
+      if(!_clientes.find(c=>c.id===jaExisteDB.id)) _clientes.push({ id:jaExisteDB.id, nome:jaExisteDB.nome, telefone:jaExisteDB.telefone, ausenteEnviadoEm:null });
+      _novoAgClienteId = jaExisteDB.id;
+      _novoAgClienteBusca = jaExisteDB.nome;
       _novoAgClienteResultados = [];
       _novoAgCriarCliente = false;
       draw(); toast('Cliente já cadastrado com este número.','ok');
