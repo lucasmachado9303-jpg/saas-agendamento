@@ -3792,6 +3792,15 @@ function renderGestao(empInicial){
     if(!nome){ toast('Preencha o nome.','err'); return; }
     if(telRaw.length!==11||telRaw[2]!=='9'){ toast('Telefone inválido. Ex: (11) 98765-4321','err'); return; }
     const telefone = '0'+telRaw;
+    const jaExiste = _clientes.find(c=>c.telefone===telefone);
+    if(jaExiste){
+      _novoAgClienteId = jaExiste.id;
+      _novoAgClienteBusca = jaExiste.nome;
+      _novoAgClienteResultados = [];
+      _novoAgCriarCliente = false;
+      draw(); toast('Cliente já cadastrado com este número.','ok');
+      return;
+    }
     const { data, error } = await supabaseClient.from('clientes').insert({ empresa_id:emp.id, nome, telefone }).select().single();
     if(error){ toast('Erro ao cadastrar cliente.','err'); return; }
     _clientes.push({ id:data.id, nome:data.nome, telefone:data.telefone, ausenteEnviadoEm:null });

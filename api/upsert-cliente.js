@@ -32,9 +32,9 @@ module.exports = async function handler(req, res) {
     return res.status(400).json({ error: 'Nome deve ter entre 2 e 120 caracteres' });
   }
 
-  // Verifica se ja existe cliente com mesmo nome + telefone + empresa
+  // Verifica se ja existe cliente com mesmo telefone + empresa (nome ignorado)
   const checkRes = await fetch(
-    `${SUPABASE_URL}/rest/v1/clientes?empresa_id=eq.${empresa_id}&nome=eq.${encodeURIComponent(nomeLimpo)}&telefone=eq.${encodeURIComponent(tel)}&select=id&limit=1`,
+    `${SUPABASE_URL}/rest/v1/clientes?empresa_id=eq.${empresa_id}&telefone=eq.${encodeURIComponent(tel)}&select=id&limit=1`,
     { headers: { 'Authorization': `Bearer ${SERVICE_KEY}`, 'apikey': SERVICE_KEY } }
   );
   const existentes = await checkRes.json();
