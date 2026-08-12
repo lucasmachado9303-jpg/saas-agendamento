@@ -159,6 +159,7 @@ nav{
   font-size:clamp(2.75rem,7vw,5.5rem);
   font-weight:800;line-height:1.04;letter-spacing:-0.035em;
   color:var(--cream);margin-bottom:24px;
+  visibility:hidden;
 }
 .hero-sub{
   font-size:clamp(1rem,2vw,1.2rem);
@@ -717,6 +718,7 @@ footer{
       }
     });
     el.innerHTML=out;
+    el.style.visibility='visible';
     var words=el.querySelectorAll('.blur-word');
     words.forEach(function(w,i){
       setTimeout(function(){w.classList.add('animate');},i*80);
