@@ -53,6 +53,8 @@ module.exports = async function handler(req, res) {
   const gestores = await gestorRes.json();
 
   if (!Array.isArray(gestores) || gestores.length === 0) {
+    // #43: loga aviso em vez de silenciar (pode indicar empresa sem gestor ou dados inconsistentes)
+    console.warn('[delete-user] nenhum gestor encontrado para empresa_id:', empresa_id);
     return res.status(200).json({ success: true, message: 'Nenhum gestor encontrado para remover' });
   }
 

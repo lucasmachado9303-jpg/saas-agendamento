@@ -26,6 +26,16 @@ module.exports = async function handler(req, res) {
     return res.status(400).json({ error: 'Telefone inválido' });
   }
 
+  // Valida que empresa_id existe
+  const empCheck = await fetch(
+    `${SUPABASE_URL}/rest/v1/empresas?id=eq.${empresa_id}&select=id&limit=1`,
+    { headers: { 'Authorization': `Bearer ${SERVICE_KEY}`, 'apikey': SERVICE_KEY } }
+  );
+  const empRows = await empCheck.json();
+  if (!Array.isArray(empRows) || !empRows.length) {
+    return res.status(400).json({ error: 'Empresa não encontrada' });
+  }
+
   // Valida nome
   const nomeLimpo = String(nome).trim();
   if (nomeLimpo.length < 2 || nomeLimpo.length > 120) {

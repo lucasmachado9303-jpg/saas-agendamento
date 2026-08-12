@@ -43,6 +43,10 @@ module.exports = async function handler(req, res) {
   if (!user_id || !email) {
     return res.status(400).json({ error: 'Campos obrigatórios: user_id, email' });
   }
+  // #7: Valida formato do email
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return res.status(400).json({ error: 'Formato de e-mail inválido' });
+  }
 
   const updRes = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${user_id}`, {
     method: 'PUT',
@@ -59,8 +63,8 @@ module.exports = async function handler(req, res) {
     return res.status(500).json({ error: err.message || 'Erro ao atualizar e-mail no Supabase.' });
   }
 
-  // Atualiza tambem a tabela profiles
-  await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${user_id}`, {
+  // #8: Atualiza tabela profiles e verifica se funcionou
+  const profilePatch = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${user_id}`, {
     method: 'PATCH',
     headers: {
       'Authorization': `Bearer ${SERVICE_KEY}`,
@@ -69,6 +73,11 @@ module.exports = async function handler(req, res) {
     },
     body: JSON.stringify({ email })
   });
+  if (!profilePatch.ok) {
+    const errBody = await profilePatch.text();
+    console.error('[update-email] erro ao atualizar profiles:', errBody);
+    return res.status(500).json({ error: 'E-mail atualizado no Auth, mas falhou ao sincronizar perfil: ' + errBody });
+  }
 
   return res.status(200).json({ success: true });
 };

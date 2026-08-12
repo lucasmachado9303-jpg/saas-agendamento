@@ -734,6 +734,8 @@ async function init(){
 
 function route(){
   const {master, empresa, page} = getParams();
+  // #35: reseta lastBooking ao sair da tela de confirmacao
+  if(page !== 'confirmacao') lastBooking = null;
   if(master){
     renderMaster();
   } else if(empresa){
@@ -1216,22 +1218,31 @@ function renderAgendar(emp){
       });
       if(ucRes.ok){ const ucData = await ucRes.json(); clienteIdBooking = ucData.cliente_id || null; }
     } catch(e){}
-    const { error } = await supabaseClient.from('agendamentos').insert({
-      empresa_id:    emp2.id,
-      cliente_id:    clienteIdBooking,
-      servico_id:    primeiroServico ? primeiroServico.id   : null,
-      servico_nome:  primeiroServico ? primeiroServico.nome : '',
-      servicos_json: JSON.stringify(bookingState.servicos),
-      data:          bookingState.data,
-      hora:          bookingState.hora,
-      nome_cliente:  bookingState.nome.trim(),
-      telefone:      bookingState.telefone.trim(),
-      token_curto:   gerarTokenCurto()
-    });
+    // #15/#28: retry em caso de colisão de token_curto (code 23505 com token_curto)
+    let error = null;
+    for(let _tentativa = 0; _tentativa < 3; _tentativa++){
+      const res = await supabaseClient.from('agendamentos').insert({
+        empresa_id:    emp2.id,
+        cliente_id:    clienteIdBooking,
+        servico_id:    primeiroServico ? primeiroServico.id   : null,
+        servico_nome:  primeiroServico ? primeiroServico.nome : '',
+        servicos_json: JSON.stringify(bookingState.servicos),
+        data:          bookingState.data,
+        hora:          bookingState.hora,
+        nome_cliente:  bookingState.nome.trim(),
+        telefone:      bookingState.telefone.trim(),
+        token_curto:   gerarTokenCurto()
+      });
+      error = res.error;
+      // colisão de token_curto: tenta novamente com outro token
+      if(error && error.code === '23505' && (error.message||'').includes('token_curto')) continue;
+      break;
+    }
     if(error){
       if(btn){ btn.disabled=false; btn.innerHTML='Confirmar'; }
+      // #16: colisão de horário → mensagem amigável
+      if(error.code === '23505') { toast('Este horário acabou de ser reservado. Escolha outro.','err'); draw(); return; }
       toast(friendlyError(error,'Erro ao realizar agendamento. Tente novamente.'),'err');
-      if(error.code==='23505') draw();
       return;
     }
     const srvNomes = bookingState.servicos.map(id=>{ const s=emp2.servicos.find(x=>x.id===id); return s?s.nome:''; }).filter(Boolean);
@@ -1695,17 +1706,14 @@ function renderGestao(empInicial){
     const fmtData = d => { const [y,m,dd]=d.split('-'); return `${dd}/${m}/${y}`; };
 
     function _diasSemVoltar(c) {
+      // #17: usa clienteId quando disponivel; cai para telefone (sem nome) para compatibilidade
       const hojeIso = isoData(new Date());
-      const temFuturoAtivo = agendamentos.some(a =>
-        a.slug===emp.slug && a.nome===c.nome && a.telefone===c.telefone
-        && a.status !== 'cancelado' && a.data > hojeIso
-      );
+      const _matchCliente = a => a.slug===emp.slug
+        && (a.clienteId ? a.clienteId===c.id : a.telefone===c.telefone)
+        && a.status !== 'cancelado';
+      const temFuturoAtivo = agendamentos.some(a => _matchCliente(a) && a.data > hojeIso);
       if(temFuturoAtivo) return null;
-      const ags = agendamentos.filter(a =>
-        a.slug===emp.slug && a.nome===c.nome && a.telefone===c.telefone
-        && a.status !== 'cancelado'
-        && a.data <= hojeIso
-      );
+      const ags = agendamentos.filter(a => _matchCliente(a) && a.data <= hojeIso);
       if(!ags.length) return null;
       const ultima = ags.map(a=>a.data).sort().pop();
       return Math.floor((new Date() - new Date(ultima+'T00:00:00')) / 86400000);
@@ -1803,10 +1811,11 @@ function renderGestao(empInicial){
     }
 
     // Calcular ausentes (faixas exclusivas)
+    // #18/#34: faixas exclusivas e alinhadas com os labels dos botoes
     const inativos30 = _clientes.filter(c => { const d=_diasSemVoltar(c); return d!==null && d>=30; });
-    const ausentesFaixa15 = _clientes.filter(c => { const d=_diasSemVoltar(c); return d!==null && d>=16 && d<=30; });
-    const ausentesFaixa30 = _clientes.filter(c => { const d=_diasSemVoltar(c); return d!==null && d>=31 && d<=45; });
-    const ausentesFaixa45 = _clientes.filter(c => { const d=_diasSemVoltar(c); return d!==null && d>=46; });
+    const ausentesFaixa15 = _clientes.filter(c => { const d=_diasSemVoltar(c); return d!==null && d>=15 && d<30; });
+    const ausentesFaixa30 = _clientes.filter(c => { const d=_diasSemVoltar(c); return d!==null && d>=30 && d<45; });
+    const ausentesFaixa45 = _clientes.filter(c => { const d=_diasSemVoltar(c); return d!==null && d>=45; });
     const clientesAusentes = _clientesInativosFiltro===15 ? ausentesFaixa15 : _clientesInativosFiltro===30 ? ausentesFaixa30 : ausentesFaixa45;
 
     // Banner
@@ -2093,9 +2102,6 @@ function renderGestao(empInicial){
       const diasTrabalho = (emp.horariosPorMes && emp.horariosPorMes['_dias_'])
         ? emp.horariosPorMes['_dias_'].map(Number)
         : [0,1,2,3,4,5,6];
-      const toggleStyle = (on)=> on
-        ? 'position:relative;display:inline-block;width:44px;height:26px;flex-shrink:0;'
-        : 'position:relative;display:inline-block;width:44px;height:26px;flex-shrink:0;';
       const cardDia = (i)=>{
         const ativo = diasTrabalho.includes(i);
         const slots = horariosParaDia(emp, i);
@@ -2221,7 +2227,7 @@ function renderGestao(empInicial){
         )}
         <div style="text-align:center;padding:8px 0 4px;">
           <p style="font-size:13px;color:#8e8e93;">Não encontrou o que procurava?</p>
-          <a href="https://wa.me/5534999999999" target="_blank" style="display:inline-block;margin-top:8px;font-size:14px;font-weight:600;color:#6366f1;text-decoration:none;">Falar com o suporte</a>
+          <a href="mailto:suporte@agenplus.com.br" style="display:inline-block;margin-top:8px;font-size:14px;font-weight:600;color:#6366f1;text-decoration:none;">Falar com o suporte</a>
         </div>
       `;
     }
@@ -2962,14 +2968,15 @@ function renderGestao(empInicial){
 
     // MENU
     if(!_relAba){
+      // #49: aria-label para leitores de tela; svg decorativo aria-hidden
       const mkCard = (onclick, bg, ico, titulo, desc) => `
-        <button onclick="${onclick}" style="width:100%;display:flex;align-items:center;gap:14px;padding:14px 16px;background:none;border:none;border-bottom:0.5px solid #f2f2f7;cursor:pointer;font-family:inherit;text-align:left;">
-          <div style="width:36px;height:36px;border-radius:10px;background:${bg};display:flex;align-items:center;justify-content:center;flex-shrink:0;">${ico}</div>
+        <button onclick="${onclick}" aria-label="${titulo}: ${desc}" style="width:100%;display:flex;align-items:center;gap:14px;padding:14px 16px;background:none;border:none;border-bottom:0.5px solid #f2f2f7;cursor:pointer;font-family:inherit;text-align:left;">
+          <div aria-hidden="true" style="width:36px;height:36px;border-radius:10px;background:${bg};display:flex;align-items:center;justify-content:center;flex-shrink:0;">${ico}</div>
           <div style="flex:1;min-width:0;">
             <div style="font-size:15px;font-weight:600;color:#1a1a1a;">${titulo}</div>
             <div style="font-size:12px;color:#8e8e93;margin-top:2px;">${desc}</div>
           </div>
-          ${ICO_CHEV}
+          <span aria-hidden="true">${ICO_CHEV}</span>
         </button>`;
       const ICO_FIN   = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>`;
       const ICO_CAL2  = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`;
@@ -3711,8 +3718,8 @@ function renderGestao(empInicial){
   window.linkAcao = (acao)=>{
     const url = `https://${emp.slug}.agenplus.com.br`;
     if(acao==='abrir'){ window.open(url, '_blank'); }
-    else if(acao==='copiar'){ navigator.clipboard.writeText(url).then(()=>toast('Link copiado!','ok')); }
-    else if(acao==='compartilhar'){ if(navigator.share) navigator.share({ title: emp.nome, url }); else navigator.clipboard.writeText(url).then(()=>toast('Link copiado!','ok')); }
+    else if(acao==='copiar'){ navigator.clipboard.writeText(url).then(()=>toast('Link copiado!','ok')).catch(()=>toast('Nao foi possivel copiar o link.','err')); }
+    else if(acao==='compartilhar'){ if(navigator.share) navigator.share({ title: emp.nome, url }); else navigator.clipboard.writeText(url).then(()=>toast('Link copiado!','ok')).catch(()=>toast('Nao foi possivel copiar o link.','err')); }
     draw();
   };
   async function carregarClientes(){
@@ -3928,7 +3935,8 @@ function renderGestao(empInicial){
     const novoSlug = (document.getElementById('pSlug')?.value || '').trim();
     if(!novoSlug){ toast('Preencha o link.','err'); return; }
     if(novoSlug === emp.slug){ toast('Link não alterado.','ok'); return; }
-    const _slugsReservados = ['api','admin','master','app','www','mail','suporte','ajuda','login','auth','static','assets','cdn','blog','help'];
+    // #40: lista unificada de slugs reservados (igual em todos os lugares do sistema)
+    const _slugsReservados = ['api','app','admin','master','login','logout','auth','static','assets','sw','manifest','index','null','undefined','favicon','www','mail','suporte','ajuda','cdn','blog','help','cadastro'];
     if(_slugsReservados.includes(novoSlug)){ toast('Este link não pode ser usado. Escolha outro.','err'); return; }
     if(!confirm('Alterar o link para "'+novoSlug+'.agenplus.com.br"? O endereço antigo vai parar de funcionar.')) return;
     const { error } = await supabaseClient.from('empresas').update({ slug: novoSlug }).eq('id', emp.id);
@@ -4033,7 +4041,7 @@ function renderGestao(empInicial){
         emp.horariosPorMes[key].push(slot);
       }
     }
-    toast('Horários copiados!');
+    toast('Horários copiados!','ok');
     draw();
   };
   window.toggleDiaSemana = async (dia)=>{
@@ -4508,8 +4516,6 @@ let financeiroData = []; // registros da tabela financeiro
 let _masterDetalheSlug = null; // slug da empresa aberta no detalhe
 let mensalidades = []; // historico de mensalidades por empresa
 let _finPeriodo = (()=>{ const n=new Date(); return {mes:n.getMonth(),ano:n.getFullYear()}; })();
-let _finEmpFiltro = ''; // filtro de empresa na aba financeiro
-let _finEmpExpandido = null; // slug expandido na tabela financeiro
 let _finDetalheEmpId = null; // empresa aberta no detalhe financeiro
 
 async function carregarFinanceiro(){
@@ -5428,7 +5434,9 @@ function renderMasterPanel(){
     empresas.forEach(e=>{
       const m = mensPeriodo.find(x=>x.empresa_id===e.id);
       const finReg = financeiroData.find(f=>f.empresa_id===e.id);
-      const val = m ? m.valor : (finReg ? finReg.valor : '');
+      // #36: valor em branco vira 0,00 em vez de string vazia
+      const valRaw = m ? m.valor : (finReg ? finReg.valor : null);
+      const val = valRaw != null ? parseFloat(valRaw).toFixed(2).replace('.', ',') : '0,00';
       const pago = m?.pago_em || '';
       linhas.push([e.nome, refAtual, val, pago]);
     });
@@ -5456,7 +5464,7 @@ function renderMasterPanel(){
     }
 
     // 1. Cria a empresa no banco
-    const SLUGS_RESERVADOS = ['api','app','admin','master','login','logout','static','assets','sw','manifest','index','null','undefined','favicon'];
+    const SLUGS_RESERVADOS = ['api','app','admin','master','login','logout','auth','static','assets','sw','manifest','index','null','undefined','favicon','www','mail','suporte','ajuda','cdn','blog','help','cadastro'];
     let slug = slugify(nome);
     if(SLUGS_RESERVADOS.includes(slug)){ toast(`O nome "${nome}" é reservado pelo sistema. Use um nome diferente.`,'err'); return; }
     let s2 = slug, n=1;
@@ -5566,7 +5574,7 @@ function renderMasterPanel(){
       e.bloqueada = novoStatus === 'bloqueada';
     }
 
-    const RESERVADOS = ['api','app','admin','master','login','logout','static','assets','sw','manifest','index','null','undefined','favicon'];
+    const RESERVADOS = ['api','app','admin','master','login','logout','auth','static','assets','sw','manifest','index','null','undefined','favicon','www','mail','suporte','ajuda','cdn','blog','help','cadastro'];
     if(novoSlug && novoSlug !== editingSlug){
       if(!/^[a-z0-9][a-z0-9-]*[a-z0-9]$|^[a-z0-9]$/.test(novoSlug)){
         toast('Link inválido. Use apenas letras minúsculas, números e hífens.','err'); return;
@@ -5631,15 +5639,21 @@ function renderMasterPanel(){
         // Remove o auth user do gestor via API (service role)
         try {
           const { data: { session } } = await supabaseClient.auth.getSession();
-          await fetch('/api/delete-user', {
+          const _delUserRes = await fetch('/api/delete-user', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session?.access_token },
             body: JSON.stringify({ empresa_id: e.id })
           });
-        } catch(_){}
+          if(!_delUserRes.ok){
+            const _delErr = await _delUserRes.json().catch(()=>({}));
+            console.warn('[masterExcluir] delete-user retornou erro:', _delErr);
+          }
+        } catch(_err){ console.error('[masterExcluir] falha ao chamar delete-user:', _err); }
+        // #22: verifica erros em cada delete (sem transacao, mas ao menos loga falhas)
         const _tbRel = ['agendamentos','clientes','servicos','lancamentos_financeiros','bloqueios','horarios_disponiveis','botoes_empresa'];
         for(const tb of _tbRel){
-          await supabaseClient.from(tb).delete().eq('empresa_id', e.id);
+          const { error: _tbErr } = await supabaseClient.from(tb).delete().eq('empresa_id', e.id);
+          if(_tbErr) console.warn(`[masterExcluir] erro ao deletar ${tb}:`, _tbErr);
         }
         const { error } = await supabaseClient.from('empresas').delete().eq('id', e.id);
         if(error){ toast(friendlyError(error,'Erro ao excluir empresa. Tente novamente.'),'err'); return; }
@@ -5660,7 +5674,7 @@ function _limparEstado(){
   empresas = []; agendamentos = []; loaded = false;
   editingSlug = null; masterSearch = ''; masterAba = 'dashboard'; _filtroEmpStatus = 'todos';
   financeiroData = [];
-  _masterDetalheSlug = null; mensalidades = []; _finEmpFiltro = ''; _finEmpExpandido = null;
+  _masterDetalheSlug = null; mensalidades = [];
   _finPeriodo = (()=>{ const n=new Date(); return {mes:n.getMonth(),ano:n.getFullYear()}; })();
   // gestão financeiro — resetado pelo closure de gestaoApp, mas zeramos referências globais por segurança
 }
@@ -5688,7 +5702,7 @@ window.masterRedefinirSenha = async ()=>{
     return;
   }
   confirmarAcao(`Enviar link de redefinicao de senha para <strong>${escapeHtml(email)}</strong>?`, async ()=>{
-    const { error } = await supabaseClient.auth.resetPasswordForEmail(email, { redirectTo: 'https://agenplus.com.br/app.html' });
+    const { error } = await supabaseClient.auth.resetPasswordForEmail(email, { redirectTo: 'https://agenplus.com.br/login' });
     if(error){ toast('Erro ao enviar. Tente novamente.','err'); return; }
     toast('Link de redefinicao enviado para ' + email,'ok',5000);
   });

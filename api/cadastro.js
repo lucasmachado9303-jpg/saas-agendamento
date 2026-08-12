@@ -27,7 +27,7 @@ module.exports = async function handler(req, res) {
     return res.status(409).json({ error: 'Este e-mail já está cadastrado.' });
   }
 
-  // Cria usuario via admin (sem enviar email)
+  // #10: Cria usuario via admin e trata "already exists" como 409
   const createRes = await fetch(`${SUPABASE_URL}/auth/v1/admin/users`, {
     method: 'POST',
     headers: {
@@ -38,15 +38,21 @@ module.exports = async function handler(req, res) {
   });
   if (!createRes.ok) {
     const err = await createRes.json();
-    return res.status(400).json({ error: err.msg || err.message || 'Erro ao criar usuário' });
+    const msg = err.msg || err.message || '';
+    // Auth.users já tem esse email — tratar como 409
+    if (msg.toLowerCase().includes('already') || msg.toLowerCase().includes('registered')) {
+      return res.status(409).json({ error: 'Este e-mail já está cadastrado.' });
+    }
+    return res.status(400).json({ error: msg || 'Erro ao criar usuário' });
   }
   const newUser = await createRes.json();
 
   // Gera slug único
   function slugify(s) {
+    // #9: range Unicode correto para remover diacríticos (U+0300–U+036F)
     return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
   }
-  const RESERVADOS = ['api','app','admin','master','login','logout','static','assets','sw','manifest','index','null','undefined','favicon','www','cadastro'];
+  const RESERVADOS = ['api','app','admin','master','login','logout','auth','static','assets','sw','manifest','index','null','undefined','favicon','www','mail','suporte','ajuda','cdn','blog','help','cadastro'];
   let baseSlug = slugify(nome_empresa) || 'empresa';
   if (RESERVADOS.includes(baseSlug)) baseSlug = baseSlug + '-ag';
 
@@ -67,7 +73,8 @@ module.exports = async function handler(req, res) {
       'Content-Type': 'application/json', 'Prefer': 'return=representation'
     },
     body: JSON.stringify({
-      slug, nome: nome_empresa.trim(), whatsapp: whatsapp || null, bloqueada: false,
+      // #12: normaliza whatsapp removendo qualquer caractere não-numérico
+      slug, nome: nome_empresa.trim(), whatsapp: whatsapp ? String(whatsapp).replace(/\D/g, '') || null : null, bloqueada: false,
       status: 'trial',
       foto_url: null, descricao: null, logo: null, cor_principal: '#3d1f3a', texto_destaque: null,
       trial_expira_em: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
@@ -75,10 +82,12 @@ module.exports = async function handler(req, res) {
     })
   });
   if (!empInsert.ok) {
-    await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${newUser.id}`, {
+    // #11: rollback com log de erro
+    const rollbackEmp = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${newUser.id}`, {
       method: 'DELETE',
       headers: { 'Authorization': `Bearer ${SERVICE_KEY}`, 'apikey': SERVICE_KEY }
     });
+    if (!rollbackEmp.ok) console.error('[cadastro] rollback auth user falhou:', newUser.id);
     const err = await empInsert.text();
     return res.status(500).json({ error: 'Erro ao criar empresa: ' + err });
   }
@@ -98,14 +107,17 @@ module.exports = async function handler(req, res) {
     })
   });
   if (!profilePost.ok) {
-    await fetch(`${SUPABASE_URL}/rest/v1/empresas?id=eq.${empCriada.id}`, {
+    // #11: rollback com log de erro
+    const rollbackEmpresa = await fetch(`${SUPABASE_URL}/rest/v1/empresas?id=eq.${empCriada.id}`, {
       method: 'DELETE',
       headers: { 'Authorization': `Bearer ${SERVICE_KEY}`, 'apikey': SERVICE_KEY }
     });
-    await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${newUser.id}`, {
+    if (!rollbackEmpresa.ok) console.error('[cadastro] rollback empresa falhou:', empCriada.id);
+    const rollbackUser = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${newUser.id}`, {
       method: 'DELETE',
       headers: { 'Authorization': `Bearer ${SERVICE_KEY}`, 'apikey': SERVICE_KEY }
     });
+    if (!rollbackUser.ok) console.error('[cadastro] rollback auth user falhou:', newUser.id);
     const err = await profilePost.text();
     return res.status(500).json({ error: 'Erro ao criar perfil: ' + err });
   }

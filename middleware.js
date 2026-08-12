@@ -21,11 +21,13 @@ export default async function middleware(request) {
     headers: { host, 'x-original-url': url.toString() },
   });
 
+  // #48: usa o cache-control definido pela api/subdomain-page (no-cache para conteudo dinamico)
+  const cacheControl = res.headers.get('cache-control') || 'no-cache, no-store, must-revalidate';
   return new Response(await res.text(), {
     status: res.status,
     headers: {
       'content-type': 'text/html; charset=utf-8',
-      'cache-control': 'public, s-maxage=60, stale-while-revalidate=300',
+      'cache-control': cacheControl,
     },
   });
 }

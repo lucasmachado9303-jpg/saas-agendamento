@@ -49,6 +49,16 @@ module.exports = async function handler(req, res) {
     return res.status(400).json({ error: 'Senha deve ter pelo menos 6 caracteres' });
   }
 
+  // #13: Valida que empresa_id existe antes de prosseguir
+  const empCheck = await fetch(
+    `${SUPABASE_URL}/rest/v1/empresas?id=eq.${empresa_id}&select=id&limit=1`,
+    { headers: { 'Authorization': `Bearer ${SERVICE_KEY}`, 'apikey': SERVICE_KEY } }
+  );
+  const empRows = await empCheck.json();
+  if (!Array.isArray(empRows) || !empRows.length) {
+    return res.status(400).json({ error: 'empresa_id inválido: empresa não encontrada' });
+  }
+
   // Cria o usuário no Supabase Auth (já confirmado, sem email de verificação)
   const createRes = await fetch(`${SUPABASE_URL}/auth/v1/admin/users`, {
     method: 'POST',

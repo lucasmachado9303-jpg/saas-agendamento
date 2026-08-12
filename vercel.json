@@ -2,6 +2,7 @@
   "rewrites": [
     { "source": "/login",    "destination": "/app.html" },
     { "source": "/master",   "destination": "/app.html" },
+    { "source": "/gestao",   "destination": "/app.html" },
     { "source": "/cadastro", "destination": "/app.html" },
     {
       "source": "/",
