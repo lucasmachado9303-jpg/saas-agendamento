@@ -652,6 +652,8 @@ async function init(){
     const { data, error: profErr2 } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
     if(profErr2 && profErr2.code !== 'PGRST116') console.error('Erro ao carregar perfil:', profErr2);
     currentProfile = data || null;
+    // Usuario autenticado sem perfil = conta orfa (sem gestao associada), trata como anonimo
+    if(!currentProfile){ await supabaseClient.auth.signOut(); currentUser = null; }
   }
 
   await loadData();
