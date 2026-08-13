@@ -569,6 +569,8 @@ document.addEventListener('visibilitychange', async ()=>{
   if(!document.hidden && _pollFn){
     await loadData();
     _pollFn();
+    // Se a gestao estiver na aba de clientes, recarrega a lista junto
+    if(typeof window._recarregarClientes === 'function') window._recarregarClientes();
   }
 });
 
@@ -3227,24 +3229,26 @@ function renderGestao(empInicial){
   };
 
   window.finalizarCancelado = async (agId)=>{
-    if(!confirm('Marcar como cancelado? O horário será liberado para novos agendamentos.')) return;
-    _finalizarAgId = null;
-    const { error } = await supabaseClient.from('agendamentos').update({ status:'cancelado' }).eq('id', agId);
-    if(error){ toast(friendlyError(error,'Erro ao cancelar.'),'err'); _finalizarAgId=agId; draw(); return; }
-    const ag = agendamentos.find(a=>a.id===agId);
-    if(ag) ag.status = 'cancelado';
-    toast('Agendamento cancelado.','ok');
-    draw();
+    confirmarAcao('Marcar como cancelado? O horário será liberado para novos agendamentos.', async ()=>{
+      _finalizarAgId = null;
+      const { error } = await supabaseClient.from('agendamentos').update({ status:'cancelado' }).eq('id', agId);
+      if(error){ toast(friendlyError(error,'Erro ao cancelar.'),'err'); _finalizarAgId=agId; draw(); return; }
+      const ag = agendamentos.find(a=>a.id===agId);
+      if(ag) ag.status = 'cancelado';
+      toast('Agendamento cancelado.','ok');
+      draw();
+    });
   };
 
-  window.finalizarExcluir = async (agId)=>{
-    if(!confirm('Excluir este agendamento? Essa ação não pode ser desfeita.')) return;
-    _finalizarAgId = null;
-    const { error } = await supabaseClient.from('agendamentos').delete().eq('id', agId);
-    if(error){ toast(friendlyError(error,'Erro ao excluir.'),'err'); _finalizarAgId=agId; draw(); return; }
-    agendamentos = agendamentos.filter(a=>a.id!==agId);
-    toast('Agendamento excluído.','ok');
-    draw();
+  window.finalizarExcluir = (agId)=>{
+    confirmarAcao('Excluir este agendamento? Essa ação não pode ser desfeita.', async ()=>{
+      _finalizarAgId = null;
+      const { error } = await supabaseClient.from('agendamentos').delete().eq('id', agId);
+      if(error){ toast(friendlyError(error,'Erro ao excluir.'),'err'); _finalizarAgId=agId; draw(); return; }
+      agendamentos = agendamentos.filter(a=>a.id!==agId);
+      toast('Agendamento excluído.','ok');
+      draw();
+    });
   };
 
   window.gFinFecharModal = ()=>{ _gFinModal=null; draw(); };
@@ -3736,6 +3740,9 @@ function renderGestao(empInicial){
     else if(acao==='compartilhar'){ if(navigator.share) navigator.share({ title: emp.nome, url }); else navigator.clipboard.writeText(url).then(()=>toast('Link copiado!','ok')).catch(()=>toast('Nao foi possivel copiar o link.','err')); }
     draw();
   };
+  // Expoe para o visibilitychange recarregar clientes quando a aba estiver ativa
+  window._recarregarClientes = ()=>{ if(corner === 'clientes') carregarClientes(); };
+
   async function carregarClientes(){
     _clientesCarregando = true; draw();
     const { data, error } = await supabaseClient.from('clientes').select('*').eq('empresa_id', emp.id).order('nome');
@@ -4014,9 +4021,20 @@ function renderGestao(empInicial){
     ctx.stroke();
   }
 
+  // Guarda as funcoes de listener do window para poder remover antes de adicionar novos
+  let _rodaWinListeners = null;
+
   function _initRodaCores(){
     const canvas = document.getElementById('rodaCores');
     if(!canvas) return;
+
+    // Remove listeners anteriores do window antes de adicionar novos
+    if(_rodaWinListeners){
+      window.removeEventListener('mousemove', _rodaWinListeners.move);
+      window.removeEventListener('mouseup',   _rodaWinListeners.up);
+      _rodaWinListeners = null;
+    }
+
     _desenharRodaCores(canvas);
     _desenharCursorRoda(canvas);
 
@@ -4040,12 +4058,12 @@ function renderGestao(empInicial){
       dragging=true;
       _posRodaParaHsv(canvas,x,y);
     });
-    window.addEventListener('mousemove', e=>{
-      if(!dragging) return;
-      const {x,y}=getPos(e);
-      _posRodaParaHsv(canvas,x,y);
-    });
-    window.addEventListener('mouseup', ()=>{ dragging=false; });
+
+    const onMove = e=>{ if(!dragging) return; const {x,y}=getPos(e); _posRodaParaHsv(canvas,x,y); };
+    const onUp   = ()=>{ dragging=false; };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup',   onUp);
+    _rodaWinListeners = { move: onMove, up: onUp };
 
     canvas.addEventListener('touchstart', e=>{
       e.preventDefault();
