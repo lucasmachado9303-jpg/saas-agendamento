@@ -316,7 +316,7 @@ async function loadData(){
 
     (rServicos.data || []).forEach(s => {
       const emp = empresas.find(e => e.id === s.empresa_id);
-      if(emp) emp.servicos.push({ id: s.id, nome: s.nome, duracao: s.duracao, preco: Number(s.preco) });
+      if(emp && !emp.servicos.find(x => x.id === s.id)) emp.servicos.push({ id: s.id, nome: s.nome, duracao: s.duracao, preco: Number(s.preco) });
     });
 
     (rHorarios.data || []).forEach(h => {
@@ -337,12 +337,12 @@ async function loadData(){
 
     (rBloqueios.data || []).forEach(b => {
       const emp = empresas.find(e => e.id === b.empresa_id);
-      if(emp) emp.bloqueios.push({ id: b.id, data: b.data, hora: b.hora });
+      if(emp && !emp.bloqueios.find(x => x.id === b.id)) emp.bloqueios.push({ id: b.id, data: b.data, hora: b.hora });
     });
 
     (rBotoes.data || []).forEach(b => {
       const emp = empresas.find(e => e.id === b.empresa_id);
-      if(emp) emp.botoes.push({
+      if(emp && !emp.botoes.find(x => x.id === b.id)) emp.botoes.push({
         id: b.id, nome: b.nome, tipo: b.tipo, link: b.link,
         icone: b.icone || '', ordem: b.ordem, ativo: b.ativo,
         abrirNovaAba: b.abrir_nova_aba, cor: b.cor || ''
@@ -3800,8 +3800,11 @@ function renderGestao(empInicial){
     if(!nome){ toast('Preencha o nome.','err'); return; }
     if(telRaw.length!==11 || telRaw[2]!=='9'){ toast('Telefone inválido. Ex: (11) 98765-4321','err'); return; }
     const telefone = '0'+telRaw;
-    const existe = _clientes.find(c=>c.telefone===telefone);
-    if(existe){ toast(`Já existe um cliente com este número: ${existe.nome}.`,'err'); return; }
+    const existeMem = _clientes.find(c=>c.telefone===telefone);
+    if(existeMem){ toast(`Já existe um cliente com este número: ${existeMem.nome}.`,'err'); return; }
+    // Verifica no banco diretamente para garantir mesmo se _clientes ainda nao carregou
+    const { data: existeDB } = await supabaseClient.from('clientes').select('id,nome').eq('empresa_id', emp.id).eq('telefone', telefone).limit(1);
+    if(existeDB && existeDB[0]){ toast(`Já existe um cliente com este número: ${existeDB[0].nome}.`,'err'); return; }
     const { data, error } = await supabaseClient.from('clientes').insert({ empresa_id:emp.id, nome, telefone }).select().single();
     if(error){ toast('Erro ao cadastrar cliente.','err'); return; }
     _clientes.push({ id:data.id, nome:data.nome, telefone:data.telefone, ausenteEnviadoEm:null });
@@ -3814,8 +3817,11 @@ function renderGestao(empInicial){
     if(!nome){ toast('Preencha o nome.','err'); return; }
     if(telRaw.length!==11 || telRaw[2]!=='9'){ toast('Telefone inválido. Ex: (11) 98765-4321','err'); return; }
     const telefone = '0'+telRaw;
-    const existe = _clientes.find(c=>c.telefone===telefone && c.id!==id);
-    if(existe){ toast(`Já existe um cliente com este número: ${existe.nome}.`,'err'); return; }
+    const existeMem = _clientes.find(c=>c.telefone===telefone && c.id!==id);
+    if(existeMem){ toast(`Já existe um cliente com este número: ${existeMem.nome}.`,'err'); return; }
+    // Verifica no banco diretamente para garantir mesmo se _clientes ainda nao carregou
+    const { data: existeDB2 } = await supabaseClient.from('clientes').select('id,nome').eq('empresa_id', emp.id).eq('telefone', telefone).neq('id', id).limit(1);
+    if(existeDB2 && existeDB2[0]){ toast(`Já existe um cliente com este número: ${existeDB2[0].nome}.`,'err'); return; }
     const { error } = await supabaseClient.from('clientes').update({ nome, telefone }).eq('id', id);
     if(error){ toast('Erro ao salvar.','err'); return; }
     const c = _clientes.find(x=>x.id===id);
