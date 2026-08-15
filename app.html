@@ -325,6 +325,15 @@ async function loadData(){
       emp.horariosPorMes[h.mes] = emp.horariosPorMes[h.mes] || [];
       if(!emp.horariosPorMes[h.mes].includes(h.hora)) emp.horariosPorMes[h.mes].push(h.hora);
     });
+    // Distingue empresa nunca configurada (_dias_ undefined = default todos os dias)
+    // de empresa que explicitamente desativou todos os dias (_dias_ = [] vazio).
+    // Se existem slots de dia específicos (_d0_ a _d6_) mas não existe _dias_,
+    // significa que a empresa foi configurada e depois todos os dias foram removidos.
+    empresas.forEach(e => {
+      if(Object.keys(e.horariosPorMes).some(k => /^_d[0-6]_$/.test(k)) && !('_dias_' in e.horariosPorMes)){
+        e.horariosPorMes['_dias_'] = [];
+      }
+    });
 
     (rBloqueios.data || []).forEach(b => {
       const emp = empresas.find(e => e.id === b.empresa_id);
@@ -911,8 +920,9 @@ function renderAgendar(emp){
   function slotsParaDia(iso){
     const agora   = new Date();
     const hojeIso = isoData(agora);
-    const diasTrabalho = (emp.horariosPorMes && emp.horariosPorMes['_dias_'])
-      ? emp.horariosPorMes['_dias_'].map(Number)
+    const _hpm0 = emp.horariosPorMes || {};
+    const diasTrabalho = ('_dias_' in _hpm0)
+      ? (_hpm0['_dias_'] || []).map(Number)
       : [0,1,2,3,4,5,6];
     const diaDaSemana = new Date(iso+'T00:00:00').getDay();
     if(!diasTrabalho.includes(diaDaSemana)) return [];
@@ -1013,8 +1023,9 @@ function renderAgendar(emp){
     if(bookingState.data){
       const dt = new Date(bookingState.data+"T00:00:00");
       diaLabel = dt.toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'});
-      const _diasTrab = (emp.horariosPorMes && emp.horariosPorMes['_dias_'])
-        ? emp.horariosPorMes['_dias_'].map(Number)
+      const _hpm1 = emp.horariosPorMes || {};
+      const _diasTrab = ('_dias_' in _hpm1)
+        ? (_hpm1['_dias_'] || []).map(Number)
         : [0,1,2,3,4,5,6];
       const _naoAtende = !_diasTrab.includes(new Date(bookingState.data+'T00:00:00').getDay());
       if(_naoAtende){
@@ -1540,8 +1551,9 @@ function renderGestao(empInicial){
       .filter(a=>a.slug===emp.slug && a.data===diaSelecionado)
       .map(a=>a.hora);
     const horarios = [...new Set([...horariosConfig, ...horariosAg])].sort();
-    const diasTrabalho = (emp.horariosPorMes && emp.horariosPorMes['_dias_'])
-      ? emp.horariosPorMes['_dias_'].map(Number)
+    const _hpm2 = emp.horariosPorMes || {};
+    const diasTrabalho = ('_dias_' in _hpm2)
+      ? (_hpm2['_dias_'] || []).map(Number)
       : [0,1,2,3,4,5,6];
     const diaDaSemana = new Date(diaSelecionado+"T00:00:00").getDay();
     const diaNaoTrabalha = !diasTrabalho.includes(diaDaSemana);
@@ -2103,8 +2115,9 @@ function renderGestao(empInicial){
 
     if(configurarSub === 'horarios'){
       const DIAS_LONG = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
-      const diasTrabalho = (emp.horariosPorMes && emp.horariosPorMes['_dias_'])
-        ? emp.horariosPorMes['_dias_'].map(Number)
+      const _hpm3 = emp.horariosPorMes || {};
+      const diasTrabalho = ('_dias_' in _hpm3)
+        ? (_hpm3['_dias_'] || []).map(Number)
         : [0,1,2,3,4,5,6];
       const cardDia = (i)=>{
         const ativo = diasTrabalho.includes(i);
@@ -4197,10 +4210,11 @@ function renderGestao(empInicial){
     emp.horariosPorMes = emp.horariosPorMes || {};
     const atual = (emp.horariosPorMes['_dias_'] || []).map(Number);
     let novos;
-    if(atual.length === 0){
-      // primeira vez: começa com todos os dias e remove o clicado
+    if(!('_dias_' in emp.horariosPorMes)){
+      // empresa nunca configurou dias: assume todos ativos e remove o clicado
       novos = [0,1,2,3,4,5,6].filter(d=>d!==dia);
     } else {
+      // empresa ja configurou: toggle normal (adiciona ou remove o dia clicado)
       novos = atual.includes(dia) ? atual.filter(d=>d!==dia) : [...atual, dia].sort();
     }
 
