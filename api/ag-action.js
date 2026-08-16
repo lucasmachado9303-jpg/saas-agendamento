@@ -60,7 +60,8 @@ module.exports = async function handler(req, res) {
     const cancelHoras = (Array.isArray(empRows) && empRows[0]?.cancelamento_horas != null)
       ? empRows[0].cancelamento_horas : 2;
     if (cancelHoras > 0) {
-      const agDateTime = new Date(`${ag.data}T${ag.hora}`);
+      // Interpreta data/hora como horario de Brasilia (UTC-3) para calcular antecedencia corretamente
+      const agDateTime = new Date(`${ag.data}T${ag.hora}:00-03:00`);
       const horasRestantes = (agDateTime.getTime() - Date.now()) / (1000 * 60 * 60);
       if (horasRestantes < cancelHoras) {
         return res.status(403).json({ error: `Cancelamento não permitido com menos de ${cancelHoras}h de antecedência.` });

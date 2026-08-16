@@ -1462,7 +1462,8 @@ async function agMarkFetch(body){
     fetch('/api/ag-mark', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-      body: JSON.stringify(body)
+      body: JSON.stringify(body),
+      keepalive: true
     });
   } catch(_){}
 }
