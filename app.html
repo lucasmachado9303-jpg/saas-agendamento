@@ -3233,7 +3233,7 @@ function renderGestao(empInicial){
     if(!ag) return;
     _finalizarAgId = null;
     const dataLanc = ag.data || isoData(new Date());
-    const descLanc = [ag.servicoNome, ag.nome].filter(Boolean).join(' — ') || '';
+    const descLanc = ag.nome || ag.servicoNome || '';
     const payload = { empresa_id:emp.id, tipo:'receita', descricao:descLanc, valor:val, data:dataLanc, agendamento_id:agId };
     const { error } = await supabaseClient.from('lancamentos_financeiros').insert(payload);
     if(error){ toast(friendlyError(error,'Erro ao salvar.'),'err'); _finalizarAgId=agId; draw(); return; }
