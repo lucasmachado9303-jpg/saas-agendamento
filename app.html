@@ -1580,7 +1580,7 @@ function renderGestao(empInicial){
               : 'box-shadow:0 2px 12px rgba(0,0,0,0.15);';
           const statusCor = ag.status==='confirmado' ? '#16a34a' : ag.status==='cancelado' ? '#dc2626' : '#6b7280';
           const statusLabel = ag.status==='confirmado' ? 'Confirmado' : ag.status==='cancelado' ? 'Cancelado' : 'Não confirmado';
-          const nomeStyle = ag.status==='cancelado' ? 'text-decoration:line-through;' : '';
+          const nomeStyle = '';
           const BTN = 'font-family:inherit;height:28px;width:72px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;border:0.5px solid #ccc;background:#fff;color:#555;';
           const BTN_FIN = 'font-family:inherit;height:28px;padding:0 12px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;border:1.5px solid #d97706;background:#fff;color:#d97706;';
           const botoesPendente = `<div style="display:flex;justify-content:flex-end;"><button style="${BTN_FIN}" onclick="abrirFinalizarModal('${ag.id}')">Finalizar</button></div>`;
@@ -1767,7 +1767,7 @@ function renderGestao(empInicial){
           return `
           <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:0.5px solid #f2f2f7;${cancelado?'opacity:0.6;':''}">
             <div style="flex:1;min-width:0;">
-              <div style="font-size:14px;font-weight:600;color:#1a1a1a;${cancelado?'text-decoration:line-through;':''}">${escapeHtml(a.servicoNome||'Agendamento')}</div>
+              <div style="font-size:14px;font-weight:600;color:#1a1a1a;">${escapeHtml(a.servicoNome||'Agendamento')}</div>
               <div style="font-size:13px;color:#8e8e93;margin-top:2px;">${fmtData(a.data)} ${a.hora}</div>
             </div>
             <div style="font-size:11px;font-weight:600;color:${statusCor};flex-shrink:0;margin-left:8px;">${statusLabel}</div>
@@ -3107,11 +3107,11 @@ function renderGestao(empInicial){
       const renderLinhaAg = (a, cancelado=false) => `
             <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:0.5px solid #f2f2f7;${cancelado?'opacity:0.55;':''}">
               <div style="flex-shrink:0;min-width:50px;text-align:center;">
-                <div style="font-size:12px;font-weight:700;color:${cancelado?'#dc2626':'#1a1a1a'};${cancelado?'text-decoration:line-through;':''}">${fmtData(a.data)}</div>
+                <div style="font-size:12px;font-weight:700;color:${cancelado?'#dc2626':'#1a1a1a'};">${fmtData(a.data)}</div>
                 <div style="font-size:11px;color:#8e8e93;">${a.hora}</div>
               </div>
               <div style="flex:1;min-width:0;">
-                <div style="font-size:14px;font-weight:600;color:#1a1a1a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;${cancelado?'text-decoration:line-through;':''}">${escapeHtml(a.nome||'-')}</div>
+                <div style="font-size:14px;font-weight:600;color:#1a1a1a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(a.nome||'-')}</div>
                 <div style="font-size:12px;color:#8e8e93;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(a.servicoNome||'-')}</div>
               </div>
               ${cancelado ? `<div style="font-size:11px;font-weight:600;color:#dc2626;flex-shrink:0;">Cancelado</div>` : ''}
