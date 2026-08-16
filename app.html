@@ -1425,7 +1425,8 @@ window.agConfirmar = async (agId, acao, empSlug) => {
   } catch(e) {
     if(area) area.style.opacity = '1';
     if(btnConfirmar) btnConfirmar.disabled = false;
-    toast(mensagemErroRede(e),'err');
+    const msg = (e?.message && e.message !== 'Erro') ? e.message : mensagemErroRede(e);
+    toast(msg,'err');
   }
 };
 
