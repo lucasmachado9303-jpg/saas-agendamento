@@ -1830,15 +1830,16 @@ function renderGestao(empInicial){
     // Calcular ausentes (faixas exclusivas)
     // #18/#34: faixas exclusivas e alinhadas com os labels dos botoes
     const inativos30 = _clientes.filter(c => { const d=_diasSemVoltar(c); return d!==null && d>=30; });
+    const inativos15total = _clientes.filter(c => { const d=_diasSemVoltar(c); return d!==null && d>=15; });
     const ausentesFaixa15 = _clientes.filter(c => { const d=_diasSemVoltar(c); return d!==null && d>=15 && d<30; });
     const ausentesFaixa30 = _clientes.filter(c => { const d=_diasSemVoltar(c); return d!==null && d>=30 && d<45; });
     const ausentesFaixa45 = _clientes.filter(c => { const d=_diasSemVoltar(c); return d!==null && d>=45; });
     const clientesAusentes = _clientesInativosFiltro===15 ? ausentesFaixa15 : _clientesInativosFiltro===30 ? ausentesFaixa30 : ausentesFaixa45;
 
     // Banner
-    const banner = (!_clientesBannerDismissed && inativos30.length && _clientesAba==='todos') ? `
+    const banner = (!_clientesBannerDismissed && inativos15total.length && _clientesAba==='todos') ? `
       <div style="background:#fffbea;border:1px solid #fcd34d;border-radius:14px;padding:12px 14px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
-        <div style="font-size:14px;color:#92400e;font-weight:500;">${inativos30.length} cliente${inativos30.length!==1?'s':''} sem voltar há 30 dias ou mais.</div>
+        <div style="font-size:14px;color:#92400e;font-weight:500;">${inativos15total.length} cliente${inativos15total.length!==1?'s':''} sem voltar há 15 dias ou mais.</div>
         <button onclick="dispensarBannerClientes()" style="background:none;border:none;color:#92400e;cursor:pointer;font-size:20px;line-height:1;padding:0 4px;">&times;</button>
       </div>` : '';
 
@@ -1846,7 +1847,7 @@ function renderGestao(empInicial){
     const tabs = `
       <div style="display:flex;gap:0;background:#f2f2f7;border-radius:12px;padding:3px;margin-bottom:14px;">
         <button onclick="setClientesAba('todos')" style="flex:1;padding:7px 0;border-radius:9px;border:none;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;${_clientesAba==='todos'?'background:#fff;color:#1a1a1a;box-shadow:0 1px 4px rgba(0,0,0,0.1);':'background:transparent;color:#8e8e93;'}">Todos</button>
-        <button onclick="setClientesAba('ausentes')" style="flex:1;padding:7px 0;border-radius:9px;border:none;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;${_clientesAba==='ausentes'?'background:#fff;color:#1a1a1a;box-shadow:0 1px 4px rgba(0,0,0,0.1);':'background:transparent;color:#8e8e93;'}">Ausentes${inativos30.length?` <span style="background:#ef4444;color:#fff;border-radius:99px;font-size:11px;padding:1px 6px;margin-left:4px;vertical-align:middle;">${inativos30.length}</span>`:''}</button>
+        <button onclick="setClientesAba('ausentes')" style="flex:1;padding:7px 0;border-radius:9px;border:none;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;${_clientesAba==='ausentes'?'background:#fff;color:#1a1a1a;box-shadow:0 1px 4px rgba(0,0,0,0.1);':'background:transparent;color:#8e8e93;'}">Ausentes${inativos15total.length?` <span style="background:#ef4444;color:#fff;border-radius:99px;font-size:11px;padding:1px 6px;margin-left:4px;vertical-align:middle;">${inativos15total.length}</span>`:''}</button>
       </div>`;
 
     // VIEW: AUSENTES
@@ -2606,7 +2607,7 @@ function renderGestao(empInicial){
     }
 
     // Clientes inativos — usa a tabela de clientes cadastrados, igual à aba Clientes
-    const inativosAtual = _clientes.filter(c => { const d=diasSemVoltarDash(c); return d!==null && d>=_clientesInativosFiltro; }).length;
+    const inativosAtual = _clientes.filter(c => { const d=diasSemVoltarDash(c); return d!==null && d>=15; }).length;
 
     // Faturamento de hoje
     const fatHoje = _gFinLancamentos.filter(l=>l.tipo==='receita' && l.data===hoje)
@@ -3702,13 +3703,15 @@ function renderGestao(empInicial){
     }
     window.open(link, '_blank', 'noopener,noreferrer');
   };
-  window.waAcao = (agId, tipo, empId)=>{
+  window.waAcao = async (agId, tipo, empId)=>{
     const ag = agendamentos.find(a=>a.id===agId);
     if(!ag) return;
     const waNum = '55' + ag.telefone.replace(/\D/g,'').replace(/^0/,'');
     let link;
     if(tipo === 'conversar'){
       link = `https://wa.me/${waNum}`;
+      _waMenuId = null;
+      draw();
     } else {
       const empObj = empresas.find(e=>e.id===empId);
       const defaultMsg = tipo === 'confirmacao'
@@ -3731,9 +3734,6 @@ function renderGestao(empInicial){
       _waMenuId = null;
       draw();
       await agMarkFetch({ ag_id: agId, campo });
-    } else {
-      _waMenuId = null;
-      draw();
     }
     window.open(link, '_blank', 'noopener,noreferrer');
   };
