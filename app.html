@@ -1710,7 +1710,7 @@ function renderGestao(empInicial){
         if(!canceladosDia.length) return '';
         const rows = canceladosDia.map(a=>`
           <div style="padding:10px 12px;margin-bottom:6px;border-radius:9px;border:0.5px solid #e4e4e7;background:#f7f7f7;display:flex;flex-direction:column;gap:4px;opacity:0.5;filter:grayscale(1);">
-            <div style="font-weight:700;font-size:15px;text-decoration:line-through;color:#1a1a1a;">${a.hora.slice(0,5)} — ${escapeHtml(a.nome)}</div>
+            <div style="font-weight:700;font-size:15px;color:#1a1a1a;">${a.hora.slice(0,5)} — ${escapeHtml(a.nome)}</div>
             <div style="font-size:13px;color:#8e8e93;">${escapeHtml(a.servicoNome||'')}</div>
           </div>`).join('');
         return `
