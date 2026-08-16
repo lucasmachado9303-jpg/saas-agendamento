@@ -1705,6 +1705,22 @@ function renderGestao(empInicial){
               </div>`
             : linhas
       }
+      ${(()=>{
+        const canceladosDia = agendamentos.filter(a => a.slug===emp.slug && a.data===diaSelecionado && a.status==='cancelado').sort((a,b)=>a.hora.localeCompare(b.hora));
+        if(!canceladosDia.length) return '';
+        const rows = canceladosDia.map(a=>`
+          <div style="padding:10px 12px;margin-bottom:6px;border-radius:9px;border:0.5px solid #e4e4e7;background:#f7f7f7;display:flex;flex-direction:column;gap:4px;opacity:0.5;filter:grayscale(1);">
+            <div style="font-weight:700;font-size:15px;text-decoration:line-through;color:#1a1a1a;">${a.hora.slice(0,5)} — ${escapeHtml(a.nome)}</div>
+            <div style="font-size:13px;color:#8e8e93;">${escapeHtml(a.servicoNome||'')}</div>
+          </div>`).join('');
+        return `
+          <div style="margin-top:18px;margin-bottom:6px;display:flex;align-items:center;gap:8px;">
+            <div style="flex:1;height:1px;background:#e4e4e7;"></div>
+            <span style="font-size:11px;font-weight:600;color:#b0b0b8;text-transform:uppercase;letter-spacing:.06em;">Cancelados</span>
+            <div style="flex:1;height:1px;background:#e4e4e7;"></div>
+          </div>
+          ${rows}`;
+      })()}
     `;
   }
 
@@ -2635,15 +2651,15 @@ function renderGestao(empInicial){
         <div class="g-dash-val">${val}</div>
       </div>`;
 
-    // Agenda de hoje (metade da largura)
-    const agendaRows = agsHoje.length
-      ? agsHoje.map(a=>{
+    // Agenda de hoje (metade da largura) — sem cancelados
+    const agsHojeAtivos = agsHoje.filter(a => a.status !== 'cancelado');
+    const agendaRows = agsHojeAtivos.length
+      ? agsHojeAtivos.map(a=>{
           const passou = a.hora < horaAgora;
-          const cancelado = a.status === 'cancelado';
-          return `<div class="g-ag-row" style="${cancelado||passou?'opacity:0.3;':''}">
+          return `<div class="g-ag-row" style="${passou?'opacity:0.3;':''}">
             <div style="display:flex;align-items:baseline;gap:7px;">
               <span class="g-ag-hora">${a.hora.slice(0,5)}</span>
-              <span class="g-ag-nome" style="${cancelado?'text-decoration:line-through;':''}">${escapeHtml(a.nome)}</span>
+              <span class="g-ag-nome">${escapeHtml(a.nome)}</span>
             </div>
             <div class="g-ag-serv">${escapeHtml(a.servicoNome||'')}</div>
           </div>`;
