@@ -3675,7 +3675,7 @@ function renderGestao(empInicial){
     _inativoWaMenuId = _inativoWaMenuId === clienteId ? null : clienteId;
     draw();
   };
-  window.waAcaoInativo = (clienteId, tipo, empId)=>{
+  window.waAcaoInativo = async (clienteId, tipo, empId)=>{
     const c = _clientes.find(x=>x.id===clienteId);
     if(!c || !c.telefone){ _inativoWaMenuId=null; draw(); return; }
     const waNum = '55' + c.telefone.replace(/\D/g,'').replace(/^0/,'');
