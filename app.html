@@ -1453,13 +1453,13 @@ window.recuperarSenha = async (slug)=>{
   toast('Se o e-mail estiver cadastrado, você receberá um link em breve.','ok',5000);
 };
 
-// Wrapper fire-and-forget para /api/ag-mark com autenticacao
+// Salva marcacao no banco e aguarda conclusao antes de retornar
 async function agMarkFetch(body){
   try {
     const { data: { session } } = await supabaseClient.auth.getSession();
     const token = session?.access_token;
     if(!token) return;
-    fetch('/api/ag-mark', {
+    await fetch('/api/ag-mark', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
       body: JSON.stringify(body),
@@ -3724,12 +3724,15 @@ function renderGestao(empInicial){
         .replace(/{link}/g, linkConfirmar);
       link = `https://wa.me/${waNum}?text=${encodeURIComponent(msg)}`;
       const campo = tipo === 'confirmacao' ? 'confirmacao_enviada' : 'lembrete_enviado';
-      agMarkFetch({ ag_id: agId, campo });
       if(tipo === 'confirmacao') ag.confirmacaoEnviada = true;
       else ag.lembreteEnviado = true;
+      _waMenuId = null;
+      draw();
+      await agMarkFetch({ ag_id: agId, campo });
+    } else {
+      _waMenuId = null;
+      draw();
     }
-    _waMenuId = null;
-    draw();
     window.open(link, '_blank', 'noopener,noreferrer');
   };
   window.salvarMensagens = async (empId)=>{
