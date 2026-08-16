@@ -3691,13 +3691,15 @@ function renderGestao(empInicial){
         .replace(/{link}/g, linkPublico);
       link = `https://wa.me/${waNum}?text=${encodeURIComponent(msg)}`;
     }
+    _inativoWaMenuId = null;
     if(tipo === 'inativo'){
       const agora = new Date().toISOString();
       if(c) c.ausenteEnviadoEm = agora;
-      agMarkFetch({ cliente_id: clienteId, campo: 'ausente_enviado_em' });
+      draw();
+      await agMarkFetch({ cliente_id: clienteId, campo: 'ausente_enviado_em' });
+    } else {
+      draw();
     }
-    _inativoWaMenuId = null;
-    draw();
     window.open(link, '_blank', 'noopener,noreferrer');
   };
   window.waAcao = (agId, tipo, empId)=>{
