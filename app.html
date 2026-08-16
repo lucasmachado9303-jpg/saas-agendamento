@@ -611,10 +611,14 @@ async function init(){
       currentProfile = _p || null;
       await loadData();
       if(currentProfile?.role === 'master'){
-        goto({ master: 1 }); _appInitialized = true; return;
+        // Se a URL tem ?ag= nao redireciona, deixa o roteamento normal mostrar a pagina de confirmacao
+        if(!new URLSearchParams(location.search).get('ag')){
+          goto({ master: 1 }); _appInitialized = true; return;
+        }
       } else if(currentProfile?.role === 'owner_empresa'){
         const _e = empresas.find(e => e.id === currentProfile.empresa_id);
-        if(_e){ goto({ empresa: _e.slug, page: 'gestao' }); _appInitialized = true; return; }
+        // Se a URL tem ?ag= nao redireciona, deixa o roteamento normal mostrar a pagina de confirmacao
+        if(_e && !new URLSearchParams(location.search).get('ag')){ goto({ empresa: _e.slug, page: 'gestao' }); _appInitialized = true; return; }
       }
     }
   }
@@ -647,11 +651,13 @@ async function init(){
           goto(JSON.parse(_goto)); return;
         } catch(e){}
       }
-      if (currentProfile.role === 'master') {
-        goto({ master: 1 });
-      } else if (currentProfile.role === 'owner_empresa') {
-        const emp = empresas.find(e => e.id === currentProfile.empresa_id);
-        if (emp) goto({ empresa: emp.slug, page: 'gestao' });
+      if(!new URLSearchParams(location.search).get('ag')){
+        if (currentProfile.role === 'master') {
+          goto({ master: 1 });
+        } else if (currentProfile.role === 'owner_empresa') {
+          const emp = empresas.find(e => e.id === currentProfile.empresa_id);
+          if (emp) goto({ empresa: emp.slug, page: 'gestao' });
+        }
       }
     }
   });
