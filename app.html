@@ -1453,18 +1453,15 @@ window.recuperarSenha = async (slug)=>{
   toast('Se o e-mail estiver cadastrado, você receberá um link em breve.','ok',5000);
 };
 
-// Salva marcacao no banco e aguarda conclusao antes de retornar
+// Salva marcacao no banco diretamente pelo supabaseClient
 async function agMarkFetch(body){
   try {
-    const { data: { session } } = await supabaseClient.auth.getSession();
-    const token = session?.access_token;
-    if(!token) return;
-    await fetch('/api/ag-mark', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-      body: JSON.stringify(body),
-      keepalive: true
-    });
+    if(body.ag_id && body.campo){
+      await supabaseClient.from('agendamentos').update({ [body.campo]: true }).eq('id', body.ag_id);
+    } else if(body.cliente_id && body.campo){
+      const valor = body.reset ? null : new Date().toISOString();
+      await supabaseClient.from('clientes').update({ [body.campo]: valor }).eq('id', body.cliente_id);
+    }
   } catch(_){}
 }
 
