@@ -1998,7 +1998,7 @@ function renderGestao(empInicial){
       `;
     }
     if(configurarSub === 'mensagens'){
-      const msgConfirm   = emp.msgConfirmacao || 'Olá, {nome}!\nConfirme seu agendamento de {servico} para {data} às {hora}.\nAcesse o link abaixo, faça o login e confirme ou cancele:\n{link}';
+      const msgConfirm   = emp.msgConfirmacao || 'Olá, {nome}!\nConfirme seu agendamento de {servico} para {data} às {hora}.\nAcesse o link abaixo, e confirme ou cancele:\n{link}';
       const msgLembrete  = emp.msgLembrete   || 'Olá, {nome}! \nPassando pra lembrar do seu agendamento! \n{servico}\n{data} - {hora}.\nAté lá!';
       const msgInativoTx = emp.msgInativo    || 'Olá, {nome}! \nFaz um tempinho desde o seu último atendimento.\nQue tal agendar um novo horário? Estamos à disposição.\nAgende pelo link:\n{link}';
       return `
