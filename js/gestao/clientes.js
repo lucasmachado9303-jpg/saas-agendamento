@@ -31,8 +31,10 @@
       const c = _clientes.find(x=>x.id===_clientePerfilId);
       if(!c){ _clientePerfilId=null; return clientesBody(); }
 
+      // Mesmo criterio de _diasSemVoltar: pelo id do cliente, ou pelo telefone nos agendamentos antigos sem cliente.
+      // (antes era so pelo telefone: editar o telefone do cliente "apagava" o historico)
       const hist = agendamentos
-        .filter(a => a.slug===emp.slug && a.telefone===c.telefone)
+        .filter(a => a.slug===emp.slug && (a.clienteId ? a.clienteId===c.id : a.telefone===c.telefone))
         .sort((a,b)=>b.data.localeCompare(a.data)||b.hora.localeCompare(a.hora));
 
       const histRows = hist.length
@@ -119,7 +121,6 @@
 
     // Calcular ausentes (faixas exclusivas)
     // #18/#34: faixas exclusivas e alinhadas com os labels dos botoes
-    const inativos30 = _clientes.filter(c => { const d=_diasSemVoltar(c); return d!==null && d>=30; });
     const inativos15total = _clientes.filter(c => { const d=_diasSemVoltar(c); return d!==null && d>=15; });
     const ausentesFaixa15 = _clientes.filter(c => { const d=_diasSemVoltar(c); return d!==null && d>=15 && d<30; });
     const ausentesFaixa30 = _clientes.filter(c => { const d=_diasSemVoltar(c); return d!==null && d>=30 && d<45; });
@@ -142,7 +143,7 @@
 
     // VIEW: AUSENTES
     if(_clientesAba === 'ausentes') {
-      const diaColor = d => d>=46?'#dc2626':d>=31?'#f97316':'#d97706';
+      const diaColor = d => d>=45?'#dc2626':d>=30?'#f97316':'#d97706'; // mesmas faixas dos botoes (+15, +30, +45)
       const faixaBtns = `
         <div style="display:flex;gap:8px;margin-bottom:14px;">
           <button onclick="setInativosFiltro(15)" style="flex:1;padding:7px 0;border-radius:9px;border:1.5px solid ${_clientesInativosFiltro===15?'#1a1a1a':'#e4e4e7'};font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;background:${_clientesInativosFiltro===15?'#1a1a1a':'#fff'};color:${_clientesInativosFiltro===15?'#fff':'#8e8e93'};">+15 dias<br><span style="font-size:11px;font-weight:400;">${ausentesFaixa15.length}</span></button>
@@ -225,11 +226,13 @@
   }
 
   async function carregarClientes(){
+    const seq = ++_clientesSeq; // so a resposta da carga mais recente e aplicada
     _clientesCarregando = true; draw();
     const { data, error } = await supabaseClient.from('clientes').select('*').eq('empresa_id', emp.id).order('nome');
+    if(seq !== _clientesSeq) return;
     _clientesCarregando = false;
     if(error){ toast('Erro ao carregar clientes.','err'); _clientes=[]; draw(); return; }
-    _clientes = (data||[]).map(c=>({ id:c.id, nome:c.nome, telefone:c.telefone, ausenteEnviadoEm:c.ausente_enviado_em||null }));
+    _clientes = (data||[]).map(c=>({ id:c.id, nome:c.nome || '', telefone:soDigitos(c.telefone), ausenteEnviadoEm:c.ausente_enviado_em||null }));
     draw();
   }
 
@@ -269,7 +272,8 @@ function _registrarHandlersClientes(){
     window.open(link, '_blank', 'noopener,noreferrer');
   };
   // Expoe para o visibilitychange recarregar clientes quando a aba estiver ativa
-  window._recarregarClientes = ()=>{ if(corner === 'clientes') carregarClientes(); };
+  // So recarrega se a gestao ainda estiver aberta (a funcao continua registrada depois de sair dela)
+  window._recarregarClientes = ()=>{ if(currentRoute.page === 'gestao' && corner === 'clientes') carregarClientes(); };
   window.filtrarClientesLive = (v)=>{
     _clientesBusca = v;
     const wrap = document.getElementById('clientesListaWrap');
@@ -302,7 +306,7 @@ function _registrarHandlersClientes(){
   window.dispensarBannerClientes = ()=>{ _clientesBannerDismissed=true; draw(); };
   window.salvarNovoCliente = async ()=>{
     const nome = (document.getElementById('cliNome')?.value||'').trim().toUpperCase();
-    const telRaw = (document.getElementById('cliTel')?.value||'').replace(/\D/g,'').replace(/^(55|0)/,'');
+    const telRaw = telefoneNacional(document.getElementById('cliTel')?.value); // DDD 55 (RS) e valido
     if(!nome){ toast('Preencha o nome.','err'); return; }
     if(telRaw.length!==11 || telRaw[2]!=='9'){ toast('Telefone inválido. Ex: (11) 98765-4321','err'); return; }
     const telefone = '0'+telRaw;
@@ -319,7 +323,7 @@ function _registrarHandlersClientes(){
   };
   window.salvarPerfilCliente = async (id)=>{
     const nome = (document.getElementById('cliNome')?.value||'').trim().toUpperCase();
-    const telRaw = (document.getElementById('cliTel')?.value||'').replace(/\D/g,'').replace(/^(55|0)/,'');
+    const telRaw = telefoneNacional(document.getElementById('cliTel')?.value); // DDD 55 (RS) e valido
     if(!nome){ toast('Preencha o nome.','err'); return; }
     if(telRaw.length!==11 || telRaw[2]!=='9'){ toast('Telefone inválido. Ex: (11) 98765-4321','err'); return; }
     const telefone = '0'+telRaw;

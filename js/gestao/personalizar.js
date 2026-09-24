@@ -1,19 +1,6 @@
 // Gestao — Personalizar pagina: dados, imagens, cor (roda), botoes.
 
 
-  function hexToHsl(hex){
-    let r=parseInt(hex.slice(1,3),16)/255,g=parseInt(hex.slice(3,5),16)/255,b=parseInt(hex.slice(5,7),16)/255;
-    const max=Math.max(r,g,b),min=Math.min(r,g,b);
-    let h=0,s=0,l=(max+min)/2;
-    if(max!==min){const d=max-min;s=l>0.5?d/(2-max-min):d/(max+min);switch(max){case r:h=(g-b)/d+(g<b?6:0);break;case g:h=(b-r)/d+2;break;case b:h=(r-g)/d+4;break;}h/=6;}
-    return [Math.round(h*360),Math.round(s*100),Math.round(l*100)];
-  }
-  function hslToHex(h,s,l){
-    s/=100;l/=100;const a=s*Math.min(l,1-l);
-    const f=n=>{const k=(n+h/30)%12;const c=l-a*Math.max(Math.min(k-3,9-k,1),-1);return Math.round(255*c).toString(16).padStart(2,'0');};
-    return '#'+f(0)+f(8)+f(4);
-  }
-
   function hexToHsv(hex){
     let r=parseInt(hex.slice(1,3),16)/255,g=parseInt(hex.slice(3,5),16)/255,b=parseInt(hex.slice(5,7),16)/255;
     const max=Math.max(r,g,b),min=Math.min(r,g,b),d=max-min;
@@ -32,7 +19,9 @@
     const cor = emp.corPrincipal || '#3d1f3a';
     const botoesSorted = [...(emp.botoes || [])].sort((a,b) => a.ordem - b.ordem);
 
-    const botoesHtml = botoesSorted.length ? `<div id="botoes-drag-list">${botoesSorted.map((b) => `
+    // Arrastar funciona so com mouse; no celular a ordem muda pelas setas ▲ ▼
+    const _BTN_SETA = 'width:32px;height:32px;min-height:0;border-radius:8px;border:1px solid var(--line);background:#fff;color:#555;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;font-family:inherit;';
+    const botoesHtml = botoesSorted.length ? `<div id="botoes-drag-list">${botoesSorted.map((b, i) => `
       <div data-id="${b.id}" draggable="true"
         style="display:flex;flex-direction:column;gap:10px;padding:14px 16px;margin-bottom:8px;border-radius:12px;border:1.5px solid var(--line);background:var(--card);cursor:default;transition:opacity .15s;overflow:hidden;"
         ondragstart="dragBotaoStart(event,'${b.id}')"
@@ -40,10 +29,14 @@
         ondrop="dragBotaoDrop(event,'${b.id}')"
         ondragend="dragBotaoEnd(event)">
         <div style="display:flex;align-items:center;gap:10px;min-width:0;">
-          <div style="color:#bbb;font-size:14px;cursor:grab;padding:0 4px;line-height:1;touch-action:none;flex-shrink:0;letter-spacing:1px;" title="Arraste para reordenar">::</div>
+          <div style="color:#bbb;font-size:14px;cursor:grab;padding:0 4px;line-height:1;flex-shrink:0;letter-spacing:1px;" title="Arraste para reordenar">::</div>
           <div style="flex:1;min-width:0;">
             <div style="font-weight:700;font-size:14px;">${escapeHtml(b.nome)}</div>
             <div class="muted" style="font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(b.link)}</div>
+          </div>
+          <div style="display:flex;gap:4px;flex-shrink:0;">
+            <button type="button" aria-label="Subir" title="Subir" onclick="moverBotao('${b.id}',-1)" ${i===0?'disabled':''} style="${_BTN_SETA}${i===0?'opacity:.35;cursor:default;':''}">&#9650;</button>
+            <button type="button" aria-label="Descer" title="Descer" onclick="moverBotao('${b.id}',1)" ${i===botoesSorted.length-1?'disabled':''} style="${_BTN_SETA}${i===botoesSorted.length-1?'opacity:.35;cursor:default;':''}">&#9660;</button>
           </div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
@@ -350,8 +343,6 @@ function _registrarHandlersPersonalizar(){
     if(chevron) chevron.style.transform = aberto ? '' : 'rotate(180deg)';
     if(!aberto) _initRodaCores();
   };
-  window.atualizarCorPersonalizar = ()=>{}; // mantido para compatibilidade, substituido pela roda
-
   window.rodaBrilhoChange = ()=>{
     const brilho = document.getElementById('pCorBrilho');
     if(!brilho) return;
@@ -362,17 +353,33 @@ function _registrarHandlersPersonalizar(){
     const novoSlug = (document.getElementById('pSlug')?.value || '').trim();
     if(!novoSlug){ toast('Preencha o link.','err'); return; }
     if(novoSlug === emp.slug){ toast('Link não alterado.','ok'); return; }
+    // Mesmo formato exigido no painel master: letras minusculas, numeros e hifens (sem hifen nas pontas)
+    if(!/^[a-z0-9][a-z0-9-]*[a-z0-9]$|^[a-z0-9]$/.test(novoSlug) || novoSlug.length > 63){
+      toast('Link inválido. Use letras minúsculas, números e hífens (sem hífen no começo ou no fim).','err'); return;
+    }
     // #40: lista unificada de slugs reservados (igual em todos os lugares do sistema)
     const _slugsReservados = ['api','app','admin','master','login','logout','auth','static','assets','sw','manifest','index','null','undefined','favicon','www','mail','suporte','ajuda','cdn','blog','help','cadastro'];
     if(_slugsReservados.includes(novoSlug)){ toast('Este link não pode ser usado. Escolha outro.','err'); return; }
-    if(!confirm('Alterar o link para "'+novoSlug+'.agenplus.com.br"? O endereço antigo vai parar de funcionar.')) return;
-    const { error } = await supabaseClient.from('empresas').update({ slug: novoSlug }).eq('id', emp.id);
-    if(error){ toast((error.message||'').includes('unique')||error.code==='23505' ? 'Este link já está em uso.' : 'Erro ao salvar. Tente novamente.','err'); return; }
-    const oldSlug = emp.slug;
-    emp.slug = novoSlug;
-    agendamentos.forEach(a => { if(a.slug === oldSlug) a.slug = novoSlug; });
-    toast('Link atualizado!','ok');
-    draw();
+    confirmarAcao(`Alterar o link para <strong>${escapeHtml(novoSlug)}.agenplus.com.br</strong>? O endereço antigo vai parar de funcionar.`, async ()=>{
+      const { error } = await supabaseClient.from('empresas').update({ slug: novoSlug }).eq('id', emp.id);
+      if(error){ toast((error.message||'').includes('unique')||error.code==='23505' ? 'Este link já está em uso.' : 'Erro ao salvar. Tente novamente.','err'); return; }
+      const oldSlug = emp.slug;
+      emp.slug = novoSlug;
+      agendamentos.forEach(a => { if(a.slug === oldSlug) a.slug = novoSlug; });
+      toast('Link atualizado!','ok');
+      // Se a gestao esta aberta no subdominio antigo, ele deixou de existir: leva para o novo
+      // endereco levando a sessao junto (cada subdominio guarda o login separado).
+      if(slugDoSubdominio() === oldSlug){
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if(session){
+          const hash = `access_token=${session.access_token}&refresh_token=${session.refresh_token}&token_type=bearer&type=bearer`;
+          location.replace(urlEmpresa(novoSlug, `/gestao#${hash}`));
+          return;
+        }
+      }
+      currentRoute = { ...currentRoute, empresa: novoSlug };
+      draw();
+    });
   };
   window.marcarPersonalizarDirty = ()=>{
     if(personalizarDirty) return;
@@ -382,8 +389,14 @@ function _registrarHandlersPersonalizar(){
     if(saveWrap) saveWrap.style.display = 'none';
     if(dirtyBanner) dirtyBanner.style.display = 'block';
   };
-  window.voltarDePersonalizar = ()=>{ personalizarDirty=false; configurarIr(null); };
-  window.descartarPersonalizar = ()=>{ personalizarDirty=false; configurarIr(null); };
+  // Sair sem salvar desfaz o que foi digitado: draw() copia os campos para "emp" (preservarCamposPersonalizar),
+  // entao sem restaurar a copia, as alteracoes nao salvas continuavam valendo na memoria.
+  function _restaurarPersonalizar(){
+    if(_personalizarOriginal) Object.assign(emp, _personalizarOriginal);
+    configurarSub = null; // evita que o draw() de configurarIr copie os campos de novo
+  }
+  window.voltarDePersonalizar = ()=>{ _restaurarPersonalizar(); personalizarDirty=false; configurarIr(null); };
+  window.descartarPersonalizar = ()=>{ _restaurarPersonalizar(); personalizarDirty=false; configurarIr(null); };
 
   // ── PERSONALIZAR PÁGINA ──────────────────────────────────
 
@@ -402,6 +415,7 @@ function _registrarHandlersPersonalizar(){
     }).eq('id', emp.id);
     if(error){ console.error('Erro ao salvar informações:', error); toast('Erro ao salvar. Tente novamente.','err'); return; }
     personalizarDirty = false;
+    _personalizarOriginal = { nome:emp.nome, descricao:emp.descricao, textoDestaque:emp.textoDestaque, textoAgendar:emp.textoAgendar, corPrincipal:emp.corPrincipal };
     toast('Informações salvas!','ok');
     draw();
   };
@@ -509,12 +523,30 @@ function _registrarHandlersPersonalizar(){
     draw();
   };
 
-  window.removerBotao = async (id)=>{
-    if(!confirm('Remover este botão?')) return;
-    const { error } = await supabaseClient.from('botoes_empresa').delete().eq('id', id);
-    if(error){ toast(friendlyError(error,'Erro ao remover botão. Tente novamente.'),'err'); return; }
-    emp.botoes = emp.botoes.filter(b=>b.id!==id);
+  window.removerBotao = (id)=>{
+    confirmarAcao('Remover este botão?', async ()=>{
+      const { error } = await supabaseClient.from('botoes_empresa').delete().eq('id', id);
+      if(error){ toast(friendlyError(error,'Erro ao remover botão. Tente novamente.'),'err'); return; }
+      emp.botoes = emp.botoes.filter(b=>b.id!==id);
+      draw();
+    });
+  };
+  // Grava a ordem atual dos botoes (usado pelo arrastar e pelas setas)
+  async function _salvarOrdemBotoes(){
+    emp.botoes.forEach((b, i) => b.ordem = i);
+    const resultados = await Promise.all(emp.botoes.map(b =>
+      supabaseClient.from('botoes_empresa').update({ ordem: b.ordem }).eq('id', b.id)
+    ));
+    if(resultados.some(r => r.error)) toast('Não foi possível salvar a nova ordem. Tente novamente.','err');
     draw();
+  }
+  window.moverBotao = async (id, dir)=>{
+    emp.botoes.sort((a,b)=>a.ordem-b.ordem);
+    const i = emp.botoes.findIndex(b=>b.id===id);
+    const j = i + dir;
+    if(i < 0 || j < 0 || j >= emp.botoes.length) return;
+    [emp.botoes[i], emp.botoes[j]] = [emp.botoes[j], emp.botoes[i]];
+    await _salvarOrdemBotoes();
   };
   window.dragBotaoStart = (e, id)=>{
     _dragFromId = id;
@@ -537,11 +569,7 @@ function _registrarHandlersPersonalizar(){
     if(fromIdx < 0 || toIdx < 0) return;
     const moved = emp.botoes.splice(fromIdx, 1)[0];
     emp.botoes.splice(toIdx, 0, moved);
-    emp.botoes.forEach((b, i) => b.ordem = i);
     _dragFromId = null;
-    await Promise.all(emp.botoes.map(b =>
-      supabaseClient.from('botoes_empresa').update({ ordem: b.ordem }).eq('id', b.id)
-    ));
-    draw();
+    await _salvarOrdemBotoes();
   };
 }

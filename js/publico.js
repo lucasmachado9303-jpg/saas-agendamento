@@ -19,7 +19,8 @@ function renderHome(emp){
     ? `<img src="${escapeAttr(emp.logo)}" alt="Logo" style="width:180px;height:180px;border-radius:50%;border:4px solid #fff;object-fit:cover;box-shadow:0 4px 24px rgba(0,0,0,0.22);">`
     : `<div style="width:180px;height:180px;border-radius:50%;border:4px solid #fff;background:${cor};display:flex;align-items:center;justify-content:center;font-size:72px;font-family:'Nunito',sans-serif;font-weight:600;color:#fff;box-shadow:0 4px 24px rgba(0,0,0,0.22);">${escapeHtml(emp.nome.charAt(0).toUpperCase())}</div>`;
 
-  const _corTexto = (hex) => {
+  const _corTexto = (hexBruto) => {
+    const hex = sanitizeCor(hexBruto);
     const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
     return (r*299 + g*587 + b*114) / 1000 > 140 ? '#1a1a1a' : '#ffffff';
   };
@@ -139,7 +140,7 @@ function renderAgendar(emp){
     const letras = emp.nome.trim().split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase();
     const avatarHtml = emp.logo
       ? `<img src="${escapeAttr(emp.logo)}" style="width:46px;height:46px;border-radius:50%;object-fit:cover;flex-shrink:0;" alt="${escapeAttr(emp.nome)}">`
-      : `<div style="width:46px;height:46px;border-radius:50%;background:${acc};display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;font-weight:700;flex-shrink:0;">${letras}</div>`;
+      : `<div style="width:46px;height:46px;border-radius:50%;background:${acc};display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;font-weight:700;flex-shrink:0;">${escapeHtml(letras)}</div>`;
     const dots = [1,2,3,4].map(i=>{
       const cor = (bookingState._done || i < bookingState._step) ? acc
                 : i === bookingState._step ? acc+'80'
@@ -478,38 +479,6 @@ function renderAgendar(emp){
 
 let lastBooking = null;
 
-// ---------- CONFIRMAÇÃO ----------
-function renderConfirmacao(emp){
-  applyAccent(emp.corPrincipal);
-  const b = lastBooking;
-  if(!b){
-    render(`<div class="container"><div class="empty"><h2 class="display">Nenhum agendamento recente</h2><button class="btn" onclick="goto({empresa:'${emp.slug}'})">Voltar</button></div></div>`);
-    return;
-  }
-  const srvNomesConf = (b.servicosNomes||[b.servicoNome]).filter(Boolean);
-  const dataFmt = new Date(b.data+"T00:00:00").toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'});
-  const msg = `Olá!\n\nGostaria de confirmar meu agendamento!\n\nData: ${dataFmt}\nHorário: ${b.hora}\nServiço: ${srvNomesConf.join(', ')}\nNome: ${b.nome}`;
-  const numero = '55' + (emp.whatsapp||"").replace(/\D/g,"").replace(/^0/,"");
-  const link = `https://wa.me/${numero}?text=${encodeURIComponent(msg)}`;
-  render(`
-    <div class="container">
-      <div class="card" style="text-align:center;">
-        <div style="font-size:52px;margin-bottom:8px;">✓</div>
-        <div class="eyebrow" style="color:var(--ok);">Agendamento confirmado</div>
-        <h1 class="display">Agendado!</h1>
-        <div style="text-align:left;background:var(--paper);border-radius:10px;padding:16px;margin:20px 0;">
-          <div><strong>Serviço:</strong> ${escapeHtml(srvNomesConf.join(', '))}</div>
-          <div><strong>Dia:</strong> ${dataFmt}</div>
-          <div><strong>Hora:</strong> ${b.hora}</div>
-          <div><strong>Nome:</strong> ${escapeHtml(b.nome)}</div>
-        </div>
-        ${emp.whatsapp ? `<a href="${link}" target="_blank" rel="noopener noreferrer"><button class="btn ghost" style="width:100%;">Enviar confirmação pelo WhatsApp</button></a>` : ''}
-        <div style="margin-top:14px;"><button class="icon-btn" onclick="goto({empresa:'${emp.slug}'})">Voltar ao início</button></div>
-      </div>
-    </div>
-  `);
-}
-
 // ---------- LINK DIRETO DE AGENDAMENTO (?ag=UUID) ----------
 async function renderAgConfirmar(emp, agId){
   applyAccent(emp.corPrincipal);
@@ -654,14 +623,20 @@ window.recuperarSenha = async (slug)=>{
 };
 
 // Salva marcacao no banco diretamente pelo supabaseClient
+// (o supabase-js nao lanca excecao em erro de banco: devolve { error }, que antes era ignorado)
 async function agMarkFetch(body){
+  let error = null;
   try {
     if(body.ag_id && body.campo){
-      await supabaseClient.from('agendamentos').update({ [body.campo]: true }).eq('id', body.ag_id);
+      ({ error } = await supabaseClient.from('agendamentos').update({ [body.campo]: true }).eq('id', body.ag_id));
     } else if(body.cliente_id && body.campo){
       const valor = body.reset ? null : new Date().toISOString();
-      await supabaseClient.from('clientes').update({ [body.campo]: valor }).eq('id', body.cliente_id);
+      ({ error } = await supabaseClient.from('clientes').update({ [body.campo]: valor }).eq('id', body.cliente_id));
     }
-  } catch(_){}
+  } catch(e){ error = e; }
+  if(error){
+    console.error('Erro ao salvar marcacao:', error);
+    toast('Não foi possível salvar a marcação. Verifique sua conexão.','err');
+  }
 }
 

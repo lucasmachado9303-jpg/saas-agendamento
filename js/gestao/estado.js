@@ -7,7 +7,6 @@ let editandoId;
 let novoAgState;
 let configurarSub; // null | 'servicos' | 'horarios' | 'personalizar' | 'mensagens'
 let _waMenuId; // id do agendamento com dropdown WA aberto
-let _horariosDiaSel; // dia selecionado na aba de config de horarios (0-6)
 let _inativoWaMenuId; // id do cliente inativo com dropdown WA aberto
 let _rodaH, _rodaS, _rodaV; // estado da roda de cores (HSV)
 let personalizarDirty;
@@ -21,7 +20,6 @@ let _gFinData; // ISO date para dia, 'YYYY-MM' para mes
 let _gFinLancamentos; // registros de lancamentos_financeiros
 let _gFinModal; // { tipo, agId?, descricao, valor, editId? }
 let _gFinFiltro; // 'todos' | 'entradas' | 'saidas'
-let _gFinCarregando;
 let _gFinAgLancados; // IDs de agendamentos já lançados — reconstruído do banco em cada chamada de gFinCarregar()
 let _finalizarAgId; // ID do agendamento com modal "Finalizar" aberto
 let _finalizarAcao; // null = etapa 1 (escolha) | 'atendido' = etapa 2 (valor)
@@ -42,9 +40,13 @@ let _clientesAba; // 'todos' | 'ausentes'
 let _clientesInativosFiltro; // faixa selecionada: 15 | 30 | 45 (compartilhada com o dashboard)
 let _clientesBannerDismissed;
 let _notas; // registros da tabela notas
-let _notaModal; // { texto, cor, editId? }
-let _notasCarregando;
+let _notaModal; // { texto, cor }
 let _novoAgCriarCliente;
 let _novoAgServicos; // ids dos servicos selecionados no modal manual
 let _rodaWinListeners;
 let _dragFromId;
+let _personalizarOriginal; // copia dos campos ao entrar em Personalizar (para "Descartar" desfazer de verdade)
+// Contadores de requisicao: so a resposta mais recente e aplicada (nao precisam ser reiniciados)
+let _notasSeq = 0;
+let _gFinSeq = 0;
+let _clientesSeq = 0;

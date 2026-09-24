@@ -9,29 +9,57 @@ const LABEL_POR_TIPO = {
 
 let empresas = [];
 let agendamentos = [];
-let loaded = false;
 
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('/sw.js').catch(()=>{});
 }
 
+// Valores que vem do banco e sao inseridos no HTML (inclusive dentro de onclick) passam por aqui.
+// O banco aceita escrita publica (agendamentos) e do gestor (empresa, botoes, horarios),
+// entao o formato nao e confiavel: sem isso, um campo malicioso executaria codigo na tela do gestor/master.
+function slugSeguro(s){ return String(s || '').toLowerCase().replace(/[^a-z0-9-]/g, ''); }
+function horaSegura(h){ const m = /^(\d{2}):(\d{2})/.exec(String(h || '')); return m ? m[1] + ':' + m[2] : ''; }
+function dataSegura(d){ const s = String(d || '').slice(0, 10); return /^\d{4}-\d{2}-\d{2}$/.test(s) ? s : ''; }
+function soDigitos(t){ return String(t || '').replace(/\D/g, ''); }
+function corHexSegura(c){ return /^#[0-9a-fA-F]{6}$/.test(String(c || '')) ? String(c) : ''; }
+function urlImagemSegura(u){ return /^https:\/\/[^\s"'()<>\\]+$/.test(String(u || '')) ? String(u) : ''; }
+// Telefone no formato nacional (DDD + numero), sem +55 e sem 0 inicial.
+// Cuidado: 55 tambem e DDD (RS), por isso so remove o 55 quando sobra digito demais.
+function telefoneNacional(v){
+  let d = soDigitos(v);
+  if(d.startsWith('55') && d.length > 11) d = d.slice(2);
+  if(d.startsWith('0')) d = d.slice(1);
+  return d;
+}
+
 async function loadData(){
+  // Carrega so o necessario: master ve todas as empresas; gestor so a dele;
+  // visitante so a empresa do subdominio (antes todo visitante baixava todas as empresas).
+  let qEmpresas = supabaseClient.from('empresas').select('*');
+  if(currentProfile?.role === 'master'){
+    // todas
+  } else if(currentProfile?.role === 'owner_empresa'){
+    qEmpresas = currentProfile.empresa_id ? qEmpresas.eq('id', currentProfile.empresa_id) : null;
+  } else {
+    const _sub = slugDoSubdominio();
+    qEmpresas = _sub ? qEmpresas.eq('slug', _sub) : null;
+  }
   try{
-    const { data, error } = await supabaseClient.from('empresas').select('*');
+    const { data, error } = qEmpresas ? await qEmpresas : { data: [], error: null };
     if(error) throw error;
     empresas = (data || []).map(e => ({
       id:                   e.id,
-      slug:                 e.slug,
-      nome:                 e.nome,
-      fotoUrl:              e.foto_url              || '',
-      whatsapp:             e.whatsapp              || '',
+      slug:                 slugSeguro(e.slug),
+      nome:                 e.nome                  || '',
+      fotoUrl:              urlImagemSegura(e.foto_url),
+      whatsapp:             soDigitos(e.whatsapp),
 
       bloqueada:            e.bloqueada,
       status:               e.status || 'ativa',
       trialExpiraEm:        e.trial_expira_em || null,
       // Campos de personalização (Fase 2)
       descricao:            e.descricao             || '',
-      logo:                 e.logo                  || '',
+      logo:                 urlImagemSegura(e.logo),
       corPrincipal:         sanitizeCor(e.cor_principal || '#3d1f3a'),
       textoDestaque:        e.texto_destaque        || '',
       // Mensagens de lembrete
@@ -72,7 +100,7 @@ async function loadData(){
       [rServicos, rHorarios, rBloqueios, rBotoes, rAg, rProfiles] = await Promise.all(queries);
     }catch(e){
       console.error('Erro ao carregar dados:', e);
-      agendamentos = []; loaded = true; return;
+      agendamentos = []; return;
     }
 
     (rServicos.data || []).forEach(s => {
@@ -83,8 +111,13 @@ async function loadData(){
     (rHorarios.data || []).forEach(h => {
       const emp = empresas.find(e => e.id === h.empresa_id);
       if(!emp) return;
+      // _dias_ guarda dias da semana (0-6); as demais chaves guardam horarios HH:MM
+      const valor = h.mes === '_dias_'
+        ? (/^[0-6]$/.test(String(h.hora)) ? String(h.hora) : '')
+        : horaSegura(h.hora);
+      if(!valor) return;
       emp.horariosPorMes[h.mes] = emp.horariosPorMes[h.mes] || [];
-      if(!emp.horariosPorMes[h.mes].includes(h.hora)) emp.horariosPorMes[h.mes].push(h.hora);
+      if(!emp.horariosPorMes[h.mes].includes(valor)) emp.horariosPorMes[h.mes].push(valor);
     });
     // Distingue empresa nunca configurada (_dias_ undefined = default todos os dias)
     // de empresa que explicitamente desativou todos os dias (_dias_ = [] vazio).
@@ -98,7 +131,8 @@ async function loadData(){
 
     (rBloqueios.data || []).forEach(b => {
       const emp = empresas.find(e => e.id === b.empresa_id);
-      if(emp && !emp.bloqueios.find(x => x.id === b.id)) emp.bloqueios.push({ id: b.id, data: b.data, hora: b.hora });
+      const data = dataSegura(b.data), hora = horaSegura(b.hora);
+      if(emp && data && hora && !emp.bloqueios.find(x => x.id === b.id)) emp.bloqueios.push({ id: b.id, data, hora });
     });
 
     (rBotoes.data || []).forEach(b => {
@@ -106,13 +140,15 @@ async function loadData(){
       if(emp && !emp.botoes.find(x => x.id === b.id)) emp.botoes.push({
         id: b.id, nome: b.nome, tipo: b.tipo, link: b.link,
         icone: b.icone || '', ordem: b.ordem, ativo: b.ativo,
-        abrirNovaAba: b.abrir_nova_aba, cor: b.cor || ''
+        abrirNovaAba: b.abrir_nova_aba, cor: corHexSegura(b.cor)
       });
     });
     empresas.forEach(e => e.botoes.sort((a, b) => a.ordem - b.ordem));
 
+    // Agendamentos podem ser criados por qualquer visitante: data/hora/telefone fora do formato sao descartados
+    const agsValidos = (rAg.data || []).filter(a => dataSegura(a.data) && horaSegura(a.hora));
     if(podeVerDadosPessoais){
-      agendamentos = (rAg.data || []).map(a => {
+      agendamentos = agsValidos.map(a => {
         const emp = empresas.find(e => e.id === a.empresa_id);
         let servicosNomes = [];
         try {
@@ -126,21 +162,21 @@ async function loadData(){
           servicoId:           a.servico_id,
           servicoNome:         servicosNomes.length > 1 ? servicosNomes.join(', ') : a.servico_nome,
           servicosNomes:       servicosNomes,
-          data:                a.data,
-          hora:                a.hora,
-          nome:                a.nome_cliente,
-          telefone:            a.telefone,
+          data:                dataSegura(a.data),
+          hora:                horaSegura(a.hora),
+          nome:                a.nome_cliente || '',
+          telefone:            soDigitos(a.telefone),
           criadoEm:            a.criado_em,
           confirmacaoEnviada:  a.confirmacao_enviada || false,
           lembreteEnviado:     a.lembrete_enviado    || false,
           status:              a.status || 'nao_confirmado',
-          tokenCurto:          a.token_curto || null
+          tokenCurto:          a.token_curto ? String(a.token_curto).replace(/[^a-z0-9]/gi, '') : null
         };
       });
     } else {
-      agendamentos = (rAg.data || []).map(a => {
+      agendamentos = agsValidos.map(a => {
         const emp = empresas.find(e => e.id === a.empresa_id);
-        return { slug: emp ? emp.slug : '', data: a.data, hora: a.hora };
+        return { slug: emp ? emp.slug : '', data: dataSegura(a.data), hora: horaSegura(a.hora) };
       });
     }
 
@@ -151,12 +187,11 @@ async function loadData(){
   } else {
     agendamentos = [];
   }
-
-  loaded = true;
 }
 
-async function saveEmpresas(){
-  const toRow = e => ({
+// Converte a empresa da memoria para as colunas do banco
+function _linhaEmpresa(e){
+  return {
     slug:                  e.slug,
     nome:                  e.nome,
     foto_url:              e.fotoUrl              || null,
@@ -172,27 +207,26 @@ async function saveEmpresas(){
     texto_destaque:        e.textoDestaque         || null,
     cancelamento_horas:    e.cancelamentoHoras != null ? e.cancelamentoHoras : 2,
     tipo:                  e.tipo || 'agendamento',
-  });
+  };
+}
 
-  const novas     = empresas.filter(e => !e.id);
-  const existentes = empresas.filter(e =>  e.id);
+// Cria a empresa no banco e preenche e.id. Retorna o erro (ou null).
+async function inserirEmpresa(e){
+  const { data, error } = await supabaseClient.from('empresas').insert(_linhaEmpresa(e)).select('id').single();
+  if(error){ console.error('Erro ao criar empresa:', error); return error; }
+  e.id = data.id;
+  return null;
+}
 
-  if(novas.length > 0){
-    const { data, error } = await supabaseClient
-      .from('empresas').insert(novas.map(toRow)).select();
-    if(error){ console.error('Erro ao criar empresa:', error); return; }
-    (data || []).forEach(row => {
-      const emp = empresas.find(e => e.slug === row.slug);
-      if(emp) emp.id = row.id;
-    });
-  }
-
-  if(existentes.length > 0){
-    const { error } = await supabaseClient
-      .from('empresas')
-      .upsert(existentes.map(e => ({ id: e.id, ...toRow(e) })), { onConflict: 'id' });
-    if(error) console.error('Erro ao atualizar empresa:', error);
-  }
+// Atualiza SO as colunas informadas, SO desta empresa. Antes, salvar qualquer empresa
+// regravava todas com os dados da memoria e desfazia alteracoes feitas pelos gestores.
+async function atualizarEmpresa(e, colunas){
+  const linha = _linhaEmpresa(e);
+  const patch = {};
+  colunas.forEach(c => { patch[c] = linha[c]; });
+  const { error } = await supabaseClient.from('empresas').update(patch).eq('id', e.id);
+  if(error) console.error('Erro ao atualizar empresa:', error);
+  return error || null;
 }
 function slugify(s){
   return s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/(^-|-$)/g,"");
@@ -271,11 +305,6 @@ function defaultEmpresa(){
 function mesKey(d){
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
 }
-function horariosDoMes(emp, key){
-  const uni  = (emp.horariosPorMes && emp.horariosPorMes['_uni_']) || [];
-  const mes  = (key && key !== '_uni_' && emp.horariosPorMes && emp.horariosPorMes[key]) || [];
-  return [...new Set([...uni, ...mes])].sort();
-}
 // Retorna slots para um dia da semana especifico (0=Dom...6=Sab).
 // Usa _dN_ se existir; senao cai em _uni_ para compatibilidade.
 function horariosParaDia(emp, diaSemana){
@@ -306,11 +335,20 @@ function toast(msg, type='info', ms=3200){
   el.textContent = msg;
   c.appendChild(el);
   requestAnimationFrame(()=>requestAnimationFrame(()=>el.classList.add('show')));
-  setTimeout(()=>{ el.classList.remove('show'); el.addEventListener('transitionend',()=>el.remove(),{once:true}); }, ms);
+  setTimeout(()=>{
+    el.classList.remove('show');
+    el.addEventListener('transitionend',()=>el.remove(),{once:true});
+    // Garante a remocao mesmo se a transicao nao disparar (aba em segundo plano, animacoes desligadas)
+    setTimeout(()=>el.remove(), 500);
+  }, ms);
 }
 function friendlyError(err, fallback='Algo deu errado. Tente novamente.'){
   if(!err) return fallback;
-  if(err.code==='23505') return 'Esse horário já está reservado. Escolha outro.';
+  if(err.code==='23505'){
+    // Duplicidade: so e "horario ocupado" quando a restricao violada e a de agendamentos
+    const txt = (err.message || '') + ' ' + (err.details || '');
+    return /agendamentos/i.test(txt) ? 'Esse horário já está reservado. Escolha outro.' : 'Este registro já existe.';
+  }
   if(err.code==='42501'||err.code==='PGRST301') return 'Sem permissão para esta ação.';
   if(err.message && err.message.toLowerCase().includes('network')) return 'Sem conexão. Verifique sua internet.';
   return fallback;
@@ -323,10 +361,7 @@ function mensagemErroRede(e){
 
 function fmtTelStr(val){
   if(!val) return '';
-  let d = String(val).replace(/\D/g,'');
-  if(d.startsWith('55') && d.length > 11) d = d.slice(2);
-  if(d.startsWith('0')) d = d.slice(1);
-  d = d.slice(0,11);
+  const d = telefoneNacional(val).slice(0,11);
   if(d.length > 7) return `(${d.slice(0,2)}) ${d.slice(2,7)}-${d.slice(7)}`;
   if(d.length > 2) return `(${d.slice(0,2)}) ${d.slice(2)}`;
   return d;
@@ -343,15 +378,23 @@ function iniciarPolling(fn){
 function pararPolling(){
   _pollFn = null;
 }
-// Recarrega dados quando o usuário volta para a aba
-document.addEventListener('visibilitychange', async ()=>{
-  if(!document.hidden && _pollFn){
+// Recarrega os dados da tela aberta (painel master ou gestao).
+// Roda ao voltar para a aba e a cada 60s enquanto a aba esta visivel.
+let _atualizandoDados = false;
+async function atualizarDadosDaTela(){
+  if(document.hidden || !_pollFn || _atualizandoDados) return;
+  _atualizandoDados = true;
+  try {
     await loadData();
-    _pollFn();
+    if(_pollFn) _pollFn();
     // Se a gestao estiver na aba de clientes, recarrega a lista junto
     if(typeof window._recarregarClientes === 'function') window._recarregarClientes();
+  } finally {
+    _atualizandoDados = false;
   }
-});
+}
+document.addEventListener('visibilitychange', atualizarDadosDaTela);
+setInterval(atualizarDadosDaTela, 60000);
 
 // ---------- INIT ----------
 let _appInitialized = false;
@@ -469,7 +512,6 @@ async function init(){
     if(agParam){ currentRoute.page = 'ag'; currentRoute.agId = agParam; }
     else if(subPage === 'gestao')      currentRoute.page = 'gestao';
     else if(subPage === 'agendar')     currentRoute.page = 'agendar';
-    else if(subPage === 'confirmacao') currentRoute.page = 'confirmacao';
     // Limpa /app.html da URL para ficar estetico
     if(path === 'app.html' || _pParam){
       const cleanPath = currentRoute.page === 'ag'
@@ -521,15 +563,14 @@ async function init(){
 
 function route(){
   const {master, empresa, page} = getParams();
-  // #35: reseta lastBooking ao sair da tela de confirmacao
-  if(page !== 'confirmacao') lastBooking = null;
+  // #35: o resumo do ultimo agendamento so vale ate a proxima navegacao
+  lastBooking = null;
   if(master){
     renderMaster();
   } else if(empresa){
     const emp = empresas.find(e=>e.slug===empresa);
     if(!emp){ renderNotFound(); return; }
     if(page==="agendar") renderAgendar(emp);
-    else if(page==="confirmacao") renderConfirmacao(emp);
     else if(page==="ag") renderAgConfirmar(emp, currentRoute.agId);
     else if(page==="gestao"){
       const isMaster = currentProfile?.role === 'master';
@@ -564,14 +605,16 @@ function renderNotFound(){
 
 function setPageMeta(title, description, imageUrl){
   document.title = title;
-  const setMeta = (sel, attr, val) => {
-    let el = document.querySelector(sel);
-    if(!el){ el = document.createElement('meta'); document.head.appendChild(el); }
-    el.setAttribute(attr, val);
+  // Cria a tag com o name/property correto quando ela ainda nao existe
+  // (antes criava uma <meta> vazia a cada chamada, que nunca era reencontrada)
+  const setMeta = (attr, chave, val) => {
+    let el = document.querySelector(`meta[${attr}="${chave}"]`);
+    if(!el){ el = document.createElement('meta'); el.setAttribute(attr, chave); document.head.appendChild(el); }
+    el.setAttribute('content', val);
   };
-  setMeta('meta[name="description"]', 'content', description || '');
-  setMeta('meta[property="og:title"]', 'content', title);
-  setMeta('meta[property="og:description"]', 'content', description || '');
-  if(imageUrl) setMeta('meta[property="og:image"]', 'content', imageUrl);
+  setMeta('name', 'description', description || '');
+  setMeta('property', 'og:title', title);
+  setMeta('property', 'og:description', description || '');
+  if(imageUrl) setMeta('property', 'og:image', imageUrl);
 }
 

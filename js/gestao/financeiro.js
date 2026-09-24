@@ -4,15 +4,16 @@
   // ── Financeiro (gestão) ──
 
   async function gFinCarregar(){
-    if(_gFinCarregando) return;
-    _gFinCarregando = true;
+    // Antes, uma carga em andamento fazia a proxima ser ignorada (um lancamento recem-salvo
+    // podia nao aparecer). Agora todas rodam e so a resposta da mais recente e aplicada.
+    const seq = ++_gFinSeq;
     const { data, error } = await supabaseClient
       .from('lancamentos_financeiros')
       .select('*')
       .eq('empresa_id', emp.id)
       .order('data', { ascending: false })
       .order('criado_em', { ascending: false });
-    _gFinCarregando = false;
+    if(seq !== _gFinSeq) return;
     if(!error && data){
       _gFinLancamentos = data;
       _gFinAgLancados = new Set(data.filter(l=>l.agendamento_id).map(l=>l.agendamento_id));
@@ -232,13 +233,14 @@ function _registrarHandlersFinanceiro(){
     draw();
   };
 
-  window.gFinExcluir = async (id)=>{
-    if(!confirm('Excluir este lançamento?')) return;
-    const { error, count } = await supabaseClient.from('lancamentos_financeiros').delete({ count: 'exact' }).eq('id', id);
-    if(error){ toast('Erro ao excluir: ' + error.message,'err'); return; }
-    if(count === 0){ toast('Sem permissão para excluir este lançamento.','err'); return; }
-    toast('Lançamento removido.','ok');
-    await gFinCarregar();
+  window.gFinExcluir = (id)=>{
+    confirmarAcao('Excluir este lançamento?', async ()=>{
+      const { error, count } = await supabaseClient.from('lancamentos_financeiros').delete({ count: 'exact' }).eq('id', id);
+      if(error){ toast(friendlyError(error,'Erro ao excluir lançamento.'),'err'); return; }
+      if(count === 0){ toast('Sem permissão para excluir este lançamento.','err'); return; }
+      toast('Lançamento removido.','ok');
+      await gFinCarregar();
+    });
   };
 
   window.gFinFecharModal = ()=>{ _gFinModal=null; draw(); };

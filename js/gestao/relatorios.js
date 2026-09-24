@@ -157,10 +157,10 @@
         ? `<div style="text-align:center;padding:28px;color:#aaa;font-size:13px;">Nenhum cliente neste mês</div>`
         : lista_cli.map(c=>`
             <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:0.5px solid #f2f2f7;">
-              <div style="width:34px;height:34px;border-radius:50%;background:#f5f3ff;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;font-weight:700;color:#7c3aed;">${(c.nome||'?')[0].toUpperCase()}</div>
+              <div style="width:34px;height:34px;border-radius:50%;background:#f5f3ff;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;font-weight:700;color:#7c3aed;">${escapeHtml((c.nome||'?')[0].toUpperCase())}</div>
               <div style="flex:1;min-width:0;">
                 <div style="font-size:14px;font-weight:600;color:#1a1a1a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(c.nome)}</div>
-                <div style="font-size:12px;color:#8e8e93;">${c.telefone||'sem telefone'}</div>
+                <div style="font-size:12px;color:#8e8e93;">${c.telefone ? escapeHtml(fmtTelStr(c.telefone)) : 'sem telefone'}</div>
               </div>
               <div style="font-size:13px;font-weight:700;color:#7c3aed;flex-shrink:0;">${c.count} ${c.count===1?'vez':'vezes'}</div>
             </div>`).join('');
@@ -234,10 +234,6 @@ function _registrarHandlersRelatorios(){
       csv += ags.map(a=>`${fmtData(a.data)};${a.hora};${csvField(a.nome)};${csvField(a.servicoNome)};${stLabel(a.status)}`).join('\n');
       nome = `agendamentos_${mesLabel}.csv`;
     }
-    const blob = new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8;'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href=url; a.download=nome; a.click();
-    URL.revokeObjectURL(url);
+    baixarArquivo('﻿'+csv, nome, 'text/csv;charset=utf-8;');
   };
 }

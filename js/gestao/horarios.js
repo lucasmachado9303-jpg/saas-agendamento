@@ -24,12 +24,8 @@ function _registrarHandlersHorarios(){
     if(v.length >= 3) v = v.slice(0,2) + ':' + v.slice(2);
     el.value = v;
   };
-  window.selecionarHorarioDia = (dia)=>{
-    _horariosDiaSel = dia;
-    draw();
-  };
   window.adicionarHorario = async (dia)=>{
-    const el = document.getElementById('hi-'+dia) || document.getElementById('novoHorarioInput');
+    const el = document.getElementById('hi-'+dia);
     const raw = el ? el.value.trim() : '';
     const val = raw.length === 4 && !raw.includes(':') ? raw.slice(0,2)+':'+raw.slice(2) : raw;
     const horaValida = /^([01]\d|2[0-3]):([0-5]\d)$/.test(val);
@@ -57,8 +53,10 @@ function _registrarHandlersHorarios(){
     // Se nao existe chave pro dia, cria com base em _uni_ antes de remover
     if(!emp.horariosPorMes[key]){
       const base = [...(emp.horariosPorMes['_uni_'] || [])];
-      for(const slot of base){
-        await supabaseClient.from('horarios_disponiveis').insert({ empresa_id: emp.id, mes: key, hora: slot });
+      if(base.length){
+        const { error: errBase } = await supabaseClient.from('horarios_disponiveis')
+          .insert(base.map(slot => ({ empresa_id: emp.id, mes: key, hora: slot })));
+        if(errBase){ toast(friendlyError(errBase,'Erro ao remover horário. Tente novamente.'),'err'); return; }
       }
       emp.horariosPorMes[key] = base;
     }
@@ -66,28 +64,6 @@ function _registrarHandlersHorarios(){
       .delete().eq('empresa_id', emp.id).eq('mes', key).eq('hora', h);
     if(error){ toast(friendlyError(error,'Erro ao remover horário. Tente novamente.'),'err'); return; }
     emp.horariosPorMes[key] = (emp.horariosPorMes[key]||[]).filter(x=>x!==h);
-    draw();
-  };
-  window.copiarHorarioParaTodos = async (diaOrigem)=>{
-    emp.horariosPorMes = emp.horariosPorMes || {};
-    const keyOrigem = '_d' + diaOrigem + '_';
-    const slots = horariosParaDia(emp, diaOrigem);
-    const diasTrabalho = (emp.horariosPorMes['_dias_'] || []).map(Number);
-    const diasDestino = diasTrabalho.filter(d => d !== diaOrigem);
-    if(!diasDestino.length){ return; }
-    toast('Copiando...','info');
-    for(const d of diasDestino){
-      const key = '_d' + d + '_';
-      // Remove slots existentes do dia destino
-      await supabaseClient.from('horarios_disponiveis').delete().eq('empresa_id', emp.id).eq('mes', key);
-      emp.horariosPorMes[key] = [];
-      // Insere os slots do dia origem
-      for(const slot of slots){
-        await supabaseClient.from('horarios_disponiveis').insert({ empresa_id: emp.id, mes: key, hora: slot });
-        emp.horariosPorMes[key].push(slot);
-      }
-    }
-    toast('Horários copiados!','ok');
     draw();
   };
   window.toggleDiaSemana = async (dia)=>{

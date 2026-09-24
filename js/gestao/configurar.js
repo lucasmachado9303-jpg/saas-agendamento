@@ -113,13 +113,13 @@
         </div>
         <div style="background:#fff;border:0.5px solid #e4e4e7;border-radius:16px;padding:18px;margin-bottom:14px;box-shadow:0 1px 6px rgba(0,0,0,0.07);">
           <div style="font-size:15px;font-weight:700;color:#1a1a1a;margin-bottom:6px;">Prazo mínimo para cancelar</div>
-          <div style="font-size:13px;color:#8e8e93;margin-bottom:14px;line-height:1.5;">Quantas horas antes do horário o cliente pode cancelar pelo link público. Use 0 para desativar o cancelamento pelo cliente.</div>
+          <div style="font-size:13px;color:#8e8e93;margin-bottom:14px;line-height:1.5;">Até quantas horas antes do horário o cliente pode cancelar pelo link. Use 0 para não ter prazo mínimo.</div>
           <div class="field" style="margin:0;">
             <label>Horas de antecedência</label>
             <input id="cancelamentoHoras" type="number" min="0" max="168" step="1" value="${horas}" placeholder="0"
               style="width:100%;border:0.5px solid #d1d5db;border-radius:10px;padding:10px 12px;font-size:16px;font-family:inherit;color:#1a1a1a;"/>
           </div>
-          <div style="font-size:12px;color:#8e8e93;margin-top:8px;line-height:1.6;">Exemplo: 0 = Você não aceita cancelamentos<br>Exemplo: 2 = O cliente pode cancelar até 2 horas antes</div>
+          <div style="font-size:12px;color:#8e8e93;margin-top:8px;line-height:1.6;">Exemplo: 0 = O cliente pode cancelar até o horário marcado<br>Exemplo: 2 = O cliente pode cancelar até 2 horas antes</div>
         </div>
         <button class="btn" onclick="salvarCancelamentoHoras('${emp.id}')">Salvar</button>
       `;
@@ -254,6 +254,8 @@
           <div style="font-size:12px;font-weight:700;color:#8e8e93;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:8px;padding:0 4px;">${titulo}</div>
           <div style="background:#fff;border-radius:16px;box-shadow:0 2px 12px rgba(0,0,0,0.06);overflow:hidden;">${itens}</div>
         </div>`;
+      // Mesmo nome do item no menu Configurar (varia com o tipo de conta)
+      const P = emp.tipo === 'pagina' ? 'Personalize sua pagina' : 'Personalize seu link';
       return `
         <style>details[open] summary svg{transform:rotate(180deg);}</style>
         <div style="position:relative;display:flex;align-items:center;margin-bottom:20px;min-height:36px;">
@@ -265,51 +267,51 @@
           ajudaItem('Como funciona a agen+?',
             'A agen+ cria uma página de agendamento com o seu nome e link exclusivo. Seus clientes acessam esse link, escolhem o serviço, o dia e o horário — e o agendamento aparece automaticamente no seu painel. Sem precisar de app ou mensagem no WhatsApp.')
           + ajudaItem('Como configurar minha página pela primeira vez?',
-            'Vá em <b>Configurar → Serviços oferecidos</b> e adicione os serviços com nome e duração. Depois vá em <b>Horários de agendamento</b> e marque os dias e horários que você atende. Por último, vá em <b>Personalize sua página</b> para colocar seu nome, logo e cor.')
+            `Vá em <b>Configurar → Serviços oferecidos</b> e adicione os serviços com nome e preço. Depois, em <b>Horários de agendamento</b>, ative os dias em que você atende e adicione os horários de cada dia. Por último, em <b>${P}</b>, coloque seu nome, logo, imagem de fundo e cor.`)
           + ajudaItem('Como meu cliente agenda?',
-            'Compartilhe seu link (ex: seuNome.agenplus.com.br). O cliente abre o link, escolhe o serviço, escolhe o dia e horário disponível, informa o nome e telefone, e confirma. O agendamento aparece no seu painel automaticamente.', true)
+            'Compartilhe seu link (ex: seuNome.agenplus.com.br). O cliente abre o link, escolhe um ou mais serviços, o dia e o horário disponível, informa nome e telefone e confirma. O agendamento aparece no seu painel automaticamente.', true)
         )}
         ${ajudaCat('Meu link',
           ajudaItem('Como encontrar meu link de agendamento?',
-            'Vá em <b>Configurar → Link público</b>. Lá aparece seu link completo. Você pode copiar ou abrir diretamente.')
+            'Vá em <b>Configurar → Link público</b>. Lá aparece seu link completo, com as opções <b>Abrir</b>, <b>Copiar link</b> e <b>Compartilhar</b>.')
           + ajudaItem('Como compartilhar o link?',
-            'Vá em <b>Configurar → Link público</b> e toque em <b>Compartilhar link</b>. Você pode mandar pelo WhatsApp, Instagram ou qualquer outro app. Também dá para colocar na bio do Instagram.')
+            'Vá em <b>Configurar → Link público</b> e toque em <b>Compartilhar</b>. Você pode mandar pelo WhatsApp, Instagram ou qualquer outro app. Também dá para colocar na bio do Instagram.')
           + ajudaItem('Como personalizar a aparência da minha página?',
-            'Vá em <b>Configurar → Personalize sua página</b>. Lá você pode alterar: nome exibido, descrição, logo, foto de capa, cor de destaque e os textos dos botões da sua página.', true)
+            `Vá em <b>Configurar → ${P}</b>. Lá você altera o nome, a descrição, o texto de destaque, o texto do botão de agendamento, a logo, a imagem de fundo, a cor principal e os botões da página. Toque em <b>Salvar</b> no final.`, true)
         )}
         ${ajudaCat('Agenda',
           ajudaItem('Como ver os agendamentos do dia?',
-            'Abra a aba <b>Agenda</b> na barra inferior. Ela mostra todos os agendamentos do dia atual. Deslize para os lados para navegar entre os dias.')
+            'Abra a aba <b>Agenda</b>. Ela começa no dia de hoje. Use as setas <b>‹ ›</b> ao lado da data, ou toque na data, para ver outros dias.')
           + ajudaItem('Como bloquear um horário?',
-            'Na aba <b>Agenda</b>, toque no horário que deseja bloquear e selecione <b>Bloquear horário</b>. O horário ficará indisponível para novos agendamentos.')
+            'Na aba <b>Agenda</b>, toque em <b>Bloquear</b> ao lado de um horário livre. Para fechar o dia inteiro, use <b>Bloquear dia todo</b>. O horário fica indisponível para novos agendamentos.')
           + ajudaItem('Como cancelar um agendamento?',
-            'Na aba <b>Agenda</b>, toque no agendamento e selecione <b>Cancelar</b>. O horário volta a ficar disponível.')
+            'Na aba <b>Agenda</b>, toque em <b>Cancelar</b> no agendamento. O horário volta a ficar disponível e o cancelado aparece no fim do dia, em <b>Cancelados</b>.')
           + ajudaItem('Como marcar um agendamento como atendido?',
-            'Na aba <b>Agenda</b>, toque no agendamento e selecione <b>Marcar como atendido</b>. Isso registra o atendimento e, se você quiser, já lança o valor no financeiro.', true)
+            'Depois que o horário passa, o agendamento mostra o botão <b>Finalizar</b>. Toque nele, escolha <b>Atendido</b> e informe o valor recebido: ele é lançado no Financeiro. Os pendentes também aparecem na aba Financeiro.', true)
         )}
         ${ajudaCat('Clientes',
           ajudaItem('Como cadastrar um cliente manualmente?',
-            'Vá na aba <b>Clientes</b> e toque no botão <b>+ Novo</b> no canto superior direito. Preencha o nome e telefone e salve.')
+            'Vá na aba <b>Clientes</b> e toque no botão <b>Novo</b> no canto superior direito. Preencha o nome e telefone e salve.')
           + ajudaItem('O que é a aba Ausentes?',
-            'A aba <b>Ausentes</b> mostra clientes que não agendam há mais de 30 dias. Você pode tocar em um cliente e enviar uma mensagem personalizada pelo WhatsApp para trazê-los de volta.')
+            'A aba <b>Ausentes</b> mostra clientes que não agendam há 15 dias ou mais, separados em <b>+15</b>, <b>+30</b> e <b>+45 dias</b>. Toque no botão do WhatsApp ao lado do cliente para enviar a mensagem de cliente ausente.')
           + ajudaItem('Como enviar lembrete de agendamento pelo WhatsApp?',
-            'Na aba <b>Agenda</b>, abra um agendamento e toque em <b>Lembrete</b>. O app vai abrir o WhatsApp já com a mensagem preenchida para você enviar ao cliente.', true)
+            'Na aba <b>Agenda</b>, toque em <b>WhatsApp</b> no agendamento e escolha <b>Lembrete</b> (ou <b>Confirmação</b>). O WhatsApp abre com a mensagem pronta para você enviar. Os textos podem ser alterados em <b>Configurar → Configurar mensagens</b>.', true)
         )}
         ${ajudaCat('Financeiro',
           ajudaItem('Como registrar uma entrada ou saída?',
-            'Vá na aba <b>Financeiro</b> e toque em <b>+ Lançamento</b>. Informe se é uma entrada ou saída, o valor, a descrição e a data. O lançamento aparece no resumo do mês.')
+            'Vá na aba <b>Financeiro</b> e toque em <b>+ Receita</b> ou <b>+ Despesa</b>. Informe a descrição e o valor. O lançamento entra no dia que está selecionado.')
           + ajudaItem('Como ver o faturamento do mês?',
-            'Na aba <b>Financeiro</b>, o resumo do mês aparece no topo com o total de entradas, saídas e saldo. Deslize para ver meses anteriores.', true)
+            'Na aba <b>Financeiro</b>, toque em <b>Mês</b> no topo: aparecem as receitas, despesas e o saldo do mês. Use as setas para ver outros meses. Em <b>Configurar → Relatórios</b> há o resumo mensal com exportação em CSV.', true)
         )}
         ${ajudaCat('Configurações',
           ajudaItem('Como adicionar ou editar um serviço?',
-            'Vá em <b>Configurar → Serviços oferecidos</b>. Toque em <b>+ Adicionar serviço</b> para criar um novo, ou toque em um serviço existente para editar o nome, duração e descrição.')
+            'Vá em <b>Configurar → Serviços oferecidos</b>. Toque em <b>Novo serviço</b> para criar um, no lápis para editar o nome e o preço, ou na lixeira para excluir.')
           + ajudaItem('Como configurar os dias e horários de atendimento?',
-            'Vá em <b>Configurar → Horários de agendamento</b>. Ative os dias da semana que você trabalha e defina os horários de início e fim para cada dia.')
+            'Vá em <b>Configurar → Horários de agendamento</b>. Ative os dias da semana em que você atende e, em cada dia, toque em <b>+ Adicionar</b> para incluir um horário (ex.: 09:00).')
           + ajudaItem('Como trocar o nome do meu link (endereço)?',
-            'Vá em <b>Configurar → Personalize sua página</b> e altere o campo <b>Nome do link</b>. O link novo será seuNovoNome.agenplus.com.br.')
+            `Vá em <b>Configurar → ${P}</b>, altere o campo <b>Link público</b> e toque em <b>Salvar link</b>. O endereço antigo deixa de funcionar e você será levado para o novo.`)
           + ajudaItem('Como trocar a logo e a cor da página?',
-            'Vá em <b>Configurar → Personalize sua página</b>. Toque na logo para substituir a imagem e use o seletor de cor para escolher a cor de destaque da sua página.', true)
+            `Vá em <b>Configurar → ${P}</b>. Use <b>Enviar logo</b> e <b>Enviar imagem de fundo</b> para as imagens e toque na <b>Cor principal</b> para escolher na roda de cores. Depois toque em <b>Salvar</b>.`, true)
         )}
         <div style="text-align:center;padding:8px 0 4px;">
           <p style="font-size:13px;color:#8e8e93;">Não encontrou o que procurava?</p>
@@ -392,7 +394,7 @@ function _registrarHandlersConfigurar(){
 
   window.salvarCancelamentoHoras = async (empresaId)=>{
     const val = parseInt(document.getElementById('cancelamentoHoras')?.value||'', 10);
-    if(isNaN(val)||val<0){ toast('Digite um número de horas válido (0 = sem limite).','err'); return; }
+    if(isNaN(val)||val<0||val>168){ toast('Digite um número de horas de 0 a 168 (0 = sem prazo mínimo).','err'); return; }
     const { error } = await supabaseClient.from('empresas').update({ cancelamento_horas: val }).eq('id', empresaId);
     if(error){ toast('Erro ao salvar.','err'); return; }
     emp.cancelamentoHoras = val;
@@ -401,6 +403,12 @@ function _registrarHandlersConfigurar(){
     configurarSub = null; draw();
   };
 
-  window.configurarIr = (sub)=>{ configurarSub=sub; personalizarDirty=false; _removendoServicoIdx=null; draw(); };
+  window.configurarIr = (sub)=>{
+    configurarSub=sub; personalizarDirty=false; _removendoServicoIdx=null;
+    // Guarda os campos ao entrar em Personalizar, para "Descartar"/"Voltar" desfazerem o que nao foi salvo
+    if(sub === 'personalizar') _personalizarOriginal = { nome:emp.nome, descricao:emp.descricao, textoDestaque:emp.textoDestaque, textoAgendar:emp.textoAgendar, corPrincipal:emp.corPrincipal };
+    if(sub === 'relatorios') _relAba = null; // sempre abre no menu de relatorios
+    draw();
+  };
   window.irParaHorarios = ()=>{ corner='configurar'; configurarSub='horarios'; draw(); };
 }

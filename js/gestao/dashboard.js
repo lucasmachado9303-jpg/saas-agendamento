@@ -104,7 +104,7 @@
       return `
         <div style="position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px;" onclick="if(event.target===this) fecharNota()">
           <div style="background:#fff;border-radius:16px;padding:20px;width:100%;max-width:400px;box-shadow:0 8px 32px rgba(0,0,0,0.18);">
-            <div style="font-weight:700;font-size:16px;margin-bottom:14px;">${m.editId?'Editar anotação':'Nova anotação'}</div>
+            <div style="font-weight:700;font-size:16px;margin-bottom:14px;">Nova anotação</div>
             <div class="field">
               <label>Anotação</label>
               <textarea id="notaTexto" maxlength="500" rows="4" style="resize:vertical;min-height:90px;" placeholder="Escreva sua anotação">${escapeHtml(m.texto||'')}</textarea>
@@ -165,14 +165,15 @@
   // ── Bloco de notas (dashboard) ──
 
   async function carregarNotas(){
-    if(_notasCarregando) return;
-    _notasCarregando = true;
+    // Antes, uma carga em andamento fazia a proxima ser ignorada (a nota recem-salva nao aparecia).
+    // Agora todas rodam e so a resposta da mais recente e aplicada.
+    const seq = ++_notasSeq;
     const { data, error } = await supabaseClient
       .from('notas')
       .select('*')
       .eq('empresa_id', emp.id)
       .order('criado_em', { ascending: false });
-    _notasCarregando = false;
+    if(seq !== _notasSeq) return;
     if(!error && data) _notas = data;
     if(corner === 'dashboard') draw();
   }
@@ -203,10 +204,12 @@ function _registrarHandlersDashboard(){
     await carregarNotas();
   };
 
-  window.removerNota = async (id)=>{
-    const { error } = await supabaseClient.from('notas').delete().eq('id', id);
-    if(error){ toast(friendlyError(error,'Erro ao excluir anotação.'),'err'); return; }
-    _notas = _notas.filter(n=>n.id !== id);
-    draw();
+  window.removerNota = (id)=>{
+    confirmarAcao('Excluir esta anotação?', async ()=>{
+      const { error } = await supabaseClient.from('notas').delete().eq('id', id);
+      if(error){ toast(friendlyError(error,'Erro ao excluir anotação.'),'err'); return; }
+      _notas = _notas.filter(n=>n.id !== id);
+      draw();
+    });
   };
 }

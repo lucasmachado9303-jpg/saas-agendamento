@@ -65,8 +65,6 @@
       .g-dash-mode .container.wide { height:100dvh; padding:24px 16px 16px; }
     }
 
-    .g-topbar { height:52px; display:flex; align-items:center; justify-content:space-between; padding:0 20px; background:#fff; box-shadow:0 4px 16px rgba(0,0,0,0.10); color:#1a1a1a; }
-    .g-topbar .brand { font-family:'Nunito',sans-serif; font-weight:800; font-size:18px; }
 
     /* ── Botões de agendamento ── */
     .ag-btn {
@@ -84,10 +82,6 @@
       letter-spacing:.01em;
       white-space:nowrap;
     }
-    .ag-btn-edit  { background:#fff; border:1px solid #d1d5db; color:#374151; }
-    .ag-btn-edit:hover { background:#f9fafb; }
-    .ag-btn-cancel { background:#fff; border:1px solid #fca5a5; color:#dc2626; }
-    .ag-btn-cancel:hover { background:#fef2f2; }
     .ag-btn-wa  { background:#f0fdf4; border:1px solid #86efac; color:#16a34a; }
     .ag-btn-wa:hover { background:#dcfce7; }
     .ag-wa-dd-item {
@@ -135,6 +129,9 @@
   </style>`;
 
   function draw(){
+    // Cargas assincronas (clientes, notas, financeiro) terminam depois; se o usuario ja saiu
+    // da gestao (ex.: master voltou ao painel), nao redesenha a gestao por cima da outra tela.
+    if(currentRoute.page !== 'gestao') return;
     preservarCamposPersonalizar();
     const isMaster = currentProfile?.role === 'master';
     const navFiltrado = emp.tipo === 'pagina'
@@ -155,6 +152,12 @@
 
     const cardStyle = (corner==='configurar' || corner==='financeiro' || corner==='dashboard' || corner==='clientes' || corner==='relatorios' || corner===null) ? 'background:none;box-shadow:none;padding:0;' : '';
 
+    // Trial vencido: so avisa (a empresa continua funcionando; bloquear e decisao manual do master)
+    const trialVencido = emp.status === 'trial' && emp.trialExpiraEm && new Date(emp.trialExpiraEm) < new Date();
+    const avisoTrial = trialVencido
+      ? `<div role="status" style="background:#fff8ec;border:1px solid #fcd34d;border-radius:12px;padding:12px 14px;margin-bottom:14px;font-size:13px;color:#92400e;line-height:1.5;flex-shrink:0;"><strong>Seu período de teste terminou.</strong> Para continuar usando a Agen+, fale com o suporte: <a href="mailto:suporte@agenplus.com.br" style="color:#92400e;font-weight:700;">suporte@agenplus.com.br</a></div>`
+      : '';
+
 
     render(`
       ${finalizarModalHtml()}
@@ -168,6 +171,7 @@
         </nav>
         <div class="g-content">
           <div class="container wide">
+            ${avisoTrial}
             <div class="card" style="${cardStyle}">${body}</div>
           </div>
         </div>
@@ -180,6 +184,8 @@
 function _registrarHandlersNucleo(){
 
   window.setCorner = (c)=>{
+    // Saindo de Personalizar sem salvar: desfaz o que foi digitado (ver _restaurarPersonalizar)
+    if(configurarSub === 'personalizar' && _personalizarOriginal) Object.assign(emp, _personalizarOriginal);
     // Reset de estado comum
     corner=c; editandoId=null; novoAgState=null; configurarSub=null;
     _removendoServicoIdx=null; _waMenuId=null; _gFinModal=null; _notaModal=null; _finalizarAgId=null; _finalizarAcao=null; _novoAgModalOpen=false;
@@ -212,8 +218,8 @@ function _registrarHandlersNucleo(){
 // ---------- GESTÃO (PAINEL) ----------
 function renderGestao(empInicial){
   // Estado declarado em estado.js; aqui recebe os valores iniciais a cada abertura.
-  // emp e reatribuido pelo polling, que recria os objetos de empresa a cada 30s,
-  // senão a tela congela nos dados antigos.
+  // emp e reatribuido na atualizacao automatica (atualizarDadosDaTela, em core.js),
+  // que recria os objetos de empresa; senão a tela congela nos dados antigos.
   emp = empInicial;
   setFavicon(false);
   applyAccent('#1c1917');
@@ -224,12 +230,12 @@ function renderGestao(empInicial){
   novoAgState = null;
   configurarSub = emp.tipo === 'pagina' ? 'personalizar' : null; // null | 'servicos' | 'horarios' | 'personalizar' | 'mensagens'
   _waMenuId = null; // id do agendamento com dropdown WA aberto
-  _horariosDiaSel = null; // dia selecionado na aba de config de horarios (0-6)
   _inativoWaMenuId = null; // id do cliente inativo com dropdown WA aberto
 
   _rodaH = 0, _rodaS = 0, _rodaV = 100; // estado da roda de cores (HSV)
 
   personalizarDirty = false;
+  _personalizarOriginal = { nome:emp.nome, descricao:emp.descricao, textoDestaque:emp.textoDestaque, textoAgendar:emp.textoAgendar, corPrincipal:emp.corPrincipal };
   novoBotaoState = null;
   editandoBotaoId = null;
   _removendoServicoIdx = null;
@@ -242,7 +248,6 @@ function renderGestao(empInicial){
   _gFinLancamentos = []; // registros de lancamentos_financeiros
   _gFinModal = null; // { tipo, agId?, descricao, valor, editId? }
   _gFinFiltro = 'todos'; // 'todos' | 'entradas' | 'saidas'
-  _gFinCarregando = false;
   _gFinAgLancados = new Set(); // IDs de agendamentos já lançados — reconstruído do banco em cada chamada de gFinCarregar()
   _finalizarAgId  = null; // ID do agendamento com modal "Finalizar" aberto
   _finalizarAcao = null; // null = etapa 1 (escolha) | 'atendido' = etapa 2 (valor)
@@ -271,8 +276,7 @@ function renderGestao(empInicial){
 
   // Estado do bloco de notas (dashboard)
   _notas = [];          // registros da tabela notas
-  _notaModal = null;    // { texto, cor, editId? }
-  _notasCarregando = false;
+  _notaModal = null;    // { texto, cor }
 
   _novoAgCriarCliente = false;
   _novoAgServicos = []; // ids dos servicos selecionados no modal manual
@@ -305,7 +309,7 @@ function renderGestao(empInicial){
     const atual = empresas.find(e => e.slug === emp.slug);
     if(atual) emp = atual;
     // Não redesenha se houver formulário aberto (evita apagar campos em edição)
-    const formAberto = editandoId !== null || novoAgState !== null || novoBotaoState !== null || editandoBotaoId !== null || _gFinModal !== null || _notaModal !== null || _clienteModalNovo || _clientePerfilEditando;
+    const formAberto = editandoId !== null || novoAgState !== null || novoBotaoState !== null || editandoBotaoId !== null || _gFinModal !== null || _notaModal !== null || _clienteModalNovo || _clientePerfilEditando || _finalizarAgId !== null || _excluirClienteModal !== null;
     if(!formAberto && (corner===null || corner==='dashboard')) draw();
   });
 }

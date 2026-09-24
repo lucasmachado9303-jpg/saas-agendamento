@@ -34,6 +34,12 @@ Plataforma multi-tenant gerenciada: uma instalação serve múltiplas empresas c
 
 - SPA sem framework nem build: `app.html` (estrutura), `css/app.css` e `js/` (core, publico, auth, master, upload, helpers) e `js/gestao/` (uma aba por arquivo), carregados como `<script>` classicos na ordem — funcoes chamadas por `onclick` precisam continuar globais. O estado da gestao fica em `js/gestao/estado.js` e e reiniciado em `renderGestao()` (`js/gestao/nucleo.js`); os handlers `window.*` de cada aba sao registrados por `_registrarHandlers<Aba>()`
 - Supabase para auth, banco de dados e storage de imagens
+- `loadData()` carrega so o necessario: master = todas as empresas; gestor = a propria; visitante = a do subdominio. Todo texto vindo do banco passa por `slugSeguro/horaSegura/dataSegura/corHexSegura/urlImagemSegura` (core.js) antes de entrar no HTML
+- Painel aberto (gestao ou master) recarrega os dados a cada 60s e ao voltar para a aba (`atualizarDadosDaTela`)
+- Master salva so a empresa e as colunas alteradas (`atualizarEmpresa`); nunca regravar todas as empresas
+- Trial vencido nao bloqueia: a gestao so mostra um aviso; bloquear e decisao manual do master
+- Prazo de cancelamento 0 = sem prazo minimo (cliente cancela ate o horario)
+- Regras do banco que dependem de SQL: `supabase-correcoes-auditoria.sql` (gestor nao altera status/trial; cancelado libera o horario; formato dos campos)
 - Agendamento público sem login para o cliente final
 - Multi-tenant: cada empresa tem slug, página pública, painel de gestão próprio
 - Horários universais (valem para todos os dias) com controle de dias da semana

@@ -355,24 +355,28 @@ function _registrarHandlersAgenda(){
     if(!horarios.length){ toast('Nenhum horário configurado para este dia.','err'); return; }
     const naoBloquados = horarios.filter(h=>!((emp.bloqueios||[]).some(b=>b.data===diaSelecionado && b.hora===h)));
     const dataFmtConf = new Date(diaSelecionado+"T00:00:00").toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'});
-    if(!confirm(`Bloquear o dia ${dataFmtConf} inteiro?`)) return;
-    if(naoBloquados.length){
-      const rows = naoBloquados.map(h=>({ empresa_id: emp.id, data: diaSelecionado, hora: h }));
-      const { data, error } = await supabaseClient.from('bloqueios').insert(rows).select();
-      if(error){ toast('Erro ao bloquear. Tente novamente.','err'); return; }
-      if(data) data.forEach(r=>{ (emp.bloqueios=emp.bloqueios||[]).push({id:r.id, data:r.data, hora:r.hora}); });
-    }
-    draw();
+    const dia = diaSelecionado;
+    confirmarAcao(`Bloquear o dia ${dataFmtConf} inteiro?`, async ()=>{
+      if(naoBloquados.length){
+        const rows = naoBloquados.map(h=>({ empresa_id: emp.id, data: dia, hora: h }));
+        const { data, error } = await supabaseClient.from('bloqueios').insert(rows).select();
+        if(error){ toast('Erro ao bloquear. Tente novamente.','err'); return; }
+        if(data) data.forEach(r=>{ (emp.bloqueios=emp.bloqueios||[]).push({id:r.id, data:dataSegura(r.data), hora:horaSegura(r.hora)}); });
+      }
+      draw();
+    });
   };
   window.desbloquearDiaTodo = async ()=>{
     const dataFmtConf = new Date(diaSelecionado+"T00:00:00").toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'});
-    if(!confirm(`Desbloquear o dia ${dataFmtConf} inteiro?`)) return;
-    const ids = (emp.bloqueios||[]).filter(b=>b.data===diaSelecionado).map(b=>b.id);
-    if(!ids.length){ draw(); return; }
-    const { error } = await supabaseClient.from('bloqueios').delete().in('id', ids);
-    if(error){ toast('Erro ao desbloquear. Tente novamente.','err'); return; }
-    emp.bloqueios = (emp.bloqueios||[]).filter(b=>b.data!==diaSelecionado);
-    draw();
+    const dia = diaSelecionado;
+    confirmarAcao(`Desbloquear o dia ${dataFmtConf} inteiro?`, async ()=>{
+      const ids = (emp.bloqueios||[]).filter(b=>b.data===dia).map(b=>b.id);
+      if(!ids.length){ draw(); return; }
+      const { error } = await supabaseClient.from('bloqueios').delete().in('id', ids);
+      if(error){ toast('Erro ao desbloquear. Tente novamente.','err'); return; }
+      emp.bloqueios = (emp.bloqueios||[]).filter(b=>b.data!==dia);
+      draw();
+    });
   };
 
   window.novoAgendamento = (data, hora)=>{ novoAgState={data,hora}; editandoId=null; _novoAgModalOpen=true; draw(); };
@@ -407,7 +411,7 @@ function _registrarHandlersAgenda(){
       nome:row.nome_cliente, telefone:row.telefone,
       servicoId:row.servico_id, servicoNome:servicoNomeDisplay,
       servicosNomes,
-      data:row.data, hora:row.hora,
+      data:dataSegura(row.data), hora:horaSegura(row.hora),
       status: row.status || 'nao_confirmado',
       confirmacaoEnviada: false, lembreteEnviado: false,
       tokenCurto: row.token_curto || null
@@ -423,7 +427,7 @@ function _registrarHandlersAgenda(){
     const servicoId = document.getElementById('editServico').value;
     const hora = document.getElementById('editHora').value;
     if(!nome || !tel){ toast('Preencha nome e telefone.','err'); return; }
-    const telDigitos = tel.replace(/\D/g,'').replace(/^(55|0)/,'');
+    const telDigitos = telefoneNacional(tel); // (antes, o DDD 55 era removido como se fosse o codigo do pais)
     if(telDigitos.length !== 11 || telDigitos[2] !== '9'){ toast('Telefone inválido. Ex: (11) 98765-4321','err'); return; }
     const telNorm = '0' + telDigitos;
     if(hora !== ag.hora){
@@ -438,26 +442,32 @@ function _registrarHandlersAgenda(){
       telefone:     telNorm,
       servico_id:   servicoId,
       servico_nome: servico ? servico.nome : ag.servicoNome,
+      // servicos_json tambem: e dele que o nome do servico e montado ao recarregar
+      // (antes, em agendamentos com varios servicos, a edicao "voltava" depois de atualizar a pagina)
+      servicos_json: JSON.stringify([servicoId]),
       hora:         hora
     }).eq('id', id);
     if(error){ toast(friendlyError(error,'Erro ao salvar agendamento. Tente novamente.'),'err'); return; }
     ag.nome = nome; ag.telefone = telNorm; ag.servicoId = servicoId; ag.servicoNome = servico?servico.nome:ag.servicoNome; ag.hora = hora;
+    ag.servicosNomes = servico ? [servico.nome] : [];
     editandoId = null; draw();
   };
-  window.cancelarAgendamento = async (id)=>{
-    if(!confirm('Cancelar este agendamento? O horário será liberado para novos agendamentos.')) return;
-    const { error } = await supabaseClient.from('agendamentos').update({ status: 'cancelado' }).eq('id', id);
-    if(error){ toast(friendlyError(error,'Erro ao cancelar agendamento. Tente novamente.'),'err'); return; }
-    const ag = agendamentos.find(a=>a.id===id);
-    if(ag) ag.status = 'cancelado';
-    draw();
+  window.cancelarAgendamento = (id)=>{
+    confirmarAcao('Cancelar este agendamento? O horário será liberado para novos agendamentos.', async ()=>{
+      const { error } = await supabaseClient.from('agendamentos').update({ status: 'cancelado' }).eq('id', id);
+      if(error){ toast(friendlyError(error,'Erro ao cancelar agendamento. Tente novamente.'),'err'); return; }
+      const ag = agendamentos.find(a=>a.id===id);
+      if(ag) ag.status = 'cancelado';
+      draw();
+    });
   };
-  window.excluirAgendamento = async (id)=>{
-    if(!confirm('Excluir este agendamento? Essa ação não pode ser desfeita.')) return;
-    const { error } = await supabaseClient.from('agendamentos').delete().eq('id', id);
-    if(error){ toast(friendlyError(error,'Erro ao excluir agendamento. Tente novamente.'),'err'); return; }
-    agendamentos = agendamentos.filter(a=>a.id!==id);
-    draw();
+  window.excluirAgendamento = (id)=>{
+    confirmarAcao('Excluir este agendamento? Essa ação não pode ser desfeita.', async ()=>{
+      const { error } = await supabaseClient.from('agendamentos').delete().eq('id', id);
+      if(error){ toast(friendlyError(error,'Erro ao excluir agendamento. Tente novamente.'),'err'); return; }
+      agendamentos = agendamentos.filter(a=>a.id!==id);
+      draw();
+    });
   };
   window.bloquearHorario = async (data,hora)=>{
     const { data: row, error } = await supabaseClient.from('bloqueios').insert({
@@ -542,7 +552,7 @@ function _registrarHandlersAgenda(){
   window.cancelarCriarClienteRapido = ()=>{ _novoAgCriarCliente=false; draw(); };
   window.salvarClienteRapido = async ()=>{
     const nome = (document.getElementById('novoAgCliNome')?.value||'').trim().toUpperCase();
-    const telRaw = (document.getElementById('novoAgCliTel')?.value||'').replace(/\D/g,'').replace(/^(55|0)/,'');
+    const telRaw = telefoneNacional(document.getElementById('novoAgCliTel')?.value);
     if(!nome){ toast('Preencha o nome.','err'); return; }
     if(telRaw.length!==11||telRaw[2]!=='9'){ toast('Telefone inválido. Ex: (11) 98765-4321','err'); return; }
     const telefone = '0'+telRaw;

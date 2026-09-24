@@ -53,7 +53,6 @@ function renderMasterPanel(){
     <style>
       .ml { display:flex; flex-direction:column; min-height:100vh; }
       .ml-content { flex:1; padding:24px 20px 80px; max-width:700px; margin:0 auto; width:100%; }
-      .fin-status { display:inline-block; padding:3px 10px; border-radius:20px; font-size:12px; font-weight:600; }
 
       /* Bottom nav mobile */
       .m-nav { position:fixed; bottom:0; left:0; right:0; height:60px; background:#fff; box-shadow:0 -4px 16px rgba(0,0,0,.10); display:flex; align-items:stretch; z-index:200; }
@@ -92,40 +91,12 @@ function renderMasterPanel(){
       .m-search { width:100%; padding:10px 14px; border:1.5px solid var(--line); border-radius:10px; font-size:14px; background:var(--paper); outline:none; font-family:inherit; color:var(--ink); margin-bottom:14px; }
       .m-search:focus { border-color:#888; }
 
-      /* Empresa card */
-      .m-ec { background:#fff; border:1px solid var(--line); border-radius:14px; display:flex; align-items:center; padding:14px 16px; gap:12px; transition:border-color .15s; }
-      .m-ec:hover { border-color:#bbb; }
-      .m-ec-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
-      .m-ec-body { flex:1; min-width:0; }
-      .m-ec-name { font-size:14px; font-weight:700; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-      .m-ec-link { font-size:12px; color:var(--ink-soft); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-      .m-ec-acts { display:flex; align-items:center; gap:2px; flex-shrink:0; }
-      .m-ib { width:34px; height:34px; display:flex; align-items:center; justify-content:center; border:none; background:none; cursor:pointer; border-radius:8px; color:var(--ink-soft); transition:background .12s, color .12s; }
-      .m-ib:hover { background:var(--line); color:var(--ink); }
-      .m-ib svg { width:16px; height:16px; }
-
-      /* Financeiro card */
-      .m-fc { background:var(--paper); border:1px solid var(--line); border-radius:14px; padding:14px 18px; display:flex; align-items:center; gap:12px; }
-      .m-fc-body { flex:1; min-width:0; }
-      .m-fc-name { font-size:14px; font-weight:700; color:var(--ink); }
-      .m-fc-sub { font-size:12px; color:var(--ink-soft); margin-top:3px; }
-      .m-fc-acts { display:flex; gap:8px; align-items:center; flex-shrink:0; }
-
-      /* Alert row */
-      .m-alert-row { display:flex; align-items:center; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--line); }
-      .m-alert-row:last-child { border-bottom:none; }
-
       /* Status badges */
       .m-badge { display:inline-flex; align-items:center; gap:5px; padding:3px 10px; border-radius:20px; font-size:12px; font-weight:700; white-space:nowrap; }
       .m-badge-dot { width:6px; height:6px; border-radius:50%; background:currentColor; }
       .m-badge.ativa     { background:#dcfce7; color:#16a34a; }
       .m-badge.trial     { background:#fef3c7; color:#b45309; }
       .m-badge.bloqueada { background:#fee2e2; color:#dc2626; }
-
-      /* Atencao section */
-      .m-atencao { border:1px solid #fca5a5; border-radius:14px; overflow:hidden; margin-bottom:16px; }
-      .m-atencao-head { padding:12px 16px; background:#fff5f5; border-bottom:1px solid #fca5a5; display:flex; align-items:center; justify-content:space-between; }
-      .m-atencao-title { font-size:13px; font-weight:700; color:#dc2626; }
 
       /* Fin filter tabs */
       .m-tabs { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:16px; }
@@ -188,13 +159,9 @@ function renderMasterPanel(){
       .m-tipo-opt-sub { font-size:11px; color:var(--ink-soft); line-height:1.4; }
       .m-tipo-opt.sel .m-tipo-opt-title { color:#3d1f3a; }
 
-      /* Color swatches */
-      .m-swatches { display:grid; grid-template-columns:repeat(6,1fr); gap:8px; margin-bottom:10px; }
-      .m-sw { width:100%; aspect-ratio:1; border-radius:8px; cursor:pointer; border:3px solid transparent; box-sizing:border-box; transition:border-color .1s; }
-
       /* Empresa card clicavel */
       .m-ec { cursor:pointer; display:flex; align-items:center; gap:12px; padding:13px 16px; background:#fff; border:1px solid var(--line); border-radius:14px; transition:background .1s; }
-      .m-ec:hover { background:#faf9fc; }
+      .m-ec:hover { border-color:#bbb; background:#faf9fc; }
       .m-ec-body { flex:1; min-width:0; }
       .m-ec-name { font-size:14px; font-weight:700; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
       .m-ec-link { font-size:12px; color:var(--ink-soft); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
@@ -203,7 +170,6 @@ function renderMasterPanel(){
 
       /* Detalhe empresa */
       .m-det-header { background:#fff; border:1px solid var(--line); border-radius:14px; padding:18px; margin-bottom:14px; display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
-      .m-det-av { width:52px; height:52px; border-radius:15px; display:flex; align-items:center; justify-content:center; font-size:20px; font-weight:800; color:#fff; flex-shrink:0; }
       .m-det-info { flex:1; min-width:0; }
       .m-det-nome { font-size:18px; font-weight:800; color:var(--ink); letter-spacing:-.3px; }
       .m-det-slug { font-size:12px; color:var(--ink-soft); margin-top:2px; }
@@ -216,20 +182,6 @@ function renderMasterPanel(){
       .m-pag-sec { background:#fff; border:1px solid var(--line); border-radius:14px; overflow:hidden; margin-bottom:14px; }
       .m-pag-head { display:flex; align-items:center; justify-content:space-between; padding:12px 16px; border-bottom:1px solid var(--line); }
       .m-pag-title { font-size:13px; font-weight:700; color:var(--ink); }
-      .m-pag-row { display:flex; align-items:center; padding:10px 16px; border-bottom:0.5px solid var(--line); gap:10px; }
-      .m-pag-row:last-child { border-bottom:none; }
-      .m-pag-circle { width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-      .m-pag-circle.ok { background:#dcfce7; color:#16a34a; }
-      .m-pag-circle.miss { background:#fee2e2; color:#dc2626; }
-      .m-pag-mes { font-size:13px; font-weight:700; color:var(--ink); min-width:72px; }
-      .m-pag-data { font-size:12px; color:var(--ink-soft); flex:1; }
-      .m-pag-valor { font-size:13px; font-weight:700; color:var(--ink); font-variant-numeric:tabular-nums; }
-      .m-lanc-form { padding:12px 16px; display:flex; gap:8px; align-items:flex-end; flex-wrap:wrap; border-top:1px solid var(--line); }
-      .m-lanc-field { display:flex; flex-direction:column; gap:4px; flex:1; min-width:90px; }
-      .m-lanc-lbl { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-soft); }
-      .m-lanc-input { height:34px; padding:0 9px; border:1.5px solid var(--line); border-radius:8px; font-size:13px; color:var(--ink); font-family:inherit; background:#fff; outline:none; }
-      .m-lanc-input:focus { border-color:#3d1f3a; }
-      .m-lanc-btn { height:34px; padding:0 14px; background:#3d1f3a; color:#fff; border:none; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer; font-family:inherit; white-space:nowrap; }
 
       /* Acoes grid no detalhe */
       .m-acoes-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; padding:12px 16px; }
@@ -246,9 +198,9 @@ function renderMasterPanel(){
       .m-fin-hdr { display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; gap:10px; flex-wrap:wrap; }
       .m-period-nav { display:flex; align-items:center; background:var(--paper); border:1px solid var(--line); border-radius:10px; overflow:hidden; }
       .m-period-btn { width:34px; height:34px; border:none; background:none; cursor:pointer; display:flex; align-items:center; justify-content:center; color:var(--ink-soft); transition:background .1s; }
-      .m-period-btn:hover { background:var(--bg); color:var(--ink); }
+      .m-period-btn:hover { background:var(--paper); color:var(--ink); }
       .m-period-lbl { padding:0 14px; font-size:14px; font-weight:700; color:var(--ink); border-left:1px solid var(--line); border-right:1px solid var(--line); height:34px; display:flex; align-items:center; white-space:nowrap; }
-      .m-btn-csv { display:flex; align-items:center; gap:6px; height:34px; padding:0 14px; border:1.5px solid var(--line); border-radius:10px; background:var(--paper); font-size:13px; font-weight:600; color:var(--ink-2); cursor:pointer; font-family:inherit; }
+      .m-btn-csv { display:flex; align-items:center; gap:6px; height:34px; padding:0 14px; border:1.5px solid var(--line); border-radius:10px; background:var(--paper); font-size:13px; font-weight:600; color:var(--ink-soft); cursor:pointer; font-family:inherit; }
       .m-btn-csv:hover { border-color:#c4b5c0; }
       .m-sum-row { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:16px; }
       .m-sum-card { background:#fff; border:1px solid var(--line); border-radius:14px; padding:14px 16px; position:relative; overflow:hidden; }
@@ -264,28 +216,6 @@ function renderMasterPanel(){
       .m-sum-sub { font-size:11px; color:var(--ink-soft); margin-top:3px; }
       .m-chart-wrap { background:#fff; border:1px solid var(--line); border-radius:14px; padding:16px 18px 14px; margin-bottom:16px; }
       .m-chart-title { font-size:13px; font-weight:700; color:var(--ink); margin-bottom:12px; }
-      .m-fin-table { background:#fff; border:1px solid var(--line); border-radius:14px; overflow:hidden; }
-      .m-fin-toolbar { display:flex; align-items:center; gap:10px; padding:12px 16px; border-bottom:1px solid var(--line); }
-      .m-fin-toolbar-lbl { font-size:13px; font-weight:700; color:var(--ink); flex:1; }
-      .m-fin-filter { height:30px; padding:0 9px; border:1.5px solid var(--line); border-radius:8px; font-size:13px; color:var(--ink); font-family:inherit; background:var(--bg); outline:none; max-width:180px; }
-      .m-fin-row { display:flex; align-items:center; padding:12px 16px; border-bottom:0.5px solid var(--line); cursor:pointer; gap:10px; transition:background .1s; }
-      .m-fin-row:last-of-type { border-bottom:none; }
-      .m-fin-row:hover { background:#faf9fc; }
-      .m-fin-row.exp { background:#f3eef5; }
-      .m-fin-name { font-size:14px; font-weight:700; color:var(--ink); flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-      .m-fin-venc { font-size:12px; color:var(--ink-soft); min-width:65px; }
-      .m-fin-pago { font-size:12px; color:var(--ink-soft); min-width:80px; }
-      .m-fin-valor { font-size:13px; font-weight:700; color:var(--ink); font-variant-numeric:tabular-nums; min-width:70px; text-align:right; }
-      .m-fin-expand { padding:10px 16px 14px 16px; border-bottom:0.5px solid var(--line); background:#f3eef5; }
-      .m-fin-expand-ttl { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); margin-bottom:8px; }
-      .m-fin-hist-item { display:flex; align-items:center; gap:8px; padding:5px 0; font-size:13px; border-bottom:0.5px solid rgba(0,0,0,.06); }
-      .m-fin-hist-item:last-child { border-bottom:none; }
-      .m-fin-hist-mes { font-weight:700; color:var(--ink); min-width:72px; }
-      .m-fin-hist-data { color:var(--ink-soft); flex:1; }
-      .m-fin-hist-val { font-variant-numeric:tabular-nums; font-weight:600; color:var(--ink); }
-      .m-fin-total { display:flex; align-items:center; padding:12px 16px; background:var(--bg); border-top:2px solid var(--line); }
-      .m-fin-total-lbl { flex:1; font-size:13px; font-weight:800; color:var(--ink); }
-      .m-fin-total-val { font-size:13px; font-weight:800; color:var(--ink); font-variant-numeric:tabular-nums; }
     </style>
   `;
 
@@ -326,20 +256,26 @@ function renderMasterPanel(){
     else if(masterAba === 'financeiro') drawFinanceiro();
   }
 
+  // Status real salvo no banco. Trial vencido continua 'trial' (a empresa NAO e bloqueada
+  // automaticamente; o gestor so recebe um aviso). Antes aparecia como 'bloqueada' e a tela
+  // de edicao ja vinha com "Bloqueada" marcado, bloqueando a empresa ao salvar qualquer campo.
   function _empStatus(e){
-    // Deriva o status real considerando trial expirado
-    if(e.status === 'trial' && e.trialExpiraEm && new Date() > new Date(e.trialExpiraEm)) return 'bloqueada';
-    return e.status || 'ativa';
+    if(e.bloqueada || e.status === 'bloqueada') return 'bloqueada';
+    return e.status === 'trial' ? 'trial' : 'ativa';
   }
   function _diasTrialRestantes(e){
     if(!e.trialExpiraEm) return null;
     const diff = Math.ceil((new Date(e.trialExpiraEm) - new Date()) / 86400000);
     return diff;
   }
+  function _trialLabel(e){
+    const dias = _diasTrialRestantes(e);
+    if(dias === null) return 'Trial';
+    return dias < 0 ? 'Trial vencido' : `Trial · ${dias}d`;
+  }
   function _statusBadgeHtml(e){
     const s = _empStatus(e);
-    const dias = s === 'trial' ? _diasTrialRestantes(e) : null;
-    const label = s === 'trial' ? `Trial · ${dias}d` : s === 'ativa' ? 'Ativa' : 'Bloqueada';
+    const label = s === 'trial' ? _trialLabel(e) : s === 'ativa' ? 'Ativa' : 'Bloqueada';
     return `<span class="m-badge ${s}"><span class="m-badge-dot"></span>${label}</span>`;
   }
 
@@ -363,8 +299,8 @@ function renderMasterPanel(){
       <div style="background:#fff8f0;border:1px solid #fcd34d;border-radius:14px;padding:14px 18px;display:flex;align-items:flex-start;gap:12px;margin-bottom:16px;">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
         <div>
-          <div style="font-size:14px;font-weight:700;color:#92400e;">${expirando.length} empresa${expirando.length!==1?'s':''} com trial expirando em breve</div>
-          <div style="font-size:13px;color:#b45309;margin-top:3px;">${expirando.map(e=>`${escapeHtml(e.nome)} (${_diasTrialRestantes(e)}d)`).join(' · ')}</div>
+          <div style="font-size:14px;font-weight:700;color:#92400e;">${expirando.length} empresa${expirando.length!==1?'s':''} com trial vencido ou vencendo em até 3 dias</div>
+          <div style="font-size:13px;color:#b45309;margin-top:3px;">${expirando.map(e=>{ const d=_diasTrialRestantes(e); return `${escapeHtml(e.nome)} (${d < 0 ? 'vencido' : d+'d'})`; }).join(' · ')}</div>
         </div>
       </div>` : '';
 
@@ -424,18 +360,18 @@ function renderMasterPanel(){
 
     // Formulario de editar — substitui a lista
     if(masterDrawerMode === 'editar' && editing){
-      const initiais = (editing.nome||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+      const initiais = (editing.nome||'?').split(' ').filter(Boolean).map(w=>w[0]).join('').slice(0,2).toUpperCase();
       const stAtual = _empStatus(editing);
       const diasTrial = editing.trialExpiraEm ? _diasTrialRestantes(editing) : null;
       const statusSub = {
         ativa:     'acesso completo',
-        trial:     diasTrial !== null ? `${diasTrial}d restantes` : 'período de teste',
+        trial:     diasTrial === null ? 'período de teste' : diasTrial < 0 ? `vencido há ${-diasTrial}d` : `${diasTrial}d restantes`,
         bloqueada: 'sem acesso',
       };
       drawMasterShell(`
         <button class="m-back" onclick="masterFecharDrawer()">${ICO_BACK} Voltar</button>
         <div class="m-emp-header">
-          <div class="m-emp-avatar" style="background:${escapeAttr(editing.corPrincipal||'#3d1f3a')}">${initiais}</div>
+          <div class="m-emp-avatar" style="background:${escapeAttr(editing.corPrincipal||'#3d1f3a')}">${escapeHtml(initiais)}</div>
           <div>
             <div class="m-emp-header-name">${escapeHtml(editing.nome)}</div>
             <div class="m-emp-header-link">${escapeHtml(editing.slug)}.agenplus.com.br</div>
@@ -501,23 +437,16 @@ function renderMasterPanel(){
 
     // Lista normal
     const ICO_CHV = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>`;
-    const ICO_OK  = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
-    const ICO_X   = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
-
-    // Cor de fundo do avatar baseada no slug
-    const AV_CORES = ['#3d1f3a','#15803d','#1d4ed8','#be185d','#c2410c','#0f766e','#7e22ce','#b45309'];
-    function empAvCor(slug){ let h=0; for(let i=0;i<slug.length;i++) h=(h*31+slug.charCodeAt(i))&0x7fffffff; return AV_CORES[h%AV_CORES.length]; }
 
     const _tipoBadge = e => e.tipo === 'pagina'
       ? `<span style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;background:#e0f2fe;color:#0369a1;white-space:nowrap;">Pagina</span>`
       : '';
 
     const empRow = e => {
-      const cor = empAvCor(e.slug);
       return `<div class="m-ec" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();masterAbrirDetalhe('${e.slug}')}" onclick="masterAbrirDetalhe('${e.slug}')">
         <div class="m-ec-body">
           <div class="m-ec-name">${escapeHtml(e.nome)}</div>
-          <div class="m-ec-link" style="display:flex;align-items:center;gap:6px;">${e.slug}.agenplus.com.br ${_tipoBadge(e)}</div>
+          <div class="m-ec-link" style="display:flex;align-items:center;gap:6px;">${escapeHtml(e.slug)}.agenplus.com.br ${_tipoBadge(e)}</div>
         </div>
         ${_statusBadgeHtml(e)}
         <div class="m-chevron">${ICO_CHV}</div>
@@ -529,27 +458,12 @@ function renderMasterPanel(){
       const e = empresas.find(x=>x.slug===_masterDetalheSlug);
       if(!e){ _masterDetalheSlug=null; }
       else {
-        const cor = empAvCor(e.slug);
         const st  = _empStatus(e);
         const finReg = financeiroData.find(f=>f.empresa_id===e.id);
-        // Historico desta empresa
-        const empMens = mensalidades.filter(m=>m.empresa_id===e.id);
-        const histRows = empMens.length ? empMens.map(m=>{
-          const ok = !!m.pago_em;
-          const dataFmt = ok ? new Date(m.pago_em).toLocaleDateString('pt-BR') : '—';
-          const valFmt = m.valor ? 'R$ '+parseFloat(m.valor).toLocaleString('pt-BR',{minimumFractionDigits:2}) : '—';
-          const [yy,mm] = m.referencia.split('-');
-          const mesLabel = new Date(+yy,+mm-1,1).toLocaleString('pt-BR',{month:'short',year:'2-digit'}).replace(' de ',' ');
-          return `<div class="m-pag-row">
-            <div class="m-pag-circle ${ok?'ok':'miss'}">${ok?ICO_OK:ICO_X}</div>
-            <span class="m-pag-mes">${mesLabel}</span>
-            <span class="m-pag-data">${ok?'Pago em '+dataFmt:'Nao pago'}</span>
-            <span class="m-pag-valor">${ok?valFmt:'—'}</span>
-          </div>`;
-        }).join('') : `<div style="padding:18px 16px;font-size:14px;color:var(--ink-soft);">Nenhum lançamento ainda.</div>`;
+        const _dTrial = _diasTrialRestantes(e);
 
-        const vencInfo = st==='trial'
-          ? `<div class="m-det-right"><div class="m-det-venc-lbl">Trial expira em</div><div class="m-det-venc-val">${_diasTrialRestantes(e)} dias</div></div>`
+        const vencInfo = st==='trial' && _dTrial !== null
+          ? `<div class="m-det-right"><div class="m-det-venc-lbl">${_dTrial < 0 ? 'Trial' : 'Trial expira em'}</div><div class="m-det-venc-val">${_dTrial < 0 ? 'vencido' : _dTrial + ' dias'}</div></div>`
           : st==='ativa' && finReg
           ? `<div class="m-det-right"><div class="m-det-venc-lbl">Vencimento</div><div class="m-det-venc-val">Dia ${finReg.dia_vencimento}</div></div>`
           : '';
@@ -564,7 +478,7 @@ function renderMasterPanel(){
           <div class="m-det-header">
             <div class="m-det-info">
               <div class="m-det-nome">${escapeHtml(e.nome)}</div>
-              <div class="m-det-slug">${e.slug}.agenplus.com.br</div>
+              <div class="m-det-slug">${escapeHtml(e.slug)}.agenplus.com.br</div>
               <div class="m-det-badges">${_statusBadgeHtml(e)}</div>
             </div>
             ${vencInfo}
@@ -700,7 +614,7 @@ function renderMasterPanel(){
           <button class="m-back" onclick="finVoltarLista()">${ICO_BACK} Financeiro</button>
           <div style="margin-bottom:20px;">
             <div style="font-size:20px;font-weight:800;color:var(--ink);">${escapeHtml(e.nome)}</div>
-            <div style="font-size:13px;color:var(--ink-soft);margin-top:2px;">${e.slug}.agenplus.com.br</div>
+            <div style="font-size:13px;color:var(--ink-soft);margin-top:2px;">${escapeHtml(e.slug)}.agenplus.com.br</div>
           </div>
 
           <div style="${SEC}">Cobrança mensal</div>
@@ -713,7 +627,7 @@ function renderMasterPanel(){
               </div>
               <div>
                 <label style="${LBL}">Dia de vencimento</label>
-                <input id="finDia_${e.id}" type="number" min="1" max="31" placeholder="Ex: 10"
+                <input id="finDia_${e.id}" type="number" min="1" max="28" placeholder="Ex: 10"
                   value="${escapeAttr(String(finReg?.dia_vencimento||''))}" style="${INP}"/>
               </div>
             </div>
@@ -877,12 +791,13 @@ function renderMasterPanel(){
   };
   window.masterVoltarEmpresas = () => { _masterDetalheSlug = null; masterDrawerMode = null; editingSlug = null; draw(); };
 
-  window.finExcluirLancamento = async (id) => {
-    if(!confirm('Excluir este lançamento?')) return;
-    const { error } = await supabaseClient.from('mensalidades').delete().eq('id', id);
-    if(error){ toast('Erro ao excluir.','err'); return; }
-    toast('Lançamento excluído.','ok');
-    await carregarMensalidades(); draw();
+  window.finExcluirLancamento = (id) => {
+    confirmarAcao('Excluir este lançamento?', async ()=>{
+      const { error } = await supabaseClient.from('mensalidades').delete().eq('id', id);
+      if(error){ toast('Erro ao excluir.','err'); return; }
+      toast('Lançamento excluído.','ok');
+      await carregarMensalidades(); draw();
+    });
   };
 
   window.masterLancarMensalidadeFin = async (empresaId) => {
@@ -909,7 +824,8 @@ function renderMasterPanel(){
     const valor = parseFloat(document.getElementById('finValor_'+empresaId)?.value)||0;
     const dia   = parseInt(document.getElementById('finDia_'+empresaId)?.value)||0;
     if(!valor){ toast('Informe o valor mensal.','err'); return; }
-    if(!dia || dia < 1 || dia > 31){ toast('Informe um dia de vencimento valido (1-31).','err'); return; }
+    // O banco aceita 1 a 28 (todo mes tem esses dias)
+    if(!dia || dia < 1 || dia > 28){ toast('Informe um dia de vencimento de 1 a 28.','err'); return; }
     const existe = financeiroData.find(f=>f.empresa_id===empresaId);
     let erro;
     if(existe){
@@ -942,12 +858,10 @@ function renderMasterPanel(){
       const pago = m?.pago_em || '';
       linhas.push([e.nome, refAtual, val, pago]);
     });
-    const csv = linhas.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
-    const blob = new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8;'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href=url; a.download=`financeiro-${refAtual}.csv`;
-    document.body.appendChild(a); a.click(); document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    // Celula que comeca com = + - @ seria executada como formula pelo Excel: prefixa com '
+    const celula = c => { let s = String(c); if(/^[=+\-@\t\r]/.test(s)) s = "'" + s; return `"${s.replace(/"/g,'""')}"`; };
+    const csv = linhas.map(r=>r.map(celula).join(',')).join('\n');
+    baixarArquivo('﻿'+csv, `financeiro-${refAtual}.csv`, 'text/csv;charset=utf-8;');
   };
 
   window.masterCriar = async ()=>{
@@ -982,15 +896,13 @@ function renderMasterPanel(){
     nova.tipo = document.getElementById('novoTipo')?.value || 'agendamento';
     nova.status = 'trial';
     nova.trialExpiraEm = new Date(Date.now() + 7*24*60*60*1000).toISOString();
-    empresas.push(nova);
-    await saveEmpresas();
-
-    const empCriada = empresas.find(e=>e.slug===s2);
-    if(!empCriada?.id){
-      empresas = empresas.filter(e=>e.slug!==s2);
-      toast('Não foi possível criar a empresa. Verifique sua conexão e tente novamente.','err',6000);
+    const errCriar = await inserirEmpresa(nova);
+    if(errCriar || !nova.id){
+      toast(errCriar?.code === '23505' ? 'Já existe uma empresa com esse link. Tente outro nome.' : 'Não foi possível criar a empresa. Verifique sua conexão e tente novamente.','err',6000);
       masterDrawerMode = null; draw(); return;
     }
+    empresas.push(nova);
+    const empCriada = nova;
 
     // 2. Cria o usuário gestor via API segura
     let _sessionData;
@@ -1062,31 +974,37 @@ function renderMasterPanel(){
     const selOpt    = document.querySelector('.m-status-opt.s-ativa,.m-status-opt.s-trial,.m-status-opt.s-bloqueada');
     const novoStatus = selOpt ? ['ativa','trial','bloqueada'].find(s=>selOpt.classList.contains('s-'+s)) : null;
 
-    if(novoNome) e.nome = novoNome;
-    if(novoTipo) e.tipo = novoTipo;
-    if(novoWhats !== undefined){
-      let _wd = novoWhats.replace(/\D/g,'');
-      if(_wd.startsWith('55') && _wd.length>11) _wd=_wd.slice(2);
-      if(_wd.startsWith('0')) _wd=_wd.slice(1);
-      if(_wd && (_wd.length < 10 || _wd.length > 11)){ toast('WhatsApp invalido. Use o formato (xx) xxxxx-xxxx.','err'); return; }
-      e.whatsapp = _wd;
-    }
-    if(novoStatus && novoStatus !== e.status){
-      e.status = novoStatus;
-      e.bloqueada = novoStatus === 'bloqueada';
-    }
-
+    // Valida tudo ANTES de alterar o objeto da empresa
+    const _wd = telefoneNacional(novoWhats);
+    if(_wd && (_wd.length < 10 || _wd.length > 11)){ toast('WhatsApp invalido. Use o formato (xx) xxxxx-xxxx.','err'); return; }
     const RESERVADOS = ['api','app','admin','master','login','logout','auth','static','assets','sw','manifest','index','null','undefined','favicon','www','mail','suporte','ajuda','cdn','blog','help','cadastro'];
-    if(novoSlug && novoSlug !== editingSlug){
+    const trocaSlug = !!novoSlug && novoSlug !== editingSlug;
+    if(trocaSlug){
       if(!/^[a-z0-9][a-z0-9-]*[a-z0-9]$|^[a-z0-9]$/.test(novoSlug)){
         toast('Link inválido. Use apenas letras minúsculas, números e hífens.','err'); return;
       }
       if(RESERVADOS.includes(novoSlug)){ toast('Esse link é reservado pelo sistema.','err'); return; }
       if(empresas.some(x=>x.slug===novoSlug && x.id!==e.id)){ toast('Esse link já está em uso por outra empresa.','err'); return; }
+    }
 
+    const antes = { nome:e.nome, tipo:e.tipo, whatsapp:e.whatsapp, status:e.status, bloqueada:e.bloqueada, slug:e.slug, logo:e.logo, fotoUrl:e.fotoUrl };
+    if(novoNome) e.nome = novoNome;
+    if(novoTipo) e.tipo = novoTipo;
+    e.whatsapp = _wd;
+    if(novoStatus && novoStatus !== _empStatus(e)){
+      e.status = novoStatus;
+      e.bloqueada = novoStatus === 'bloqueada';
+    }
+
+    if(trocaSlug){
       const antigoSlug = editingSlug;
       e.slug = novoSlug;
-      await saveEmpresas();
+      const errSlug = await atualizarEmpresa(e, ['slug']);
+      if(errSlug){
+        Object.assign(e, antes);
+        toast(errSlug.code === '23505' ? 'Esse link já está em uso por outra empresa.' : 'Erro ao salvar o link. Tente novamente.','err');
+        return;
+      }
 
       for(const bucket of ['logos','backgrounds']){
         const file = bucket==='logos' ? 'logo.jpg' : 'background.jpg';
@@ -1105,7 +1023,16 @@ function renderMasterPanel(){
       editingSlug = novoSlug;
     }
 
-    await saveEmpresas();
+    // Grava so o que mudou: evita sobrescrever alteracoes feitas pelo gestor enquanto o master estava com a tela aberta
+    const _mapa = { nome:'nome', tipo:'tipo', whatsapp:'whatsapp', status:'status', bloqueada:'bloqueada', logo:'logo', fotoUrl:'foto_url' };
+    const colunas = Object.keys(_mapa).filter(k => e[k] !== antes[k]).map(k => _mapa[k]);
+    if(colunas.length){
+      const errSalvar = await atualizarEmpresa(e, colunas);
+      if(errSalvar){
+        toast('Erro ao salvar as alterações. Tente novamente.','err');
+        await loadData(); draw(); return;
+      }
+    }
 
     // Salvar email se mudou
     if(novoEmail && novoEmail !== e.gestorEmail && !e.gestorUserId){
@@ -1129,16 +1056,20 @@ function renderMasterPanel(){
   window.masterToggleEmpStatus = async (slug)=>{
     const e = empresas.find(x=>x.slug===slug);
     if(!e) return;
+    const antes = { status:e.status, bloqueada:e.bloqueada };
     if(_empStatus(e)==='bloqueada'){ e.status='ativa'; e.bloqueada=false; }
     else { e.status='bloqueada'; e.bloqueada=true; }
-    await saveEmpresas(); draw();
+    const err = await atualizarEmpresa(e, ['status','bloqueada']);
+    if(err){ Object.assign(e, antes); toast('Erro ao alterar o status. Tente novamente.','err'); }
+    draw();
   };
   window.masterExcluir = (slug)=>{
     const e = empresas.find(x=>x.slug===slug);
     if(!e){ toast('Empresa não encontrada.','err'); return; }
     confirmarAcao(`Excluir <strong>${escapeHtml(e.nome)}</strong> definitivamente? Isso também apaga os agendamentos dela. Essa ação não pode ser desfeita.`, async ()=>{
       if(e.id){
-        // Remove o auth user do gestor via API (service role)
+        // 1. Remove o login do gestor (service role). Se falhar, PARA aqui: continuar
+        //    deixaria um usuario sem empresa. Tentar de novo e seguro (sem gestor, a API responde ok).
         try {
           const { data: { session } } = await supabaseClient.auth.getSession();
           const _delUserRes = await fetch('/api/delete-user', {
@@ -1149,14 +1080,24 @@ function renderMasterPanel(){
           if(!_delUserRes.ok){
             const _delErr = await _delUserRes.json().catch(()=>({}));
             console.warn('[masterExcluir] delete-user retornou erro:', _delErr);
+            toast('Não foi possível remover o acesso do gestor. Nada foi excluído. Tente novamente.','err',6000);
+            return;
           }
-        } catch(_err){ console.error('[masterExcluir] falha ao chamar delete-user:', _err); }
-        // #22: verifica erros em cada delete (sem transacao, mas ao menos loga falhas)
-        const _tbRel = ['agendamentos','clientes','servicos','lancamentos_financeiros','bloqueios','horarios_disponiveis','botoes_empresa'];
+        } catch(_err){
+          console.error('[masterExcluir] falha ao chamar delete-user:', _err);
+          toast(mensagemErroRede(_err),'err'); return;
+        }
+        // 2. Remove os dados da empresa (agendamentos antes de clientes/servicos, que eles referenciam).
+        //    Se algo falhar, para antes de apagar a empresa: tentar de novo continua de onde parou.
+        const _tbRel = ['lancamentos_financeiros','agendamentos','clientes','servicos','bloqueios','horarios_disponiveis','botoes_empresa','notas','mensalidades','financeiro'];
         for(const tb of _tbRel){
           const { error: _tbErr } = await supabaseClient.from(tb).delete().eq('empresa_id', e.id);
-          if(_tbErr) console.warn(`[masterExcluir] erro ao deletar ${tb}:`, _tbErr);
+          if(_tbErr){
+            console.warn(`[masterExcluir] erro ao deletar ${tb}:`, _tbErr);
+            toast('Erro ao excluir os dados da empresa. Tente novamente.','err'); return;
+          }
         }
+        // 3. Remove a empresa
         const { error } = await supabaseClient.from('empresas').delete().eq('id', e.id);
         if(error){ toast(friendlyError(error,'Erro ao excluir empresa. Tente novamente.'),'err'); return; }
       }
@@ -1173,12 +1114,13 @@ function renderMasterPanel(){
 }
 
 function _limparEstado(){
-  empresas = []; agendamentos = []; loaded = false;
+  empresas = []; agendamentos = [];
   editingSlug = null; masterSearch = ''; masterAba = 'dashboard'; _filtroEmpStatus = 'todos';
   financeiroData = [];
   _masterDetalheSlug = null; mensalidades = [];
   _finPeriodo = (()=>{ const n=new Date(); return {mes:n.getMonth(),ano:n.getFullYear()}; })();
-  // gestão financeiro — resetado pelo closure de gestaoApp, mas zeramos referências globais por segurança
+  _finDetalheEmpId = null;
+  // o estado da gestao (js/gestao/estado.js) e reiniciado a cada renderGestao()
 }
 window.masterLogout = async ()=>{
   pararPolling();

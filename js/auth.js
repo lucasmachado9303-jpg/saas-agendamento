@@ -1,6 +1,30 @@
+// Conversao do cadastro: o Google Analytics e o Meta Pixel so existem na landing (index.html),
+// entao sao carregados aqui, SO na tela de cadastro (nunca nas paginas publicas das empresas).
+function _carregarRastreamentoCadastro(){
+  if(window.__rastreamentoCadastro || _ehLocal) return; // testes locais nao poluem as metricas
+  window.__rastreamentoCadastro = true;
+  window.dataLayer = window.dataLayer || [];
+  window.gtag = window.gtag || function(){ window.dataLayer.push(arguments); };
+  window.gtag('js', new Date());
+  window.gtag('config', 'G-KKBBZE9GCL');
+  const ga = document.createElement('script');
+  ga.async = true;
+  ga.src = 'https://www.googletagmanager.com/gtag/js?id=G-KKBBZE9GCL';
+  document.head.appendChild(ga);
+  // Meta Pixel (mesmo codigo da landing)
+  !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+  n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
+  n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
+  t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}
+  (window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
+  window.fbq('init', '1430461599137461');
+  window.fbq('track', 'PageView');
+}
+
 // ---------- LOGIN UNIFICADO ----------
 function renderCadastro(){
   applyAccent('#1c1917');
+  _carregarRastreamentoCadastro();
   render(`
     <div style="min-height:100vh;background:#0A0A09;padding:0 20px 16px;">
       <div style="width:100%;max-width:400px;margin:0 auto;">
@@ -89,10 +113,10 @@ window.tentarCadastro = async ()=>{
 
   const session = loginData.session;
   const hash = `access_token=${session.access_token}&refresh_token=${session.refresh_token}&token_type=bearer&type=bearer`;
-  // Dispara eventos de conversao antes de redirecionar
-  try{ if(typeof fbq==='function') fbq('track','Lead'); }catch(e){}
-  try{ if(typeof gtag==='function') gtag('event','sign_up',{method:'email'}); }catch(e){}
-  location.replace(urlEmpresa(result.slug, `/gestao#${hash}`));
+  // Dispara eventos de conversao e da um instante para eles saírem antes de trocar de pagina
+  try{ if(typeof window.fbq==='function') window.fbq('track','Lead'); }catch(e){}
+  try{ if(typeof window.gtag==='function') window.gtag('event','sign_up',{method:'email', transport_type:'beacon'}); }catch(e){}
+  setTimeout(()=>location.replace(urlEmpresa(result.slug, `/gestao#${hash}`)), 400);
 };
 
 function renderLoginUnificado(){

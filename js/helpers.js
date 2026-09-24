@@ -26,13 +26,29 @@ function confirmarAcao(msg, onConfirm){
 function escapeHtml(s){ return String(s==null?"":s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 // Alias intencional: escapeAttr usa a mesma logica de escapeHtml para valores em atributos HTML entre aspas duplas
 function escapeAttr(s){ return escapeHtml(s); }
-function sanitizeCor(c){ return /^#[0-9a-fA-F]{3,8}$/.test(c) ? c : '#3d1f3a'; }
+// Aceita #rgb ou #rrggbb e devolve sempre #rrggbb: o resto da interface concatena
+// transparencia (cor+'80') e calcula contraste assumindo 6 digitos.
+function sanitizeCor(c){
+  const s = String(c || '');
+  if(/^#[0-9a-fA-F]{6}$/.test(s)) return s;
+  if(/^#[0-9a-fA-F]{3}$/.test(s)) return '#' + s[1] + s[1] + s[2] + s[2] + s[3] + s[3];
+  return '#3d1f3a';
+}
 
 // Bloqueia links do tipo "javascript:" salvos nos botões da empresa,
 // que executariam código na página pública.
 function linkSeguro(url){
   const u = String(url||"").trim();
   return /^(https?:|tel:|mailto:)/i.test(u) ? u : '#';
+}
+// Baixa um arquivo gerado no navegador. O link precisa estar no documento (Firefox) e a URL
+// so e liberada depois do clique ser processado (revogar na hora cancela o download no Safari).
+function baixarArquivo(conteudo, nome, tipo){
+  const url = URL.createObjectURL(new Blob([conteudo], { type: tipo }));
+  const a = document.createElement('a');
+  a.href = url; a.download = nome;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 1000);
 }
 function checkCapsLock(e, id){ const el=document.getElementById(id); if(el) el.style.display=e.getModifierState('CapsLock')?'flex':'none'; }
 function applyAccent(cor){ document.documentElement.style.setProperty('--accent', cor || '#3d1f3a'); setFavicon(false); }
