@@ -1,7 +1,7 @@
 module.exports = async function handler(req, res) {
   const origin = req.headers.origin || '';
   const allowed = ['https://agenplus.com.br', 'https://www.agenplus.com.br', 'https://saas-agendamento-seven.vercel.app'];
-  if (allowed.includes(origin) || /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
+  if (allowed.includes(origin) || /^https?:\/\/([a-z0-9-]+\.)?(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
     res.setHeader('Access-Control-Allow-Origin', origin);
   }
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -13,9 +13,24 @@ module.exports = async function handler(req, res) {
   const SERVICE_KEY  = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!SUPABASE_URL || !SERVICE_KEY) return res.status(500).json({ error: 'Variáveis de ambiente não configuradas' });
 
-  const { nome_empresa, email, password, whatsapp } = req.body || {};
+  const body = req.body || {};
+  const nome_empresa = typeof body.nome_empresa === 'string' ? body.nome_empresa.trim() : '';
+  const email        = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
+  const password     = typeof body.password === 'string' ? body.password : '';
   if (!nome_empresa || !email || !password) return res.status(400).json({ error: 'Campos obrigatórios: nome_empresa, email, password' });
+  if (nome_empresa.length > 100) return res.status(400).json({ error: 'Nome da empresa muito longo (máximo 100 caracteres)' });
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ error: 'E-mail inválido' });
   if (password.length < 6) return res.status(400).json({ error: 'Senha deve ter pelo menos 6 caracteres' });
+
+  // WhatsApp: guarda so DDD + numero (sem +55 e sem 0 inicial), como o resto do sistema espera
+  let whatsapp = null;
+  if (body.whatsapp) {
+    let wd = String(body.whatsapp).replace(/\D/g, '');
+    if (wd.startsWith('55') && wd.length > 11) wd = wd.slice(2);
+    if (wd.startsWith('0')) wd = wd.slice(1);
+    if (wd.length < 10 || wd.length > 11) return res.status(400).json({ error: 'WhatsApp inválido. Use o formato (xx) xxxxx-xxxx.' });
+    whatsapp = wd;
+  }
 
   // Verifica se email já existe
   const checkRes = await fetch(
@@ -73,8 +88,7 @@ module.exports = async function handler(req, res) {
       'Content-Type': 'application/json', 'Prefer': 'return=representation'
     },
     body: JSON.stringify({
-      // #12: normaliza whatsapp removendo qualquer caractere não-numérico
-      slug, nome: nome_empresa.trim(), whatsapp: whatsapp ? String(whatsapp).replace(/\D/g, '') || null : null, bloqueada: false,
+      slug, nome: nome_empresa, whatsapp, bloqueada: false,
       status: 'trial',
       foto_url: null, descricao: null, logo: null, cor_principal: '#3d1f3a', texto_destaque: null,
       trial_expira_em: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
@@ -102,7 +116,7 @@ module.exports = async function handler(req, res) {
       'Content-Type': 'application/json', 'Prefer': 'return=minimal'
     },
     body: JSON.stringify({
-      id: newUser.id, nome: nome_empresa.trim(), email,
+      id: newUser.id, nome: nome_empresa, email,
       role: 'owner_empresa', empresa_id: empCriada.id, status: 'ativo'
     })
   });

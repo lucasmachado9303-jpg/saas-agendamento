@@ -8,9 +8,9 @@ Permite que profissionais criem uma pagina de agendamento personalizada e compar
 
 ## Paginas principais
 
-- [Pagina inicial](https://agenplus.com.br/)
-- [Criar conta](https://agenplus.com.br/cadastro)
-- [Entrar](https://agenplus.com.br/login)
+- [Pagina inicial](https://www.agenplus.com.br/)
+- [Criar conta](https://www.agenplus.com.br/cadastro)
+- [Entrar](https://www.agenplus.com.br/login)
 
 ## Uso de IA
 

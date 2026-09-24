@@ -5,7 +5,7 @@
 module.exports = async function handler(req, res) {
   const origin = req.headers.origin || '';
   const allowed = ['https://saas-agendamento-seven.vercel.app', 'https://agenplus.com.br', 'https://www.agenplus.com.br'];
-  if (allowed.includes(origin) || /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin) || /\.agenplus\.com\.br$/.test(origin)) {
+  if (allowed.includes(origin) || /^https?:\/\/([a-z0-9-]+\.)?(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin) || /^https:\/\/[a-z0-9-]+\.agenplus\.com\.br$/.test(origin)) {
     res.setHeader('Access-Control-Allow-Origin', origin);
   }
   res.setHeader('Access-Control-Allow-Methods', 'PATCH, OPTIONS');
@@ -46,33 +46,40 @@ module.exports = async function handler(req, res) {
   if (acao === 'confirmar' && ag.status === 'confirmado') {
     return res.status(409).json({ error: 'Agendamento já está confirmado.' });
   }
-  if (acao === 'cancelar' && ag.status === 'cancelado') {
-    return res.status(409).json({ error: 'Agendamento já está cancelado.' });
+  if (ag.status === 'cancelado') {
+    // Um cancelado nao pode ser reconfirmado pelo link: o horario pode ja ter sido reservado por outra pessoa
+    return res.status(409).json({ error: acao === 'cancelar' ? 'Agendamento já está cancelado.' : 'Este agendamento foi cancelado.' });
   }
 
-  // #5: Valida prazo de cancelamento conforme configuração da empresa
+  // #5: Valida prazo de cancelamento conforme configuração da empresa.
+  // cancelamento_horas = 0 significa "sem prazo minimo"; mesmo assim nao se cancela um horario que ja passou.
   if (acao === 'cancelar') {
     const empRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/empresas?id=eq.${ag.empresa_id}&select=cancelamento_horas`,
+      `${SUPABASE_URL}/rest/v1/empresas?id=eq.${encodeURIComponent(ag.empresa_id)}&select=cancelamento_horas`,
       { headers: { 'Authorization': `Bearer ${SERVICE_KEY}`, 'apikey': SERVICE_KEY } }
     );
     const empRows = await empRes.json();
     const cancelHoras = (Array.isArray(empRows) && empRows[0]?.cancelamento_horas != null)
-      ? empRows[0].cancelamento_horas : 2;
-    if (cancelHoras > 0) {
-      // Interpreta data/hora como horario de Brasilia (UTC-3) para calcular antecedencia corretamente
-      const agDateTime = new Date(`${ag.data}T${ag.hora}:00-03:00`);
-      const horasRestantes = (agDateTime.getTime() - Date.now()) / (1000 * 60 * 60);
-      if (horasRestantes < cancelHoras) {
-        return res.status(403).json({ error: `Cancelamento não permitido com menos de ${cancelHoras}h de antecedência.` });
-      }
+      ? Number(empRows[0].cancelamento_horas) : 2;
+    // Interpreta data/hora como horario de Brasilia (UTC-3) para calcular antecedencia corretamente
+    const hora = String(ag.hora || '').slice(0, 5);
+    const agDateTime = new Date(`${ag.data}T${hora}:00-03:00`);
+    const horasRestantes = (agDateTime.getTime() - Date.now()) / (1000 * 60 * 60);
+    if (!Number.isFinite(horasRestantes)) {
+      return res.status(500).json({ error: 'Data do agendamento inválida.' });
+    }
+    if (horasRestantes < 0) {
+      return res.status(403).json({ error: 'Este horário já passou.' });
+    }
+    if (cancelHoras > 0 && horasRestantes < cancelHoras) {
+      return res.status(403).json({ error: `Cancelamento não permitido com menos de ${cancelHoras}h de antecedência.` });
     }
   }
 
   const novoStatus = acao === 'cancelar' ? 'cancelado' : 'confirmado';
   const realId = ag.id;
   const updRes = await fetch(
-    `${SUPABASE_URL}/rest/v1/agendamentos?id=eq.${realId}`,
+    `${SUPABASE_URL}/rest/v1/agendamentos?id=eq.${encodeURIComponent(realId)}`,
     {
       method: 'PATCH',
       headers: {

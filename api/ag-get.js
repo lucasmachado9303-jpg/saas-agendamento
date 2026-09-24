@@ -4,7 +4,7 @@
 module.exports = async function handler(req, res) {
   const origin = req.headers.origin || '';
   const allowed = ['https://saas-agendamento-seven.vercel.app', 'https://agenplus.com.br', 'https://www.agenplus.com.br'];
-  if (allowed.includes(origin) || /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin) || /\.agenplus\.com\.br$/.test(origin)) {
+  if (allowed.includes(origin) || /^https?:\/\/([a-z0-9-]+\.)?(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin) || /^https:\/\/[a-z0-9-]+\.agenplus\.com\.br$/.test(origin)) {
     res.setHeader('Access-Control-Allow-Origin', origin);
   }
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -18,7 +18,7 @@ module.exports = async function handler(req, res) {
     return res.status(500).json({ error: 'Variáveis de ambiente não configuradas' });
   }
 
-  const { ag_id } = req.query;
+  const ag_id = String((req.query && req.query.ag_id) || '');
   if (!ag_id) return res.status(400).json({ error: 'ag_id obrigatório' });
 
   // Detecta se é UUID (36 chars) ou token curto

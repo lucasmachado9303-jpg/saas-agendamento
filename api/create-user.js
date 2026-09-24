@@ -1,7 +1,7 @@
 module.exports = async function handler(req, res) {
   const origin = req.headers.origin || '';
   const allowed = ['https://saas-agendamento-seven.vercel.app', 'https://agenplus.com.br', 'https://www.agenplus.com.br'];
-  if (allowed.includes(origin) || /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
+  if (allowed.includes(origin) || /^https?:\/\/([a-z0-9-]+\.)?(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
     res.setHeader('Access-Control-Allow-Origin', origin);
   }
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -45,8 +45,12 @@ module.exports = async function handler(req, res) {
   if (!email || !password || !nome || !empresa_id) {
     return res.status(400).json({ error: 'Campos obrigatórios: email, password, nome, empresa_id' });
   }
-  if (password.length < 6) {
+  if (typeof password !== 'string' || password.length < 6) {
     return res.status(400).json({ error: 'Senha deve ter pelo menos 6 caracteres' });
+  }
+  // IDs entram na URL do banco: so aceita UUID de verdade
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(empresa_id))) {
+    return res.status(400).json({ error: 'empresa_id inválido' });
   }
 
   // #13: Valida que empresa_id existe antes de prosseguir

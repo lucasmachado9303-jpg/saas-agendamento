@@ -17,9 +17,13 @@ function _carregarCropper(){
     const css = document.createElement('link');
     css.rel = 'stylesheet';
     css.href = 'https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css';
+    css.integrity = 'sha384-6LFfkTKLRlzFtgx8xsWyBdKGpcMMQTkv+dB7rAbugeJAu1Ym2q1Aji1cjHBG12Xh';
+    css.crossOrigin = 'anonymous';
     document.head.appendChild(css);
     const js = document.createElement('script');
     js.src = 'https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js';
+    js.integrity = 'sha384-jrOgQzBlDeUNdmQn3rUt/PZD+pdcRBdWd/HWRqRo+n2OR2QtGyjSaJC0GiCeH+ir';
+    js.crossOrigin = 'anonymous';
     js.onload = resolve;
     js.onerror = () => reject(new Error('Falha ao carregar editor de imagem.'));
     document.head.appendChild(js);

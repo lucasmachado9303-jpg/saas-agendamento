@@ -1,0 +1,8 @@
+# Arquivos que NAO devem ser publicados no site (ficam so no repositorio).
+# Sem isto, a Vercel serve qualquer arquivo da raiz como publico.
+*.sql
+*.md
+.claude
+.impeccable
+.env*
+package-lock.json

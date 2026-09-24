@@ -1,7 +1,7 @@
 module.exports = async function handler(req, res) {
   const origin = req.headers.origin || '';
   const allowed = ['https://saas-agendamento-seven.vercel.app', 'https://agenplus.com.br', 'https://www.agenplus.com.br'];
-  if (allowed.includes(origin) || /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
+  if (allowed.includes(origin) || /^https?:\/\/([a-z0-9-]+\.)?(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
     res.setHeader('Access-Control-Allow-Origin', origin);
   }
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -43,6 +43,10 @@ module.exports = async function handler(req, res) {
   const { empresa_id } = req.body || {};
   if (!empresa_id) {
     return res.status(400).json({ error: 'empresa_id obrigatório' });
+  }
+  // IDs entram na URL do banco: so aceita UUID de verdade
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(empresa_id))) {
+    return res.status(400).json({ error: 'empresa_id inválido' });
   }
 
   // Busca o profile do gestor da empresa para obter o auth user id

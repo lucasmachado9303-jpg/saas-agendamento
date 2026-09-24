@@ -3,5 +3,7 @@ Allow: /
 Disallow: /api/
 Disallow: /login
 Disallow: /cadastro
+Disallow: /gestao
+Disallow: /master
 
-Sitemap: https://agenplus.com.br/sitemap.xml
+Sitemap: https://www.agenplus.com.br/sitemap.xml
