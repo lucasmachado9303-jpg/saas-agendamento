@@ -1,3 +1,7 @@
+-- !! HISTORICO — NAO RODE DE NOVO !!
+-- Este script ja foi aplicado. Rodar outra vez recria a view horarios_ocupados
+-- e a restricao unica ANTIGAS (horario cancelado voltaria a ficar ocupado),
+-- desfazendo o supabase-correcoes-auditoria.sql.
 -- ============================================================
 -- Agenda+ — FIX FINAL (execute INTEIRO no SQL Editor do Supabase)
 -- É seguro rodar mais de uma vez.

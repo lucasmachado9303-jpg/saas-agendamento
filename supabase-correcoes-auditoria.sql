@@ -82,6 +82,11 @@ alter table agendamentos drop constraint if exists agendamentos_data_hora_format
 alter table agendamentos add constraint agendamentos_data_hora_formato
   check (data::text ~ '^\d{4}-\d{2}-\d{2}$' and hora::text ~ '^\d{2}:\d{2}(:\d{2})?$') not valid;
 
+-- Codigo curto do link de confirmacao (?ag=): so letras e numeros (o app gera 8)
+alter table agendamentos drop constraint if exists agendamentos_token_formato;
+alter table agendamentos add constraint agendamentos_token_formato
+  check (token_curto is null or token_curto ~ '^[a-z0-9]{4,32}$') not valid;
+
 -- Horarios configurados: dia da semana (0-6) na chave _dias_, HH:MM nas demais
 alter table horarios_disponiveis drop constraint if exists horarios_hora_formato;
 alter table horarios_disponiveis add constraint horarios_hora_formato
@@ -134,6 +139,9 @@ select 'restricao botoes_cor_formato',
 union all
 select 'restricao agendamentos_data_hora_formato',
        case when exists (select 1 from pg_constraint where conname = 'agendamentos_data_hora_formato') then 'ok' else 'FALTANDO' end
+union all
+select 'restricao agendamentos_token_formato',
+       case when exists (select 1 from pg_constraint where conname = 'agendamentos_token_formato') then 'ok' else 'FALTANDO' end
 union all
 select 'indice agendamentos_slot_ativo_unique',
        case when exists (select 1 from pg_indexes where indexname = 'agendamentos_slot_ativo_unique') then 'ok' else 'FALTANDO' end

@@ -65,7 +65,7 @@
             <div style="font-size:13px;font-weight:700;color:#1a1a1a;margin-bottom:3px;">Mensagem de lembrete</div>
             <div style="font-size:12px;color:#8e8e93;margin-bottom:10px;">Enviada ao clicar em "Lembrete" no agendamento.</div>
             <textarea id="msgLembrete" rows="5" style="width:100%;font-family:inherit;font-size:13px;border:0.5px solid #d1d5db;border-radius:8px;padding:10px 12px;resize:none;line-height:1.5;color:#1a1a1a;background:#f9f9f7;">${escapeHtml(msgLembrete)}</textarea>
-            <div style="font-size:11px;color:#8e8e93;margin-top:6px;">Variaveis: {nome} {hora} {servico} {data}</div>
+            <div style="font-size:11px;color:#8e8e93;margin-top:6px;">Variaveis: {nome} {hora} {servico} {data} {link}</div>
           </div>
           <div style="background:#fff;border:0.5px solid #e4e4e7;border-radius:12px;padding:14px;box-shadow:0 1px 6px rgba(0,0,0,0.07);">
             <div style="font-size:13px;font-weight:700;color:#1a1a1a;margin-bottom:3px;">Mensagem de cliente ausente</div>
@@ -233,7 +233,7 @@
       return `
         <div style="position:relative;display:flex;align-items:center;margin-bottom:16px;min-height:36px;">
           <button onclick="voltarDePersonalizar()" style="background:none;border:none;font-size:14px;font-weight:600;color:#555;cursor:pointer;padding:0;font-family:inherit;display:flex;align-items:center;gap:4px;">&#8249; Voltar</button>
-          <div style="position:absolute;left:0;right:0;text-align:center;font-weight:700;font-size:16px;pointer-events:none;">Personalize seu link</div>
+          <div style="position:absolute;left:0;right:0;text-align:center;font-weight:700;font-size:16px;pointer-events:none;">${emp.tipo === 'pagina' ? 'Personalize sua pagina' : 'Personalize seu link'}</div>
           <div></div>
         </div>
         ${personalizarBody()}
@@ -386,7 +386,7 @@ function _registrarHandlersConfigurar(){
   };
   window.linkAcao = (acao)=>{
     const url = `https://${emp.slug}.agenplus.com.br`;
-    if(acao==='abrir'){ window.open(url, '_blank'); }
+    if(acao==='abrir'){ window.open(url, '_blank', 'noopener,noreferrer'); }
     else if(acao==='copiar'){ navigator.clipboard.writeText(url).then(()=>toast('Link copiado!','ok')).catch(()=>toast('Nao foi possivel copiar o link.','err')); }
     else if(acao==='compartilhar'){ if(navigator.share) navigator.share({ title: emp.nome, url }); else navigator.clipboard.writeText(url).then(()=>toast('Link copiado!','ok')).catch(()=>toast('Nao foi possivel copiar o link.','err')); }
     draw();

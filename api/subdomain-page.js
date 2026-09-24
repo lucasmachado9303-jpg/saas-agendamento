@@ -51,9 +51,10 @@ module.exports = async function handler(req, res) {
   } catch(e) { console.error('[subdomain-page] erro ao buscar empresa:', e.message); }
 
   // Busca agendamento se ?ag= presente
-  const agId = (req.query && req.query.ag) || new URL('https://x.com' + req.url).searchParams.get('ag');
+  const agId = String((req.query && req.query.ag) || new URL('https://x.com' + req.url).searchParams.get('ag') || '');
   let ag = null;
-  if (agId && emp) {
+  // UUID ou codigo curto: so letras, numeros e hifen (mesma regra de api/ag-get)
+  if (agId && emp && /^[a-z0-9-]{1,64}$/i.test(agId)) {
     try {
       const isUUID = /^[0-9a-f-]{36}$/i.test(agId);
       const filtro = isUUID ? `id=eq.${agId}` : `token_curto=eq.${encodeURIComponent(agId)}`;

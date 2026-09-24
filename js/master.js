@@ -882,6 +882,7 @@ function renderMasterPanel(){
     // 1. Cria a empresa no banco
     const SLUGS_RESERVADOS = ['api','app','admin','master','login','logout','auth','static','assets','sw','manifest','index','null','undefined','favicon','www','mail','suporte','ajuda','cdn','blog','help','cadastro'];
     let slug = slugify(nome);
+    if(!slug){ toast('Use letras ou números no nome da empresa (ele vira o link).','err'); return; }
     if(SLUGS_RESERVADOS.includes(slug)){ toast(`O nome "${nome}" é reservado pelo sistema. Use um nome diferente.`,'err'); return; }
     let s2 = slug, n=1;
     while(empresas.some(e=>e.slug===s2)){ s2 = slug+"-"+(++n); }

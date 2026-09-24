@@ -95,7 +95,7 @@
           <div style="font-size:22px;font-weight:700;color:#fff;margin-bottom:4px;">${escapeHtml(c.nome)}</div>
           <div style="font-size:14px;color:rgba(255,255,255,0.6);margin-bottom:18px;">${fmtTelStr(c.telefone)}</div>
           <div style="display:flex;gap:10px;">
-            <a href="${telWaLink(c.telefone)}" target="_blank" style="flex:1;display:flex;align-items:center;justify-content:center;gap:7px;background:#25d366;color:#fff;border-radius:12px;padding:10px 0;font-size:14px;font-weight:600;text-decoration:none;">${ICO_WA} WhatsApp</a>
+            <a href="${telWaLink(c.telefone)}" target="_blank" rel="noopener noreferrer" style="flex:1;display:flex;align-items:center;justify-content:center;gap:7px;background:#25d366;color:#fff;border-radius:12px;padding:10px 0;font-size:14px;font-weight:600;text-decoration:none;">${ICO_WA} WhatsApp</a>
             <button onclick="toggleEditarPerfil()" style="flex:1;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.15);color:#fff;border:none;border-radius:12px;padding:10px 0;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;">Editar</button>
           </div>
         </div>
@@ -255,9 +255,10 @@ function _registrarHandlersClientes(){
       const defaultMsg = 'Olá, {nome}! \nFaz um tempinho desde o seu último atendimento.\nQue tal agendar um novo horário? Estamos à disposição.\nAgende pelo link:\n{link}';
       const tmpl = empObj?.msgInativo || defaultMsg;
       const linkPublico = 'https://' + (empObj?.slug||'') + '.agenplus.com.br';
+      // Substitui com funcao: com texto, um "$&" no nome seria interpretado pelo replace
       const msg = tmpl
-        .replace(/{nome}/g, c.nome||'')
-        .replace(/{link}/g, linkPublico);
+        .replace(/{nome}/g, ()=>c.nome||'')
+        .replace(/{link}/g, ()=>linkPublico);
       link = `https://wa.me/${waNum}?text=${encodeURIComponent(msg)}`;
     }
     _inativoWaMenuId = null;
@@ -271,7 +272,7 @@ function _registrarHandlersClientes(){
     }
     window.open(link, '_blank', 'noopener,noreferrer');
   };
-  // Expoe para o visibilitychange recarregar clientes quando a aba estiver ativa
+  // Chamada pela atualizacao automatica (atualizarDadosDaTela, em core.js) para recarregar a lista.
   // So recarrega se a gestao ainda estiver aberta (a funcao continua registrada depois de sair dela)
   window._recarregarClientes = ()=>{ if(currentRoute.page === 'gestao' && corner === 'clientes') carregarClientes(); };
   window.filtrarClientesLive = (v)=>{

@@ -20,6 +20,8 @@ module.exports = async function handler(req, res) {
 
   const ag_id = String((req.query && req.query.ag_id) || '');
   if (!ag_id) return res.status(400).json({ error: 'ag_id obrigatório' });
+  // UUID ou codigo curto: so letras, numeros e hifen
+  if (!/^[a-z0-9-]{1,64}$/i.test(ag_id)) return res.status(400).json({ error: 'ag_id inválido' });
 
   // Detecta se é UUID (36 chars) ou token curto
   const isUUID = /^[0-9a-f-]{36}$/i.test(ag_id);

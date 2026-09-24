@@ -37,7 +37,7 @@ let _clientePerfilId;
 let _clientePerfilEditando;
 let _excluirClienteModal; // id do cliente aguardando confirmação de exclusão
 let _clientesAba; // 'todos' | 'ausentes'
-let _clientesInativosFiltro; // faixa selecionada: 15 | 30 | 45 (compartilhada com o dashboard)
+let _clientesInativosFiltro; // faixa selecionada na aba Ausentes: 15 | 30 | 45
 let _clientesBannerDismissed;
 let _notas; // registros da tabela notas
 let _notaModal; // { texto, cor }

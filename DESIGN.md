@@ -126,7 +126,7 @@ Paleta de dois mundos: quase-pretos quentes para superfícies, âmbar intenso co
 - **Label** (700, `0.75rem`, ls 0.1em, uppercase): Eyebrows de categoria (ex: "Preço simples, sem surpresa").
 
 ### Named Rules
-**A Regra do Peso Único.** Bricolage Grotesque aparece apenas em 800. Sem uso em pesos intermediários (400, 600) — eles perdem o caráter da fonte neste contexto.
+**A Regra do Peso Único.** Bricolage Grotesque aparece em 800 nos títulos (e 700 em títulos menores: passos, features, preço). Sem uso em pesos intermediários (400, 600) — eles perdem o caráter da fonte neste contexto.
 
 ## Layout
 
@@ -181,7 +181,7 @@ Linguagem de formas consistentemente arredondada — sem ângulos retos em compo
 - **Active:** `transform: scale(0.97)`.
 
 ### Feature List
-- Lista vertical com separadores `1px` em `rgba(240,235,227,0.12)`.
+- Lista vertical com separadores `1px` em âmbar translúcido (`rgba(232,149,42,0.25)`).
 - Nome em Bricolage 700, tamanho fluido `clamp(1.1rem, 3vw, 1.4rem)`.
 - Primeiro item com destaque extra: `clamp(1.3rem, 3.5vw, 1.7rem)`.
 - Descrição em system-ui 1rem, cor `--muted-2`.

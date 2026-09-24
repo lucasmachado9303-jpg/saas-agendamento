@@ -487,12 +487,16 @@ async function renderAgConfirmar(emp, agId){
   // Tela de carregamento
   render(`<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--paper);"><div style="font-size:14px;color:#aaa;">Carregando...</div></div>`);
 
-  // Busca o agendamento pelo UUID via API (service key, contorna RLS)
+  // Busca o agendamento pelo UUID via API (service key, contorna RLS).
+  // O id vem da URL e vai para dentro de onclick: so aceita letras, numeros e hifen
+  // (o token_curto pode ser escolhido por quem cria o agendamento).
   let ag = null;
-  try {
-    const r = await fetch('/api/ag-get?ag_id=' + encodeURIComponent(agId));
-    if(r.ok) ag = await r.json();
-  } catch(e){}
+  if(/^[a-z0-9-]{1,64}$/i.test(String(agId || ''))){
+    try {
+      const r = await fetch('/api/ag-get?ag_id=' + encodeURIComponent(agId));
+      if(r.ok) ag = await r.json();
+    } catch(e){}
+  }
 
   if(!ag){
     render(`

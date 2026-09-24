@@ -180,7 +180,9 @@
     const _nome = document.getElementById('pNome')?.value;          if(_nome != null) emp.nome = _nome || emp.nome;
     const _desc = document.getElementById('pDescricao')?.value;     if(_desc != null) emp.descricao = _desc;
     const _dest = document.getElementById('pTextoDestaque')?.value; if(_dest != null) emp.textoDestaque = _dest;
-    const _cor  = document.getElementById('pCor')?.value;           if(_cor)          emp.corPrincipal = _cor;
+    // (o texto do botao de agendamento nao era preservado e sumia ao abrir o formulario de botao)
+    const _agd  = document.getElementById('pTextoAgendar');         if(_agd && _agd.type !== 'hidden') emp.textoAgendar = _agd.value;
+    const _cor  = document.getElementById('pCor')?.value;           if(_cor)          emp.corPrincipal = sanitizeCor(_cor);
   }
 
   function _atualizarCorRoda(){
@@ -405,7 +407,7 @@ function _registrarHandlersPersonalizar(){
     emp.descricao          = document.getElementById('pDescricao').value.trim();
     emp.textoDestaque      = document.getElementById('pTextoDestaque').value.trim();
     emp.textoAgendar       = document.getElementById('pTextoAgendar').value.trim();
-    emp.corPrincipal       = document.getElementById('pCor').value;
+    emp.corPrincipal       = sanitizeCor(document.getElementById('pCor').value);
     const { error } = await supabaseClient.from('empresas').update({
       nome:                  emp.nome,
       descricao:             emp.descricao             || null,
@@ -479,7 +481,7 @@ function _registrarHandlersPersonalizar(){
       nome, tipo, link, icone: '', abrir_nova_aba: true, cor: corBotao || null
     }).eq('id', id);
     if(error){ toast('Erro ao salvar. Tente novamente.','err'); return; }
-    Object.assign(existingB, { nome, tipo, link, icone: '', abrirNovaAba: true, cor: corBotao });
+    Object.assign(existingB, { nome, tipo, link, icone: '', abrirNovaAba: true, cor: corHexSegura(corBotao) });
     editandoBotaoId = null;
     draw();
   };
@@ -517,7 +519,7 @@ function _registrarHandlersPersonalizar(){
     }).select().single();
     if(error){ console.error('Erro ao adicionar botão:', error); toast('Erro ao salvar. Tente novamente.','err'); return; }
     emp.botoes.push({ id:row.id, nome:row.nome, tipo:row.tipo, link:row.link,
-      icone:row.icone, ordem:row.ordem, ativo:row.ativo, abrirNovaAba:row.abrir_nova_aba, cor:row.cor||'' });
+      icone:row.icone, ordem:row.ordem, ativo:row.ativo, abrirNovaAba:row.abrir_nova_aba, cor:corHexSegura(row.cor) });
     emp.botoes.sort((a,b)=>a.ordem-b.ordem);
     novoBotaoState = null;
     draw();

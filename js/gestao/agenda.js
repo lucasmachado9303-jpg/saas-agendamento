@@ -36,10 +36,9 @@
       const parts = [];
       for(const h of horarios){
         // Um horario pode ter um agendamento ativo e, alem dele, cancelados antigos.
-        // O cancelado nao ocupa mais a vaga — fica so como registro riscado.
+        // O cancelado nao ocupa mais a vaga: aparece so na lista "Cancelados", no fim do dia.
         const agsHora    = agendamentos.filter(a=>a.slug===emp.slug && a.data===diaSelecionado && a.hora===h);
         const ag         = agsHora.find(a=>a.status!=='cancelado') || null;
-        const cancelados = agsHora.filter(a=>a.status==='cancelado');
         const bloqueado = (emp.bloqueios||[]).some(b=>b.data===diaSelecionado && b.hora===h);
         const passadoHora = diaPassado || (diaSelecionado === hojeStr && h < horaAgora);
         const cardAgendamento = (ag)=>{
@@ -52,7 +51,6 @@
               : 'box-shadow:0 2px 12px rgba(0,0,0,0.15);';
           const statusCor = ag.status==='confirmado' ? '#16a34a' : ag.status==='cancelado' ? '#dc2626' : '#6b7280';
           const statusLabel = ag.status==='confirmado' ? 'Confirmado' : ag.status==='cancelado' ? 'Cancelado' : 'Não confirmado';
-          const nomeStyle = '';
           const BTN = 'font-family:inherit;height:28px;width:72px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;border:0.5px solid #ccc;background:#fff;color:#555;';
           const BTN_FIN = 'font-family:inherit;height:28px;padding:0 12px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;border:1.5px solid #d97706;background:#fff;color:#d97706;';
           const botoesPendente = `<div style="display:flex;justify-content:flex-end;"><button style="${BTN_FIN}" onclick="abrirFinalizarModal('${ag.id}')">Finalizar</button></div>`;
@@ -79,7 +77,7 @@
           return `<div style="padding:10px 12px;margin-bottom:6px;border-radius:9px;border:0.5px solid #e4e4e7;background:var(--card);display:flex;flex-direction:column;gap:8px;${cardStyle2}">
             <div>
               <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
-                <div style="font-weight:700;font-size:15px;${nomeStyle}">${h} — ${escapeHtml(ag.nome)}</div>
+                <div style="font-weight:700;font-size:15px;">${h} — ${escapeHtml(ag.nome)}</div>
                 ${showBadge ? `<div style="font-size:11px;font-weight:600;white-space:nowrap;color:${badgeCor};">${badgeLabel}</div>` : ''}
               </div>
               <div class="muted" style="font-size:13px;margin-top:2px;">${escapeHtml(ag.servicoNome)}</div>
@@ -199,7 +197,6 @@
   function novoAgModalHtml(){
     if(!novoAgState || !_novoAgModalOpen) return '';
     const {data, hora} = novoAgState;
-    const servicoOpts = emp.servicos.map(s=>`<option value="${s.id}">${escapeHtml(s.nome)}</option>`).join('');
     const _cliSel = _novoAgClienteId ? _clientes.find(x=>x.id===_novoAgClienteId) : null;
     const _nomePreench = _novoAgClienteBusca.toUpperCase();
     const dataFmt = new Date(data+'T00:00:00').toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'});
@@ -508,12 +505,13 @@ function _registrarHandlersAgenda(){
       const dataFmt = ag.data ? new Date(ag.data+'T00:00:00').toLocaleDateString('pt-BR') : '';
       const token = ag.tokenCurto || agId;
       const linkConfirmar = 'https://' + (empObj?.slug||'') + '.agenplus.com.br/?ag=' + token;
+      // Substitui com funcao: com texto, um "$&" no nome seria interpretado pelo replace
       const msg = tmpl
-        .replace(/{nome}/g, ag.nome||'')
-        .replace(/{hora}/g, ag.hora||'')
-        .replace(/{servico}/g, ag.servicoNome||'')
-        .replace(/{data}/g, dataFmt)
-        .replace(/{link}/g, linkConfirmar);
+        .replace(/{nome}/g, ()=>ag.nome||'')
+        .replace(/{hora}/g, ()=>ag.hora||'')
+        .replace(/{servico}/g, ()=>ag.servicoNome||'')
+        .replace(/{data}/g, ()=>dataFmt)
+        .replace(/{link}/g, ()=>linkConfirmar);
       link = `https://wa.me/${waNum}?text=${encodeURIComponent(msg)}`;
       const campo = tipo === 'confirmacao' ? 'confirmacao_enviada' : 'lembrete_enviado';
       if(tipo === 'confirmacao') ag.confirmacaoEnviada = true;

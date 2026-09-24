@@ -1,6 +1,6 @@
 // #33: versao do cache deve ser atualizada a cada deploy que mude os arquivos cacheados.
 // Formato sugerido: agendaplus-vANO.MES.DIA (ex: agendaplus-v2026.08.12)
-const CACHE = 'agendaplus-v2026.09.24-3';
+const CACHE = 'agendaplus-v2026.09.24-4';
 const ASSETS = [
   '/', '/index.html', '/app.html', '/manifest.json', '/icon.png', '/favicon.png',
   '/css/app.css',
