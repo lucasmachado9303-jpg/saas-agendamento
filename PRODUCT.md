@@ -32,7 +32,7 @@ Plataforma multi-tenant gerenciada: uma instalação serve múltiplas empresas c
 
 ## Capabilities and Constraints
 
-- SPA sem framework nem build: `app.html` (estrutura), `css/app.css` e `js/` (core, publico, gestao, auth, master, upload, helpers), carregados como `<script>` classicos na ordem — funcoes chamadas por `onclick` precisam continuar globais
+- SPA sem framework nem build: `app.html` (estrutura), `css/app.css` e `js/` (core, publico, auth, master, upload, helpers) e `js/gestao/` (uma aba por arquivo), carregados como `<script>` classicos na ordem — funcoes chamadas por `onclick` precisam continuar globais. O estado da gestao fica em `js/gestao/estado.js` e e reiniciado em `renderGestao()` (`js/gestao/nucleo.js`); os handlers `window.*` de cada aba sao registrados por `_registrarHandlers<Aba>()`
 - Supabase para auth, banco de dados e storage de imagens
 - Agendamento público sem login para o cliente final
 - Multi-tenant: cada empresa tem slug, página pública, painel de gestão próprio

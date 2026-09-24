@@ -1,11 +1,15 @@
 // #33: versao do cache deve ser atualizada a cada deploy que mude os arquivos cacheados.
 // Formato sugerido: agendaplus-vANO.MES.DIA (ex: agendaplus-v2026.08.12)
-const CACHE = 'agendaplus-v2026.09.24';
+const CACHE = 'agendaplus-v2026.09.24-2';
 const ASSETS = [
   '/', '/index.html', '/app.html', '/manifest.json', '/icon.png', '/favicon.png',
   '/css/app.css',
-  '/js/core.js', '/js/publico.js', '/js/gestao.js', '/js/auth.js',
+  '/js/core.js', '/js/publico.js', '/js/auth.js',
   '/js/master.js', '/js/upload.js', '/js/helpers.js',
+  '/js/gestao/estado.js', '/js/gestao/nucleo.js', '/js/gestao/dashboard.js',
+  '/js/gestao/agenda.js', '/js/gestao/clientes.js', '/js/gestao/financeiro.js',
+  '/js/gestao/relatorios.js', '/js/gestao/configurar.js', '/js/gestao/horarios.js',
+  '/js/gestao/personalizar.js',
 ];
 
 self.addEventListener('install', e => {
