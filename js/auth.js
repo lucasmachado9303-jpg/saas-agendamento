@@ -92,7 +92,7 @@ window.tentarCadastro = async ()=>{
   // Dispara eventos de conversao antes de redirecionar
   try{ if(typeof fbq==='function') fbq('track','Lead'); }catch(e){}
   try{ if(typeof gtag==='function') gtag('event','sign_up',{method:'email'}); }catch(e){}
-  location.replace(`https://${result.slug}.agenplus.com.br/gestao#${hash}`);
+  location.replace(urlEmpresa(result.slug, `/gestao#${hash}`));
 };
 
 function renderLoginUnificado(){
@@ -179,7 +179,7 @@ window.tentarLoginUnificado = async ()=>{
         try {
           const { data: { session } } = await supabaseClient.auth.getSession();
           const hash = `access_token=${session.access_token}&refresh_token=${session.refresh_token}&token_type=bearer&type=bearer`;
-          location.replace(`https://${emp.slug}.agenplus.com.br/gestao#${hash}`);
+          location.replace(urlEmpresa(emp.slug, `/gestao#${hash}`));
         } catch(e) {
           if(btn){ btn.disabled = false; btn.textContent = 'Entrar com email'; }
           toast('Erro ao redirecionar. Tente novamente.','err');

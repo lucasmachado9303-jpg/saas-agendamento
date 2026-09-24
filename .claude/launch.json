@@ -1,12 +1,12 @@
-{
+﻿{
   "version": "0.0.1",
   "configurations": [
     {
       "name": "agenda-plus",
       "runtimeExecutable": "npx",
-      "runtimeArgs": ["serve", "."],
-      "port": 3000,
-      "autoPort": true
+      "runtimeArgs": ["serve", ".", "--config", ".claude/serve.json", "-l", "3001"],
+      "port": 3001,
+      "autoPort": false
     }
   ]
 }

@@ -212,6 +212,15 @@ function slugDoSubdominio(){
   return null;
 }
 
+// Em localhost (testes) os redirecionamentos ficam locais: slug.localhost:PORTA
+const _ehLocal = location.hostname === 'localhost' || location.hostname.endsWith('.localhost');
+function urlPrincipal(path){
+  return _ehLocal ? `http://localhost:${location.port}${path}` : `https://agenplus.com.br${path}`;
+}
+function urlEmpresa(slug, path){
+  return _ehLocal ? `http://${slug}.localhost:${location.port}${path}` : `https://${slug}.agenplus.com.br${path}`;
+}
+
 function goto(params){
   pararPolling();
   currentRoute = { master:null, empresa:null, page:"", ...params };
@@ -219,7 +228,7 @@ function goto(params){
 
   if(params.master){
     if(subSlug){
-      location.href = 'https://agenplus.com.br/master';
+      location.href = urlPrincipal('/master');
       return;
     }
     history.pushState(currentRoute, '', '/master');
@@ -232,7 +241,7 @@ function goto(params){
         const qs = params.page ? `/app.html?empresa=${slug}&page=${params.page}` : `/app.html?empresa=${slug}`;
         history.pushState(currentRoute, '', qs);
       } else {
-        location.href = `https://${slug}.agenplus.com.br${path}`;
+        location.href = urlEmpresa(slug, path);
         return;
       }
     } else {

@@ -631,7 +631,7 @@ window.agConfirmar = async (agId, acao, empSlug) => {
 
 window.loginComGoogle = async (slug)=>{
   if(slug) localStorage.setItem('ob_goto', JSON.stringify({ empresa: slug, page: 'gestao' }));
-  const redirectTo = 'https://agenplus.com.br/login';
+  const redirectTo = urlPrincipal('/login');
   const { error } = await supabaseClient.auth.signInWithOAuth({
     provider: 'google',
     options: { redirectTo }
@@ -647,7 +647,7 @@ window.recuperarSenha = async (slug)=>{
     inputEl?.focus();
     return;
   }
-  const redirectTo = 'https://agenplus.com.br/login';
+  const redirectTo = urlPrincipal('/login');
   const { error } = await supabaseClient.auth.resetPasswordForEmail(email, { redirectTo });
   if(error){ toast('Erro ao enviar. Tente novamente.','err'); return; }
   toast('Se o e-mail estiver cadastrado, você receberá um link em breve.','ok',5000);

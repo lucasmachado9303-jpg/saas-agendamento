@@ -1204,7 +1204,7 @@ window.masterRedefinirSenha = async ()=>{
     return;
   }
   confirmarAcao(`Enviar link de redefinicao de senha para <strong>${escapeHtml(email)}</strong>?`, async ()=>{
-    const { error } = await supabaseClient.auth.resetPasswordForEmail(email, { redirectTo: 'https://agenplus.com.br/login' });
+    const { error } = await supabaseClient.auth.resetPasswordForEmail(email, { redirectTo: urlPrincipal('/login') });
     if(error){ toast('Erro ao enviar. Tente novamente.','err'); return; }
     toast('Link de redefinicao enviado para ' + email,'ok',5000);
   });
