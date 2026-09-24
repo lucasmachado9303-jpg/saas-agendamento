@@ -5,7 +5,7 @@
 const fs   = require('fs');
 const path = require('path');
 
-// app.html tem ~5000 linhas — le do disco uma vez e reusa entre requisicoes.
+// app.html (so a estrutura; o JS fica em js/) — le do disco uma vez e reusa entre requisicoes.
 // TTL de 5 minutos: apos um deploy, instancias em execucao recarregam o arquivo.
 let _appHtmlCache = null;
 let _appHtmlCachedAt = 0;

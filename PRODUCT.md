@@ -28,11 +28,11 @@ Plataforma multi-tenant gerenciada: uma instalação serve múltiplas empresas c
 - Agendamentos por dia e horário, com bloqueios manuais e por dia da semana
 - Painel de gestão: agendamentos, configurar serviços/horários, personalizar página
 - Painel master: criar empresas, gerenciar financeiro, bloquear contas
-- Stack: single-file SPA (`app.html`) com Supabase (PostgreSQL + RLS) como backend
+- Stack: SPA em JS puro (`app.html` + `css/app.css` + `js/*.js`, sem build) com Supabase (PostgreSQL + RLS) como backend
 
 ## Capabilities and Constraints
 
-- Single-file SPA — todo HTML, CSS e JS inline em `app.html`
+- SPA sem framework nem build: `app.html` (estrutura), `css/app.css` e `js/` (core, publico, gestao, auth, master, upload, helpers), carregados como `<script>` classicos na ordem — funcoes chamadas por `onclick` precisam continuar globais
 - Supabase para auth, banco de dados e storage de imagens
 - Agendamento público sem login para o cliente final
 - Multi-tenant: cada empresa tem slug, página pública, painel de gestão próprio
@@ -48,7 +48,7 @@ Nome: **Agenda+**. Sem slogan ou identidade visual formal definida ainda.
 
 ## Evidence on Hand
 
-Implementação existente em `app.html` (~2500+ linhas). Interface funcional com painéis de gestão e master operacionais. Sem assets de marketing ou copy institucional.
+Implementação existente em `app.html` + `js/` (~6000 linhas). Interface funcional com painéis de gestão e master operacionais. Sem assets de marketing ou copy institucional.
 
 ## Product Principles
 
